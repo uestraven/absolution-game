@@ -24,18 +24,18 @@ export function TitleScreen({
       <p className="start-sub">{SUBTITLE}</p>
       <div className="start-actions">
         {canContinue ? (
-          <button type="button" className="btn btn-primary btn-big" onClick={onContinue}>
+          <button type="button" className="btn" onClick={onContinue}>
             Continue
           </button>
         ) : null}
         <button
           type="button"
-          className={`btn btn-big ${canContinue ? '' : 'btn-primary'}`}
+          className="btn"
           onClick={onNewGame}
         >
           New Game
         </button>
-        <button type="button" className="btn btn-big btn-quiet" onClick={onImport}>
+        <button type="button" className="btn btn-quiet" onClick={onImport}>
           Import Save
         </button>
       </div>
@@ -75,7 +75,7 @@ export function SetupScreen({ inputMode, onSetMode, onChoose, onBack }: SetupScr
               <button
                 key={id}
                 type="button"
-                className="btn btn-big btn-primary character-btn"
+                className="btn character-btn"
                 aria-label={`Play as ${character.name}`}
                 onClick={() => onChoose(id)}
               >

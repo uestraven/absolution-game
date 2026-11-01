@@ -83,6 +83,7 @@ const TRANSCRIPT_KINDS: ReadonlySet<string> = new Set<TranscriptKind>([
   'command',
   'location',
   'dialogue',
+  'success',
   'system',
   'options',
   'objective',

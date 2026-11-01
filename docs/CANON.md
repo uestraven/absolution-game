@@ -157,6 +157,15 @@ objective text and save filenames. `content/content.test.ts` enforces the first
 of those with a pattern list, and the export filename is the deliberately
 anonymous `adventure-save.json`.
 
+The interface's magenta highlight is held to the same standard. Its term list
+(`content/highlights.ts`) is deliberately broad — the prophecy, the Wanderer,
+the rite's name, the cataclysm, the vigil, the threshold, the carved eye, the
+relief, and the odd sounds in the cave — so that seeing magenta does not amount
+to the interface pointing at the chapter's twist. Every term on it is something
+the player has already read on the plank, heard from a villager, or is standing
+in front of. Cyan highlighting is derived from `state.discovered`, so it cannot
+mark anything the player has not found.
+
 This is presentation only. The build is static client-side JavaScript: every
 string, every flag name and every location id ships to the browser and can be
 read by anyone who opens the bundle or this repository. No claim is made that

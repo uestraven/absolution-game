@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CharacterId, GameAction, GameState } from '../engine/types';
 import { echoCommand, resolve } from '../engine/reducer';
-import { getAffordances } from '../engine/affordances';
+import { getAffordances, type Affordances } from '../engine/affordances';
 import { parse } from '../engine/parser';
 import { activeTopics, currentLocation } from '../engine/selectors';
-import { CHARACTERS } from '../content/characters';
-import { LOCATIONS } from '../content/locations';
+import { vocabulary } from '../engine/highlighting';
 import {
   DEFAULT_PREFS,
   EXPORT_FILENAME,
@@ -28,6 +27,12 @@ import { SettingsDialog } from './SettingsDialog';
 import { SetupScreen, TitleScreen } from './StartScreens';
 
 type Screen = 'title' | 'setup' | 'play';
+
+/**
+ * Meta actions promoted into the header, so they are reachable compactly in
+ * both input modes without a persistent menu competing with the narrative.
+ */
+const HEADER_META = ['meta-inventory', 'meta-journal', 'meta-help'];
 
 export function App() {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
@@ -88,6 +93,10 @@ export function App() {
   );
 
   const topics = useMemo(() => (state ? activeTopics(state) : []), [state]);
+  const terms = useMemo(
+    () => (state ? vocabulary(state) : { mystery: [], interactive: [] }),
+    [state]
+  );
 
   const submitTyped = useCallback(
     (raw: string) => {
@@ -105,23 +114,17 @@ export function App() {
   );
 
   /* --- Starting and restarting ------------------------------------ */
-  const chooseCharacter = useCallback(
-    (character: CharacterId) => {
-      const result = resolve({ ...blankSelectState(), character: null }, {
-        type: 'SELECT_CHARACTER',
-        character,
-      });
-      setState(result.state);
-      setScreen('play');
-      setAnnouncement(result.events.map((e) => e.text).join('\n\n'));
-      const checkpoint = writeCheckpoint(result.state);
-      if (checkpoint.working) setHasCheckpoint(true);
-      const saved = writeAutosave(result.state);
-      setStorage(saved);
-      if (saved.working) setCanContinue(true);
-    },
-    []
-  );
+  const chooseCharacter = useCallback((character: CharacterId) => {
+    const result = resolve(blankSelectState(), { type: 'SELECT_CHARACTER', character });
+    setState(result.state);
+    setScreen('play');
+    setAnnouncement(result.events.map((e) => e.text).join('\n\n'));
+    const checkpoint = writeCheckpoint(result.state);
+    if (checkpoint.working) setHasCheckpoint(true);
+    const saved = writeAutosave(result.state);
+    setStorage(saved);
+    if (saved.working) setCanContinue(true);
+  }, []);
 
   const startNewGame = useCallback(() => {
     if (canContinue) {
@@ -239,46 +242,54 @@ export function App() {
 
   const location = currentLocation(state);
   const affordances = getAffordances(state);
-  const character = state.character ? CHARACTERS[state.character] : null;
+  const headerMeta = affordances.meta.filter((m) => HEADER_META.includes(m.key));
+  const panelMeta = affordances.meta.filter((m) => !HEADER_META.includes(m.key));
   const placeHint =
     state.pending?.kind === 'clarification'
-      ? 'A number, a name, or CANCEL'
+      ? 'a number, a name, or cancel'
       : state.pending?.kind === 'conversation'
-        ? 'A topic, its number, or LEAVE'
-        : 'look, examine relief, go west…';
+        ? 'a topic, its number, or leave'
+        : 'look, examine relief, go west...';
 
   return (
-    <div
-      className={`app ${prefs.largeText ? 'large-text' : ''}`}
-      data-tone={LOCATIONS[state.locationId].tone}
-    >
+    <div className={`app ${prefs.largeText ? 'large-text' : ''}`}>
       <a className="skip-link" href="#main-controls">
         Skip to actions
       </a>
 
       <header className="topbar">
         <div className="topbar-where">
-          <p className="topbar-place">{location.name}</p>
+          <h1 className="topbar-place">{location.name}</h1>
           <p className="topbar-sub">{location.subtitle(state)}</p>
         </div>
-        <div className="topbar-right">
-          <p className="topbar-who">
-            {character ? character.name : ''}
-            {state.inventory.length > 0 ? ` · carrying ${state.inventory.length}` : ''}
-          </p>
+        <nav className="topbar-meta" aria-label="Game information">
+          {headerMeta.map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              className="btn btn-plain"
+              onClick={() => act(m.action, m.label)}
+            >
+              {m.label}
+            </button>
+          ))}
           <button
             type="button"
-            className="btn btn-quiet"
+            className="btn btn-plain"
             onClick={() => setSettingsOpen(true)}
             aria-haspopup="dialog"
           >
             Settings
           </button>
-        </div>
+        </nav>
       </header>
 
-      <p className="objective" aria-label="Current objective">
-        <span className="objective-tag">Objective</span> {state.objective}
+      <p
+        className={`objective ${state.ended ? 'objective-done' : ''}`}
+        aria-label="Current objective"
+      >
+        <span className="objective-tag">objective:</span>{' '}
+        <span className="objective-text">{state.objective}</span>
       </p>
 
       {!storage.working && storage.message ? (
@@ -290,6 +301,7 @@ export function App() {
       <main className="main">
         <Transcript
           entries={state.transcript}
+          vocabulary={terms}
           showOptionLists={prefs.inputMode === 'type'}
         />
       </main>
@@ -300,13 +312,12 @@ export function App() {
 
       <section className="controls" id="main-controls" aria-label="Actions">
         {prefs.inputMode === 'type' ? (
-          <TypeInput
-            label="What do you do?"
-            placeholder={placeHint}
-            onSubmit={submitTyped}
-          />
+          <TypeInput label="What do you do?" placeholder={placeHint} onSubmit={submitTyped} />
         ) : (
-          <SelectPanel affordances={affordances} onAct={(action, label) => act(action, label)} />
+          <SelectPanel
+            affordances={{ ...affordances, meta: panelMeta } satisfies Affordances}
+            onAct={(action, label) => act(action, label)}
+          />
         )}
       </section>
 
@@ -386,8 +397,8 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
   return (
     <div className="toast" role="status">
       <span>{message}</span>
-      <button type="button" className="btn btn-small btn-quiet" onClick={onDismiss}>
-        Dismiss
+      <button type="button" className="btn btn-plain" onClick={onDismiss}>
+        dismiss
       </button>
     </div>
   );

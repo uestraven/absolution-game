@@ -1,13 +1,18 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { TranscriptEntry } from '../engine/types';
+import type { Vocabulary } from '../engine/highlighting';
 import { RichText } from './RichText';
 
-/** Spoken name for each entry kind, so nothing depends on colour alone. */
+/**
+ * Spoken name for each entry kind. Every colour in the transcript is backed by
+ * one of these, so the meaning survives without colour.
+ */
 const KIND_NAME: Record<TranscriptEntry['kind'], string> = {
   narration: 'Narration',
   command: 'Your command',
   location: 'Arrival',
   dialogue: 'Conversation',
+  success: 'Done',
   system: 'Information',
   options: 'Choices',
   objective: 'Objective',
@@ -15,8 +20,20 @@ const KIND_NAME: Record<TranscriptEntry['kind'], string> = {
   failure: 'Nothing happens',
 };
 
+/** Entries whose text is prose worth tinting. */
+const TINTED: ReadonlySet<TranscriptEntry['kind']> = new Set<TranscriptEntry['kind']>([
+  'narration',
+  'location',
+  'dialogue',
+  'success',
+  'system',
+  'journal',
+  'failure',
+]);
+
 export interface TranscriptProps {
   entries: TranscriptEntry[];
+  vocabulary: Vocabulary;
   /**
    * Selectable mode renders the same choices as buttons, so the written-out
    * numbered list would be duplicate noise there.
@@ -24,7 +41,7 @@ export interface TranscriptProps {
   showOptionLists: boolean;
 }
 
-export function Transcript({ entries, showOptionLists }: TranscriptProps) {
+export function Transcript({ entries, vocabulary, showOptionLists }: TranscriptProps) {
   const shown = showOptionLists ? entries : entries.filter((e) => e.kind !== 'options');
   const scroller = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
@@ -60,11 +77,15 @@ export function Transcript({ entries, showOptionLists }: TranscriptProps) {
           <span className="sr-only">{KIND_NAME[entry.kind]}: </span>
           {entry.kind === 'command' ? (
             <p className="para command-line">
-              <span aria-hidden="true">› </span>
+              <span aria-hidden="true">&gt; </span>
               {entry.text}
             </p>
           ) : (
-            <RichText text={entry.text} />
+            <RichText
+              text={entry.text}
+              {...(TINTED.has(entry.kind) ? { vocabulary } : {})}
+              interactiveTint={entry.kind === 'success' ? 'success' : 'interactive'}
+            />
           )}
         </article>
       ))}

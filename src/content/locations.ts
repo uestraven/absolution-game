@@ -42,7 +42,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'Your Room',
     subtitle: () => 'Above the kitchen — early, on your birthday',
-    tone: 'village',
     description: () =>
       'Your room is the width of two arm-spans and smells of woodsmoke from the flue that ' +
       'runs up through the corner. Someone has been up before you: there is bread set out on ' +
@@ -68,7 +67,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'The Village Square',
     subtitle: () => 'Hard-packed earth, a well, and more cord strung up than usual',
-    tone: 'village',
     description: (state) => {
       const board = f(state, FLAGS.heardProphecy)
         ? 'The chalked plank by the well has been read aloud so many times this week that ' +
@@ -122,7 +120,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: "The Joiner's Workshop",
     subtitle: () => 'Sawdust, glue-pot, and a basket of offcuts',
-    tone: 'village',
     description: () =>
       'The workshop is one long room with the big door hooked open for the light. Shavings ' +
       'have drifted into the corners in pale banks. A glue-pot sits off the heat with a skin ' +
@@ -147,7 +144,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'The Cave Path',
     subtitle: () => 'Above the roofs, where the grass gives up',
-    tone: 'approach',
     description: () =>
       'The path leaves the last house and climbs through thistle and loose shale. From here ' +
       'the village is all roof-slate and smoke, and you can see the strung lanterns as a ' +
@@ -188,7 +184,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'The Cave Mouth',
     subtitle: () => 'The Cave of Absolution — the part everyone sees',
-    tone: 'cave',
     description: (state) =>
       'The mouth is a wide low slot under an overhang, taller than you and three times as ' +
       'wide. The floor inside is swept earth. There is a bench. There is a hook with a spare ' +
@@ -226,7 +221,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'The Outer Gallery',
     subtitle: () => 'As far as most people get, and then some',
-    tone: 'cave',
     description: (state) =>
       'The gallery is a long room with a ceiling that comes down to meet you at the far end. ' +
       'The rope ends here, tied off round a natural pillar. Behind you, back along the slope, ' +
@@ -270,7 +264,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'The Echo Chamber',
     subtitle: () => 'A room that answers back',
-    tone: 'cave',
     description: (state) =>
       'The crawl opens without warning into a bell of a room, high and round, with a floor ' +
       'that slopes to a shallow dish of standing water. Every sound you make arrives back at ' +
@@ -300,7 +293,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     name: 'The Sealed Chamber',
     subtitle: (state) =>
       f(state, FLAGS.passageOpen) ? 'Not as sealed as its name' : 'Small, square, and finished',
-    tone: 'cave',
     description: (state) => {
       const parts: string[] = [];
       parts.push(
@@ -373,7 +365,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'The Deep Chamber',
     subtitle: () => 'Below the part of the cave that has a name',
-    tone: 'deep',
     description: (state) => {
       const parts: string[] = [];
       parts.push(
@@ -417,7 +408,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'past',
     name: 'The Basin Chamber',
     subtitle: () => 'The same room, and nothing like it',
-    tone: 'deep',
     description: (state) =>
       'You are standing in the chamber. You are standing in a different chamber.\n\n' +
       'The walls are the walls — the same reach, the same low rim — but the stone is crisp. ' +
@@ -448,7 +438,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'past',
     name: 'The Cave Mouth',
     subtitle: () => 'A shorter way out than there should be',
-    tone: 'cave',
     description: () =>
       'The stair brings you up in four turns and lets you out at the mouth, and the walk takes ' +
       'a fraction of the time it should. There is no gallery. There is no crawl, no squeeze, no ' +
@@ -484,7 +473,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'past',
     name: 'The Village Square',
     subtitle: () => 'Your village, nearly',
-    tone: 'village',
     description: () => {
       const parts: string[] = [];
       parts.push(

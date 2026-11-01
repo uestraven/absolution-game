@@ -76,7 +76,7 @@ describe('selectable mode', () => {
     expect(within(panel).getByRole('button', { name: 'Take' })).toBeTruthy();
     await user.click(within(panel).getByRole('button', { name: 'Take' }));
     const log = screen.getByRole('log', { name: 'Story so far' });
-    expect(within(log).getByText(/lift the lantern off the sill/)).toBeTruthy();
+    expect(log.textContent).toMatch(/lift the lantern off the sill/);
   });
 });
 
@@ -90,7 +90,7 @@ describe('type-only mode', () => {
 
     await user.type(screen.getByLabelText('What do you do?'), 'take lantern{Enter}');
     const log = screen.getByRole('log', { name: 'Story so far' });
-    expect(within(log).getByText(/lift the lantern off the sill/)).toBeTruthy();
+    expect(log.textContent).toMatch(/lift the lantern off the sill/);
     // The command itself is echoed back into the transcript.
     expect(within(log).getByText('take lantern')).toBeTruthy();
   });
@@ -118,7 +118,7 @@ describe('switching modes', () => {
     // Same place, same history, now with buttons.
     expect(screen.getAllByText('The Village Square').length).toBeGreaterThan(0);
     const log = screen.getByRole('log', { name: 'Story so far' });
-    expect(within(log).getByText(/lift the lantern off the sill/)).toBeTruthy();
+    expect(log.textContent).toMatch(/lift the lantern off the sill/);
     expect(screen.queryByLabelText('What do you do?')).toBeNull();
     const panel = screen.getByRole('region', { name: 'Actions' });
     expect(within(panel).getByRole('button', { name: /joiner's workshop/ })).toBeTruthy();

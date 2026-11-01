@@ -1,74 +1,35 @@
 /* ------------------------------------------------------------------ *
- * Cave of Absolution — ordinary CSS, no framework, no generated art.
+ * Cave of Absolution — minimal terminal.
  *
- * Two palette families: warm village tones, colder cave tones. Tone is set
- * per location by `data-tone` on the app shell. Nothing is signalled by
- * colour alone; every state also has words.
+ * Soft white on near-black, one monospace face, one centred reading column
+ * about 70 characters wide. Colour appears only on short spans and always
+ * means the same thing:
+ *
+ *   magenta  unusual phenomena and significant story terms
+ *   cyan     exits, interactive objects, conversation topics
+ *   green    successful actions, acquired items, completed objectives
+ *
+ * Nothing is signalled by colour alone — every coloured span is also plain,
+ * explicit wording. No typewriter effect, flicker, scanlines, glow, gradients
+ * or decorative panels.
  * ------------------------------------------------------------------ */
 
 :root {
-  --ink: #f1e8dc;
-  --ink-soft: #cbbda9;
-  --ink-faint: #9c8f7e;
-  --bg: #17140f;
-  --bg-raised: #221d16;
-  --bg-sunk: #100e0a;
-  --line: #3b3226;
-  --accent: #d9a24a;
-  --accent-ink: #1a1409;
-  --warn-bg: #4a2a16;
-  --warn-ink: #ffd9b0;
-  --danger: #8c3a2e;
-  --focus: #8fc7ff;
+  --bg: #080a0c;
+  --ink: #dedfda;
+  --ink-dim: #a0a6ad;
+  --magenta: #eb8fd8;
+  --cyan: #79dce8;
+  --green: #a3db96;
 
-  --radius: 10px;
+  /* Hairlines only: outlines for controls, never filled panels. */
+  --rule: #23282d;
+  --rule-strong: #3a4147;
+
+  --measure: 70ch;
   --tap: 44px;
-  --measure: 38rem;
-
-  --font-body: ui-serif, Georgia, 'Iowan Old Style', 'Times New Roman', serif;
-  --font-ui: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* Warm, lamplit, lived-in. */
-[data-tone='village'] {
-  --bg: #1d1710;
-  --bg-raised: #2a2117;
-  --bg-sunk: #140f09;
-  --line: #43372a;
-  --accent: #e0a94f;
-}
-
-/* Out of doors, going up the hill: cooler, thinner light. */
-[data-tone='approach'] {
-  --bg: #171a18;
-  --bg-raised: #212522;
-  --bg-sunk: #101211;
-  --line: #343b37;
-  --accent: #b9bb86;
-}
-
-/* Stone. Colder, greyer, less of it. */
-[data-tone='cave'] {
-  --bg: #11151a;
-  --bg-raised: #1a2027;
-  --bg-sunk: #0c0f13;
-  --line: #2b343e;
-  --accent: #8fb3cc;
-  --ink: #e4ecf2;
-  --ink-soft: #a9bac6;
-  --ink-faint: #76858f;
-}
-
-/* Deeper still. */
-[data-tone='deep'] {
-  --bg: #0c1218;
-  --bg-raised: #141c25;
-  --bg-sunk: #070a0e;
-  --line: #243040;
-  --accent: #79cfd2;
-  --ink: #e8f2f5;
-  --ink-soft: #a4bcc6;
-  --ink-faint: #6f8691;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Mono", Menlo,
+    Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace;
 }
 
 * {
@@ -79,16 +40,16 @@ html,
 body {
   margin: 0;
   padding: 0;
-  min-height: 100%;
+  background: var(--bg);
 }
 
 body {
-  background: var(--bg-sunk);
   color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 17px;
+  font-family: var(--mono);
+  font-size: 18px;
   line-height: 1.6;
   -webkit-text-size-adjust: 100%;
+  font-variant-ligatures: none;
 }
 
 #root {
@@ -103,14 +64,14 @@ body {
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
 }
 
+/* Focus is always visible, and never colour-only: it adds an outline. */
 :focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
 
@@ -119,209 +80,217 @@ body {
   left: -9999px;
   top: 0;
   z-index: 50;
-  background: var(--accent);
-  color: var(--accent-ink);
-  padding: 0.6rem 1rem;
-  font-family: var(--font-ui);
-  border-radius: 0 0 var(--radius) 0;
+  background: var(--bg);
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  padding: 0.5rem 0.75rem;
 }
 .skip-link:focus {
   left: 0;
 }
 
 /* ------------------------------------------------------------------ *
- * Buttons
+ * Tints. The three meanings, used identically everywhere.
+ * ------------------------------------------------------------------ */
+
+.tint-mystery {
+  color: var(--magenta);
+}
+.tint-interactive {
+  color: var(--cyan);
+}
+.tint-success {
+  color: var(--green);
+}
+
+/* ------------------------------------------------------------------ *
+ * Controls: plain text labels and simple outlines.
  * ------------------------------------------------------------------ */
 
 .btn {
-  font-family: var(--font-ui);
-  font-size: 0.95rem;
-  line-height: 1.25;
+  font: inherit;
+  color: var(--cyan);
+  background: transparent;
+  border: 1px solid var(--rule-strong);
+  padding: 0.4rem 0.7rem;
   min-height: var(--tap);
-  padding: 0.6rem 0.9rem;
-  color: var(--ink);
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  cursor: pointer;
   text-align: left;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  cursor: pointer;
 }
 .btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--bg-raised) 80%, var(--accent) 20%);
-  border-color: var(--accent);
+  border-color: var(--cyan);
+  text-decoration: underline;
+}
+/* Selected and focused controls get an underline as well as a border. */
+.btn:focus-visible {
+  border-color: var(--cyan);
+  text-decoration: underline;
 }
 .btn:disabled {
-  opacity: 0.45;
+  color: var(--ink-dim);
+  border-color: var(--rule);
   cursor: not-allowed;
 }
-.btn-primary {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
-  font-weight: 700;
+.btn[aria-expanded='true'] {
+  border-color: var(--cyan);
+  text-decoration: underline;
 }
-.btn-primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 85%, white 15%);
+
+/* Meta controls read as a row of plain words, not a toolbar. */
+.btn-plain {
+  border: 1px solid transparent;
+  padding: 0.25rem 0.4rem;
+  min-height: auto;
+  color: var(--cyan);
 }
+
+.btn-plain:hover,
+.btn-plain:focus-visible {
+  border-color: var(--rule-strong);
+  text-decoration: underline;
+}
+
 .btn-quiet {
-  background: transparent;
-  color: var(--ink-soft);
+  color: var(--ink-dim);
 }
-.btn-small {
-  min-height: 38px;
-  padding: 0.4rem 0.7rem;
-  font-size: 0.87rem;
-}
-.btn-big {
-  min-height: 56px;
-  font-size: 1.05rem;
-}
-.btn-danger {
-  border-color: var(--danger);
-  color: #ffc9c0;
+.btn-quiet:hover:not(:disabled),
+.btn-quiet:focus-visible {
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 .btn-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 .btn-col {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.3rem;
+  align-items: stretch;
 }
 
 /* ------------------------------------------------------------------ *
- * Start screens
+ * Title and setup
  * ------------------------------------------------------------------ */
 
 .start {
   max-width: var(--measure);
   margin: 0 auto;
-  padding: 2rem 1rem 4rem;
-  background: var(--bg);
-  min-height: 100vh;
-  min-height: 100dvh;
+  padding: 3rem 1rem 4rem;
 }
 .start-title {
-  font-size: clamp(2rem, 9vw, 3rem);
-  margin: 1rem 0 0.25rem;
-  letter-spacing: 0.01em;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--magenta);
+  margin: 0;
 }
 .start-sub {
-  color: var(--ink-faint);
-  font-family: var(--font-ui);
-  margin: 0 0 2rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 0.75rem;
+  color: var(--ink-dim);
+  margin: 0.4rem 0 2.5rem;
 }
 .start-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin: 1rem 0;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 1.5rem 0;
 }
 .start-notes {
-  border-left: 3px solid var(--accent);
-  padding: 0.25rem 0 0.25rem 0.9rem;
-  margin: 1.5rem 0;
-  color: var(--ink-soft);
-  font-size: 0.95rem;
+  color: var(--ink-dim);
+  border-left: 1px solid var(--rule-strong);
+  padding-left: 0.9rem;
+  margin: 2rem 0;
+}
+.start-notes p {
+  margin: 0 0 0.5rem;
 }
 .start-foot {
-  color: var(--ink-faint);
-  font-size: 0.85rem;
-  font-family: var(--font-ui);
-  margin-top: 2.5rem;
+  color: var(--ink-dim);
+  margin-top: 3rem;
 }
+
 .setup-block {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem;
-  margin: 1.5rem 0;
+  border: 0;
+  padding: 0;
+  margin: 2.5rem 0 0;
 }
 .setup-head {
-  font-family: var(--font-ui);
   font-size: 1rem;
-  margin: 0;
-  padding: 0 0.3rem;
+  font-weight: 400;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin: 0 0 0.75rem;
+  padding: 0;
 }
 .setup-prompt {
-  font-size: 1.25rem;
-  margin: 0.75rem 0 0;
+  margin: 0 0 0.75rem;
 }
 .setup-note {
-  color: var(--ink-faint);
-  font-size: 0.85rem;
-  font-family: var(--font-ui);
-  margin: 0.5rem 0 0;
+  color: var(--ink-dim);
+  margin: 0.75rem 0 0;
 }
 .character-btn {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  display: block;
+  min-width: 18rem;
 }
 .character-name {
-  font-size: 1.15rem;
+  color: var(--cyan);
 }
 .character-blurb {
-  font-weight: 400;
-  font-size: 0.85rem;
-  opacity: 0.85;
+  display: block;
+  color: var(--ink-dim);
 }
+
 .radio-col {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.25rem;
 }
 .radio,
 .check {
   display: flex;
   gap: 0.6rem;
-  align-items: flex-start;
-  font-family: var(--font-ui);
-  font-size: 0.95rem;
+  align-items: baseline;
   min-height: var(--tap);
-  padding: 0.35rem 0;
+  padding: 0.3rem 0;
   cursor: pointer;
 }
 .radio input,
 .check input {
-  margin-top: 0.3rem;
-  width: 1.15rem;
-  height: 1.15rem;
   flex: none;
-  accent-color: var(--accent);
+  accent-color: var(--cyan);
+  width: 1rem;
+  height: 1rem;
+  /* Line up with the first line of a wrapping label, not its middle. */
+  align-self: flex-start;
+  margin-top: 0.35em;
+}
+.radio strong,
+.check strong {
+  font-weight: 400;
+  color: var(--cyan);
 }
 
 /* ------------------------------------------------------------------ *
- * Play shell
+ * Play: header, narrative, controls. One column, narrative first.
  * ------------------------------------------------------------------ */
 
-/*
- * The shell is exactly one viewport tall, so the transcript is the only thing
- * that scrolls. With `min-height` instead, the whole document scrolls and new
- * output arrives below the fold.
- */
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  /*
-   * Positioned so that the absolutely-positioned screen-reader labels inside
-   * are clipped here rather than against the document, which would otherwise
-   * stretch the page and give it a second scrollbar.
-   */
+  /* Positioned so the screen-reader labels inside are clipped here rather
+     than against the document, which would add a second scrollbar. */
   position: relative;
   overflow: hidden;
-  background: var(--bg);
-  max-width: 54rem;
-  margin: 0 auto;
 }
+
 .app.large-text {
   font-size: 1.15em;
 }
@@ -329,70 +298,68 @@ body {
 .topbar {
   flex: 0 0 auto;
   display: flex;
-  gap: 0.75rem;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 0.75rem 1rem 0.5rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg-sunk);
   flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.3rem 1rem;
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0.6rem 1rem 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.topbar-where {
+  min-width: 0;
 }
 .topbar-place {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
+  display: inline;
+  font-size: 1rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 .topbar-sub {
   margin: 0;
-  color: var(--ink-faint);
-  font-size: 0.82rem;
-  font-family: var(--font-ui);
+  display: inline;
+  color: var(--ink-dim);
 }
-.topbar-right {
+.topbar-sub::before {
+  content: ' · ';
+}
+.topbar-meta {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
   flex-wrap: wrap;
+  gap: 0.1rem 0.25rem;
+  margin-left: auto;
 }
-.topbar-who {
-  margin: 0;
-  font-family: var(--font-ui);
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-}
-
 .objective {
   flex: 0 0 auto;
-  margin: 0;
-  padding: 0.6rem 1rem;
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--line);
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  color: var(--ink-soft);
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0.4rem 1rem 0.5rem;
+  color: var(--ink-dim);
+  border-bottom: 1px solid var(--rule);
 }
+/* An objective in progress is supporting text; green is reserved for one that
+   has been completed. */
 .objective-tag {
-  display: inline-block;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--accent);
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  padding: 0.05rem 0.5rem;
-  margin-right: 0.5rem;
-  vertical-align: 0.08em;
+  color: var(--ink-dim);
+}
+.objective-done .objective-text {
+  color: var(--green);
 }
 
 .warn {
   flex: 0 0 auto;
-  margin: 0;
-  padding: 0.7rem 1rem;
-  background: var(--warn-bg);
-  color: var(--warn-ink);
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  border-bottom: 1px solid var(--line);
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0.4rem 1rem;
+  color: var(--magenta);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
 }
 
 .main {
@@ -408,160 +375,144 @@ body {
   position: relative;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 1rem 1rem 2rem;
+  padding: 1.2rem 1rem 2rem;
 }
 
 .entry {
   max-width: var(--measure);
   margin: 0 auto 1.4rem;
-  padding-left: 0.7rem;
-  border-left: 3px solid transparent;
+}
+.entry:last-child {
+  margin-bottom: 0;
 }
 .entry-head {
-  margin: 1.5rem 0 0.5rem;
-}
-.entry:first-child .entry-head {
-  margin-top: 0;
+  margin: 0 0 0.6rem;
 }
 .entry-title {
-  font-size: 1.3rem;
+  font-size: 1rem;
+  font-weight: 400;
   margin: 0;
-  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 .entry-sub {
-  margin: 0.15rem 0 0;
-  color: var(--ink-faint);
-  font-family: var(--font-ui);
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
+  margin: 0;
+  color: var(--ink-dim);
 }
 .para {
-  margin: 0 0 0.85rem;
+  margin: 0 0 0.9rem;
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
 .para:last-child {
   margin-bottom: 0;
 }
-
-.entry-location {
-  border-left-color: var(--accent);
-}
-.entry-command {
-  border-left-color: var(--ink-faint);
-}
-.command-line {
-  font-family: var(--font-ui);
-  color: var(--ink-faint);
-  font-size: 0.9rem;
-  text-transform: none;
-}
-.entry-dialogue {
-  border-left-color: color-mix(in srgb, var(--accent) 55%, var(--bg) 45%);
-}
-.entry-system,
-.entry-options,
-.entry-journal,
-.entry-objective {
-  border-left-color: var(--line);
-  font-family: var(--font-ui);
-  font-size: 0.92rem;
-  color: var(--ink-soft);
-}
-.entry-objective {
-  border-left-color: var(--accent);
-  color: var(--ink);
-}
-.entry-journal {
+em {
   font-style: italic;
 }
-.entry-failure {
-  border-left-color: var(--ink-faint);
-  color: var(--ink-soft);
+
+/* Previous commands and supporting labels sit back. */
+.command-line {
+  color: var(--ink-dim);
+  margin: 0;
+}
+.entry-failure .para,
+.entry-system .para,
+.entry-options .para,
+.entry-journal .para {
+  color: var(--ink-dim);
+}
+.entry-journal .para {
+  font-style: italic;
+}
+.entry-objective .para {
+  color: var(--green);
 }
 
 /* ------------------------------------------------------------------ *
- * Controls
+ * The input area, directly beneath the narrative. Both modes live here.
  * ------------------------------------------------------------------ */
 
 .controls {
   flex: 0 0 auto;
-  background: var(--bg-sunk);
-  border-top: 1px solid var(--line);
-  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0.6rem 1rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--rule);
   max-height: 46%;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .type-input {
-  max-width: var(--measure);
-  margin: 0 auto;
+  margin: 0;
 }
 .type-label {
   display: block;
-  font-family: var(--font-ui);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--ink-faint);
-  margin-bottom: 0.35rem;
+  color: var(--ink-dim);
+  margin-bottom: 0.3rem;
 }
 .type-row {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+}
+.type-row::before {
+  content: '>';
+  color: var(--cyan);
+  flex: none;
 }
 .command-field {
   flex: 1 1 auto;
   min-width: 0;
   min-height: var(--tap);
-  padding: 0.6rem 0.75rem;
-  font-family: var(--font-ui);
-  font-size: 1rem;
+  font: inherit;
   color: var(--ink);
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  padding: 0.3rem 0;
+  caret-color: var(--cyan);
+}
+.command-field:focus {
+  outline: none;
+  border-bottom-color: var(--cyan);
 }
 .command-field::placeholder {
-  color: var(--ink-faint);
+  color: var(--ink-dim);
+  opacity: 1;
 }
 .type-hint {
   margin: 0.5rem 0 0;
-  font-family: var(--font-ui);
-  font-size: 0.78rem;
-  color: var(--ink-faint);
+  color: var(--ink-dim);
 }
 
 .panel {
-  max-width: var(--measure);
-  margin: 0 auto;
+  margin: 0;
 }
 .panel-section {
-  margin-bottom: 0.9rem;
+  margin: 0 0 0.7rem;
 }
 .panel-title {
-  font-family: var(--font-ui);
-  font-size: 0.72rem;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--ink-dim);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--ink-faint);
-  margin: 0 0 0.4rem;
-  font-weight: 700;
+  margin: 0 0 0.35rem;
 }
 .panel-note {
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  color: var(--ink-faint);
+  color: var(--ink-dim);
   margin: 0;
 }
 .panel-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  border-top: 1px solid var(--line);
-  padding-top: 0.6rem;
-  margin-top: 0.5rem;
+  gap: 0.1rem 0.25rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.5rem;
+  margin-top: 0.6rem;
 }
 
 .thing-list {
@@ -570,144 +521,188 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.2rem;
 }
 .thing {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 0.35rem;
+  padding: 0;
 }
 .btn-thing {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   width: 100%;
-  background: transparent;
-  border: 0;
+  border-color: transparent;
+  padding: 0.3rem 0.4rem;
+  min-height: 2rem;
+}
+.btn-thing:hover,
+.btn-thing:focus-visible,
+.btn-thing[aria-expanded='true'] {
+  border-color: var(--rule-strong);
 }
 .thing-name {
   display: block;
-  font-family: var(--font-ui);
-  font-size: 0.95rem;
-  padding: 0.5rem 0.6rem 0.2rem;
+  color: var(--cyan);
+  padding: 0.3rem 0.4rem 0.1rem;
 }
 .thing-actions {
-  padding: 0.3rem 0.3rem 0.1rem;
+  padding: 0.1rem 0 0.3rem 1.2rem;
 }
 .chev {
-  color: var(--ink-faint);
+  color: var(--ink-dim);
 }
 
 /* ------------------------------------------------------------------ *
- * Dialogs and toasts
+ * Settings. A plain full-width sheet, outlined, not a floating card.
  * ------------------------------------------------------------------ */
 
 .scrim {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(8, 10, 12, 0.92);
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
-  padding: 0;
+  overflow-y: auto;
   z-index: 40;
 }
 .dialog {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: var(--radius) var(--radius) 0 0;
   width: 100%;
-  max-width: 34rem;
-  max-height: 88vh;
-  overflow-y: auto;
+  max-width: var(--measure);
+  background: var(--bg);
+  border: 1px solid var(--rule-strong);
   padding: 1rem 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  margin: 2rem 1rem;
 }
 .dialog-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
   gap: 1rem;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.6rem;
+  margin-bottom: 1rem;
 }
 .dialog-head h2 {
+  font-size: 1rem;
+  font-weight: 400;
   margin: 0;
-  font-size: 1.2rem;
-}
-.dialog-block {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 0.75rem;
-  margin: 0 0 1rem;
-}
-.dialog-block legend {
-  font-family: var(--font-ui);
-  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--accent);
-  padding: 0 0.4rem;
+}
+.dialog-block {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  padding: 0.8rem 0 0;
+  margin: 0 0 1.2rem;
+}
+.dialog-block legend {
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  padding: 0;
 }
 .dialog-block .btn-row {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 .dialog-note {
-  font-family: var(--font-ui);
-  font-size: 0.82rem;
-  color: var(--ink-faint);
-  margin: 0.5rem 0 0;
+  color: var(--ink-dim);
+  margin: 0.6rem 0 0;
 }
 .dialog-pre {
   white-space: pre-wrap;
+}
+.btn-danger {
+  color: var(--magenta);
+}
+.btn-danger:hover:not(:disabled),
+.btn-danger:focus-visible {
+  border-color: var(--magenta);
 }
 
 .toast {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   z-index: 60;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  max-width: min(32rem, calc(100vw - 2rem));
-  background: var(--bg-raised);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 0.6rem 0.75rem;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  max-width: min(var(--measure), calc(100vw - 1.5rem));
+  background: var(--bg);
+  border: 1px solid var(--rule-strong);
+  padding: 0.5rem 0.7rem;
+}
+
+/*
+ * Touch targets. A mouse does not need 44px of height for a text link, and
+ * forcing it makes the header chunky; a finger does. So the comfortable size
+ * is applied only where the pointer is coarse.
+ */
+@media (pointer: coarse) {
+  .btn-plain,
+  .btn-thing {
+    min-height: var(--tap);
+    display: flex;
+    align-items: center;
+  }
+  .thing-name {
+    min-height: var(--tap);
+    display: flex;
+    align-items: center;
+  }
 }
 
 /* ------------------------------------------------------------------ *
- * Narrow screens and motion
+ * Narrow screens
  * ------------------------------------------------------------------ */
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   body {
     font-size: 16px;
   }
   .transcript {
-    padding: 0.75rem 0.75rem 1.5rem;
+    padding: 1rem 0.75rem 1.5rem;
   }
   .topbar,
   .objective,
+  .warn,
   .controls {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }
-  .entry {
-    padding-left: 0.55rem;
+  /* Keep the four information links on one line at 360px. */
+  .topbar-meta {
+    margin-left: 0;
+    gap: 0 0.1rem;
+  }
+  .topbar-meta .btn-plain {
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
+  }
+  .topbar-sub::before {
+    content: none;
+  }
+  .topbar-sub {
+    display: block;
   }
   .controls {
-    max-height: 58%;
+    max-height: 56%;
+  }
+  .character-btn {
+    min-width: 0;
+    width: 100%;
+  }
+  .dialog {
+    margin: 0;
+    border: 0;
+    min-height: 100dvh;
   }
 }
 
+/* Text appears immediately; there is nothing to animate. This only disables
+   the hover transitions a browser might interpolate. */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -720,8 +715,8 @@ body {
 @media (prefers-contrast: more) {
   :root {
     --ink: #ffffff;
-    --ink-soft: #e6e6e6;
-    --ink-faint: #c9c9c9;
-    --line: #6f6f6f;
+    --ink-dim: #d2d6da;
+    --rule: #5a6066;
+    --rule-strong: #8a9096;
   }
 }

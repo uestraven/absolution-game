@@ -179,7 +179,7 @@ export function getAffordances(state: GameState): Affordances {
     { key: 'meta-inventory', label: 'Inventory', action: { type: 'INVENTORY' } },
     { key: 'meta-journal', label: 'Journal', action: { type: 'JOURNAL' } },
     { key: 'meta-hint', label: 'Hint', action: { type: 'HINT' } },
-    { key: 'meta-help', label: 'Commands', action: { type: 'HELP' } },
+    { key: 'meta-help', label: 'Help', action: { type: 'HELP' } },
   ];
 
   // Items resting in a fixture can always be recovered.

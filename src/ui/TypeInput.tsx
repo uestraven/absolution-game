@@ -81,13 +81,12 @@ export function TypeInput({ onSubmit, placeholder, label, disabled }: TypeInputP
             e.currentTarget.scrollIntoView?.({ block: 'nearest' });
           }}
         />
-        <button className="btn btn-primary" type="submit" disabled={disabled}>
-          Do it
+        <button className="btn" type="submit" disabled={disabled}>
+          enter
         </button>
       </div>
       <p className="type-hint">
-        Try LOOK, EXAMINE something, GO somewhere, TALK TO someone — or HELP for the full list.
-        Up and Down arrows recall what you typed.
+        look · examine &lt;thing&gt; · go &lt;exit&gt; · talk to &lt;person&gt; · help · hint
       </p>
     </form>
   );

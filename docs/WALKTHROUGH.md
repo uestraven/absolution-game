@@ -199,7 +199,7 @@ that no command in the run was rejected.
 
 ## Automated coverage
 
-147 tests across seven files.
+161 tests across eight files.
 
 | File | Covers |
 | --- | --- |
@@ -210,11 +210,12 @@ that no command in the run was rejected.
 | `content/characters.test.ts` | Both names and pronoun sets, pronoun substitution in NPC lines, identical progress for either character, no unrendered placeholders anywhere |
 | `persistence/persistence.test.ts` | Round trip, export/import, reload mid-puzzle, resuming pending conversations and questions, atomic crossing, backup and checkpoint fallbacks, quarantine, storage-failure reporting, preferences kept apart from progress, 22 rejected-import cases, transcript sanitising |
 | `ui/app.dom.test.tsx` | Title screen states, both modes end to end in the DOM, mode switching preserving state and transcript, option lists per mode, live region carrying only new output, focus not stolen |
+| `ui/highlighting.dom.test.tsx` | What may be tinted and in which colour: nothing undiscovered, tinting starting the moment something is discovered, magenta beating cyan where a term is both, interactive terms turning green inside a success, ordinary English left alone, once-per-paragraph, hyphen boundaries, and that text is never rendered as HTML |
 
 ## Manual and browser verification
 
 `scripts/verify-browser.mjs` drives the built bundle in Chromium (see the README
-for how to run it). Last run: **26 of 26 checks passed.**
+for how to run it). Last run: **35 of 35 checks passed.**
 
 360px with no horizontal scrolling, before and during play · touch targets at
 least 40px tall · buttons alone move the story · the transcript is the scroller
@@ -230,6 +231,14 @@ confirms before overwriting and cancelling keeps progress · checkpoint restart
 returns to the start of the current chapter (and to the bedroom mid-rite) ·
 storage failure shows a persistent warning and play continues · reduced motion
 collapses transitions.
+
+Visual specification: exact palette values (`#080A0C` / `#DEDFDA` / `#EB8FD8` /
+`#79DCE8` / `#A3DB96`) · monospace at 16px mobile and 18px desktop with 1.6 line
+height · the reading column never exceeding 70 characters at 390px and sitting
+at about 70 characters, centred, at 1280px · colour on roughly 2% of the
+transcript · nothing undiscovered tinted · a completed objective carrying a
+class as well as a colour · no background images, text shadows, box shadows or
+animation anywhere in the document.
 
 ### Known limitations
 

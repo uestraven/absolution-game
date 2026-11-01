@@ -91,6 +91,13 @@ export type TranscriptKind =
   | 'command'
   | 'location'
   | 'dialogue'
+  /**
+   * An action that achieved something: an item acquired or put down, a
+   * mechanism worked, a way opened. Separate from `narration` so the interface
+   * can mark success without guessing, and so the wording stays explicit for
+   * anyone who cannot see the colour.
+   */
+  | 'success'
   | 'system'
   /**
    * A numbered list of currently-available choices. Type-only play needs it
@@ -330,8 +337,6 @@ export interface LocationDef {
   name: string;
   /** Era-appropriate subtitle. Never says "present". */
   subtitle: (state: GameState) => string;
-  /** Palette family for the UI. */
-  tone: 'village' | 'approach' | 'cave' | 'deep';
   /** Full room description. */
   description: (state: GameState) => string;
   /** Extra paragraph shown only on first arrival. */

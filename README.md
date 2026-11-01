@@ -20,13 +20,47 @@ First playthrough is roughly 20–30 minutes.
 npm install
 npm run dev          # local dev server
 npm run typecheck    # tsc --noEmit
-npm run test         # vitest, 147 tests
+npm run test         # vitest, 161 tests
 npm run build        # typecheck, then a static bundle in dist/
 npm run check        # typecheck + test + build
 ```
 
 `npm run build` writes the whole app to `dist/` — `index.html` plus hashed
 assets, served from relative paths, so it works from any URL path.
+
+## Look and feel
+
+A minimal terminal: soft white on near-black, one monospace face at 18px
+(16–18px on mobile) with 1.6 line spacing, and a single centred reading column
+about 70 characters wide. Text appears immediately — no typewriter effect,
+flicker, scanlines, glow, gradients or decorative panels.
+
+Colour is sparse and always means the same thing, in narration, inventory,
+journal and both input modes alike:
+
+| | Colour | Meaning |
+| --- | --- | --- |
+| magenta | `#EB8FD8` | Unusual phenomena and significant story terms |
+| cyan | `#79DCE8` | Exits, interactive objects, conversation topics |
+| green | `#A3DB96` | Successful actions, acquired items, completed objectives |
+
+Background `#080A0C`, body text `#DEDFDA`, supporting text and previous
+commands `#A0A6AD`.
+
+Two rules keep the tinting honest, and both are enforced by tests:
+
+- **Interactive terms are derived from `state.discovered`.** An object the
+  player has not noticed contributes nothing to the vocabulary, so the prose
+  can never glow at something hidden. Reveal the alcove and its name starts
+  being tinted; until then it is ordinary text.
+- **Nothing is carried by colour alone.** Every tint sits on wording that
+  already says the same thing, each transcript entry is announced by kind to a
+  screen reader, exits are labelled with their direction, and a completed
+  objective gets a class as well as a colour. Focused and selected controls
+  take an underline in addition to a border.
+
+Colour also stays on short spans: a term is tinted at most once per paragraph,
+which measures at about 2% of the transcript in practice.
 
 ## Documentation
 
@@ -59,7 +93,9 @@ src/
     parser.ts       text -> action, fixed vocabulary, no LLM
     selectors.ts    derived reads: visible things, noun resolution
     affordances.ts  the selectable-mode action list, engine-computed
-  content/      authored data: locations, objects, dialogue, items, flags, hints, prose
+    highlighting.ts which terms may be tinted, derived from discovery
+  content/      authored data: locations, objects, dialogue, items, flags,
+                hints, highlight terms, prose
   persistence/  localStorage slots, export/import, save validation
   ui/           React: transcript, both input modes, settings, styles
   testing/      test harness shared by the suites
@@ -96,12 +132,14 @@ than overwritten.
 ## Accessibility
 
 - Works down to a 360px viewport with no horizontal scrolling.
-- Touch targets at least 44px; the command field stays visible when a phone
-  keyboard opens.
+- The command field stays visible when a phone keyboard opens.
 - Semantic controls and labelled inputs throughout; visible focus rings.
 - New output is announced through a small live region, not by re-reading the
   whole transcript. Focus is never taken from someone reading history.
-- Entry kinds are conveyed by text as well as colour.
+- Entry kinds are conveyed by text as well as colour, and no meaning depends on
+  hue: see **Look and feel** above.
+- Comfortable 44px touch targets where the pointer is coarse, left compact for a
+  mouse.
 - `prefers-reduced-motion` and `prefers-contrast: more` are both honoured.
 - Type-only mode is completable with the keyboard alone; Selectable Actions mode
   is completable without typing anything.
@@ -137,7 +175,11 @@ It drives the real built bundle in Chromium through Playwright request
 interception — no server and no listening socket — and checks the 360px layout,
 touch target sizes, keyboard-only completion of the whole chapter, scrolling
 behaviour, mode switching, reload, export, import, refused import, checkpoint
-restart, the New Game confirmation, storage-failure feedback and reduced motion.
+restart, the New Game confirmation, storage-failure feedback, reduced motion,
+and the visual specification itself — exact palette values, monospace metrics,
+the 70-character column on both narrow and wide viewports, how little of the
+transcript is coloured, that nothing undiscovered is tinted, and the absence of
+gradients, shadows, glow and animation.
 Playwright is intentionally not a project dependency; install it only if you want
 this pass. See [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) for what each check
 asserts and for the results of the last run.

@@ -136,8 +136,38 @@ invents no steps for versions that never existed.
 | `TypeInput` | Labelled command field, command history on Up/Down. Focuses once on mount, never again |
 | `SelectPanel` | Renders the engine's affordance list. Holds only transient menu state (which thing is expanded, which item is mid-"use on…") |
 | `SettingsDialog` | Input mode, text size, saves, checkpoint restart |
-| `RichText` | Paragraphs and `*emphasis*`, as React nodes |
+| `RichText` | Paragraphs, `*emphasis*`, and all colour — as React nodes |
 
-Palette is switched by `data-tone` on the shell, from the current location's
-authored tone: warm for the village, cooler on the approach, colder in the cave,
-coldest in the deep. The era is never named to the player.
+## Colour
+
+One palette, applied by `RichText` and nowhere else. Three meanings, used
+identically in narration, inventory, journal and both input modes: magenta for
+unusual phenomena and significant story terms, cyan for exits, interactive
+objects and conversation topics, green for successful actions, acquired items
+and completed objectives.
+
+`engine/highlighting.ts` decides what may be tinted:
+
+- **Interactive terms are derived from `state.discovered`** — the names of
+  visible objects, people present, reachable items and visible exits. An
+  undiscovered object contributes nothing, so the prose cannot glow at
+  something hidden. This is the same gate the parser uses, from the same field.
+- **Mystery terms are authored** in `content/highlights.ts`, because they carry
+  meaning rather than mechanics. The list is deliberately broad — the prophecy,
+  the rite's name, the sounds in the cave — so that magenta does not amount to
+  the interface pointing at the chapter's reveal.
+
+Only curated `name` fields feed the vocabulary, never the loose `nouns` arrays
+the parser accepts, plus each name's head noun so that "the shutter" matches an
+object called "stone shutter". Terms that are also ordinary English are listed
+in `REQUIRES_DETERMINER` and only match behind an article, so "the well" is
+tinted and "as well" is not. A term is tinted at most once per paragraph.
+
+Green is not a separate vocabulary. The engine marks an action that achieved
+something with the `success` transcript kind, and inside such an entry the same
+interactive term renders green instead of cyan — so the thing you just acquired
+or worked is the thing that goes green, with no second list to keep in step.
+
+Nothing is carried by colour alone: every tint sits on wording that already says
+the same thing, each entry is announced by kind to a screen reader, and focus
+and selection add an underline as well as a border.

@@ -261,7 +261,7 @@ function openPassage(draft: Draft, events: NarrativeEvent[]): ResolveResult {
   draft.flags[FLAGS.passageOpen] = true;
   discover(draft, ['sealed.passage']);
   events.push({
-    kind: 'narration',
+    kind: 'success',
     text:
       'You get your fingertips into the seam, set your shoulder below the turn, and push across ' +
       'rather than in.\n\n' +
@@ -709,7 +709,7 @@ function doTake(draft: Draft, target: string, events: NarrativeEvent[]): Resolve
   giveItem(draft, def.item);
   if (def.item === 'lantern') draft.flags[FLAGS.hasLantern] = true;
   events.push({
-    kind: 'narration',
+    kind: 'success',
     text:
       def.item === 'lantern'
         ? 'You lift the lantern off the sill. It is heavier than it looks, the way full things ' +
@@ -726,7 +726,7 @@ function retrieveItem(draft: Draft, item: ItemId, events: NarrativeEvent[]): Res
 
   if (placement?.kind === 'room') {
     giveItem(draft, item);
-    events.push({ kind: 'narration', text: `You pick the ${ITEMS[item].name} back up.` });
+    events.push({ kind: 'success', text: `You pick the ${ITEMS[item].name} back up.` });
     return commit(draft, events, true);
   }
 
@@ -743,7 +743,7 @@ function retrieveItem(draft: Draft, item: ItemId, events: NarrativeEvent[]): Res
     giveItem(draft, item);
     draft.flags[FLAGS.lanternInAlcove] = false;
     events.push({
-      kind: 'narration',
+      kind: 'success',
       text:
         'You reach in to the elbow and lift the lantern out of the dish. The fan of light comes ' +
         'off the patterned wall, and the room goes back to being flatly lit from wherever you ' +
@@ -762,7 +762,7 @@ function retrieveItem(draft: Draft, item: ItemId, events: NarrativeEvent[]): Res
     draft.flags[FLAGS.shutterHeld] = false;
     const trapped = itemIsIn(draft, 'lantern', 'sealed.alcove');
     events.push({
-      kind: 'narration',
+      kind: 'success',
       text:
         'You knock the wedge out with the side of your foot and catch it. The shutter runs down ' +
         'the grooves and sits closed with a flat, final sound.' +
@@ -775,7 +775,7 @@ function retrieveItem(draft: Draft, item: ItemId, events: NarrativeEvent[]): Res
   }
 
   giveItem(draft, item);
-  events.push({ kind: 'narration', text: `You take the ${ITEMS[item].name}.` });
+  events.push({ kind: 'success', text: `You take the ${ITEMS[item].name}.` });
   return commit(draft, events, true);
 }
 
@@ -789,7 +789,7 @@ function doDrop(draft: Draft, target: string, events: NarrativeEvent[]): Resolve
   removeFromInventory(draft, item);
   draft.placements[item] = { kind: 'room', locationId: draft.locationId };
   events.push({
-    kind: 'narration',
+    kind: 'success',
     text: `You put the ${ITEMS[item].name} down. It will still be here if you want it.`,
   });
   return commit(draft, events, true);
@@ -977,7 +977,7 @@ function wedgeShutter(draft: Draft, events: NarrativeEvent[]): ResolveResult {
   discover(draft, ['sealed.alcove']);
 
   events.push({
-    kind: 'narration',
+    kind: 'success',
     text:
       'You get your fingers under the lip, lift the shutter up its grooves with your back ' +
       'rather than your arms, hold it there one-handed, and kick the wedge in under the bottom ' +
@@ -1062,7 +1062,7 @@ function doPlace(
     draft.placements['lantern'] = { kind: 'fixture', fixtureId: 'sealed.alcove' };
     draft.flags[FLAGS.lanternInAlcove] = true;
     events.push({
-      kind: 'narration',
+      kind: 'success',
       text:
         'You reach in to the elbow and set the lantern down in the dished floor of the alcove. ' +
         'It seats itself with a small rock and sits level. Whoever cut that dish cut it for ' +
@@ -1233,7 +1233,7 @@ function doLight(draft: Draft, target: string, events: NarrativeEvent[]): Resolv
 
   draft.flags[FLAGS.lanternLit] = true;
   events.push({
-    kind: 'narration',
+    kind: 'success',
     text: itemIsIn(draft, 'lantern', 'sealed.alcove')
       ? 'You reach in to the elbow, pull the striker round on its chain, and scrape it. Second ' +
         'try. The wick takes, blues, and steadies.'

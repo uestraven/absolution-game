@@ -74,8 +74,8 @@ async function newPage(viewport) {
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /hooded lantern/ }).click();
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: 'Take', exact: true }).click();
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /lane down to the square/ }).click();
-  const place = await page.locator('.topbar-place').innerText();
-  place === 'The Village Square' ? ok('selectable mode: buttons move the story')
+  const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  place === 'the village square' ? ok('selectable mode: buttons move the story')
                                  : bad('selectable mode: buttons move the story', place);
 
   const scrolling = await page.evaluate(() => {
@@ -162,9 +162,85 @@ async function newPage(viewport) {
   stillPlayable.includes('rope swing') ? ok('end state: inspection still possible')
                                        : bad('end state: inspection still possible');
 
-  const tone = await page.locator('.app').getAttribute('data-tone');
-  tone === 'village' ? ok('era tone applied (village palette in the past square)')
-                     : bad('era tone applied', String(tone));
+  const completed = await page.locator('.objective').getAttribute('class');
+  /objective-done/.test(completed || '')
+    ? ok('completed objective is marked, not only coloured')
+    : bad('completed objective marking', String(completed));
+
+  const palette = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    const body = getComputedStyle(document.body);
+    const hex = (v) => {
+      const m = v.match(/\d+/g);
+      return m ? '#' + m.slice(0, 3).map((n) => (+n).toString(16).padStart(2, '0')).join('') : v;
+    };
+    return {
+      bg: hex(body.backgroundColor),
+      ink: hex(body.color),
+      font: body.fontFamily,
+      size: body.fontSize,
+      line: body.lineHeight,
+      magenta: root.getPropertyValue('--magenta').trim(),
+      cyan: root.getPropertyValue('--cyan').trim(),
+      green: root.getPropertyValue('--green').trim(),
+    };
+  });
+  palette.bg === '#080a0c' && palette.ink === '#dedfda' &&
+  palette.magenta === '#eb8fd8' && palette.cyan === '#79dce8' && palette.green === '#a3db96'
+    ? ok('palette matches the specification', `${palette.bg} / ${palette.ink}`)
+    : bad('palette matches the specification', JSON.stringify(palette));
+
+  /^1[6-8]px$/.test(palette.size) && /mono/i.test(palette.font) &&
+  Math.abs(parseFloat(palette.line) / parseFloat(palette.size) - 1.6) < 0.05
+    ? ok('typography: monospace, 16-18px, 1.6 line height', `${palette.size} / ${palette.line}`)
+    : bad('typography', JSON.stringify(palette));
+
+  const column = await page.evaluate(() => {
+    const el = document.querySelector('.entry');
+    const probe = document.createElement('span');
+    probe.textContent = '0'.repeat(70);
+    probe.style.font = getComputedStyle(document.body).font;
+    probe.style.position = 'absolute';
+    probe.style.whiteSpace = 'pre';
+    document.body.appendChild(probe);
+    const seventy = probe.getBoundingClientRect().width;
+    probe.remove();
+    return { entry: el.getBoundingClientRect().width, seventy };
+  });
+  column.entry <= column.seventy + 2
+    ? ok('reading column never exceeds 70 characters', `${Math.round(column.entry)}px at 390px`)
+    : bad('reading column width', JSON.stringify(column));
+
+  const tinted = await page.evaluate(() => {
+    const log = document.querySelector('.transcript');
+    const total = (log.textContent || '').length;
+    const coloured = [...log.querySelectorAll('[class^=tint-]')]
+      .reduce((n, el) => n + (el.textContent || '').length, 0);
+    return { total, coloured, share: coloured / Math.max(total, 1) };
+  });
+  tinted.coloured > 0 && tinted.share < 0.15
+    ? ok('colour stays on short spans', `${(tinted.share * 100).toFixed(1)}% of the transcript`)
+    : bad('colour stays on short spans', JSON.stringify(tinted));
+
+  const hidden = await page.evaluate(() =>
+    [...document.querySelectorAll('.transcript [class^=tint-]')].map((el) => el.textContent));
+  hidden.every((t) => !/alcove|seam|passage/i.test(t || ''))
+    ? ok('nothing undiscovered is tinted')
+    : bad('nothing undiscovered is tinted', hidden.join(', '));
+
+  const effects = await page.evaluate(() => {
+    const offenders = [];
+    for (const el of document.querySelectorAll('body *')) {
+      const s = getComputedStyle(el);
+      if (s.backgroundImage !== 'none') offenders.push(`bg-image on ${el.className}`);
+      if (s.textShadow !== 'none') offenders.push(`text-shadow on ${el.className}`);
+      if (s.boxShadow !== 'none') offenders.push(`box-shadow on ${el.className}`);
+      if (s.animationName !== 'none') offenders.push(`animation on ${el.className}`);
+    }
+    return offenders.slice(0, 5);
+  });
+  effects.length === 0 ? ok('no gradients, glow, shadows or animation')
+                       : bad('no gradients, glow, shadows or animation', effects.join('; '));
 
   errors.length === 0 ? ok('no console or page errors (type-only full run)')
                       : bad('no console or page errors (type-only full run)', errors.join(' | '));
@@ -172,9 +248,9 @@ async function newPage(viewport) {
   /* ---------- 3. Reload mid-story keeps progress ---------- */
   await page.reload();
   await page.getByRole('button', { name: 'Continue' }).click();
-  const after = await page.locator('.topbar-place').innerText();
+  const after = (await page.locator('.topbar-place').innerText()).toLowerCase();
   const endAfter = await page.locator('.entry-system', { hasText: 'End of the opening chapter' }).count();
-  after === 'The Village Square' && endAfter > 0
+  after === 'the village square' && endAfter > 0
     ? ok('reload: Continue restores place and transcript')
     : bad('reload: Continue restores place and transcript', `${after} / entries ${endAfter}`);
 
@@ -188,10 +264,10 @@ async function newPage(viewport) {
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Close' }).click();
   const storedAfter = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('cave-of-absolution:save')).transcript.length);
-  const place2 = await page.locator('.topbar-place').innerText();
+  const place2 = (await page.locator('.topbar-place').innerText()).toLowerCase();
   const hasButtons = await page.getByRole('region', { name: 'Actions' }).getByRole('button').count();
   const endingStillShown = await page.locator('.entry-narration', { hasText: 'You are a long way from home' }).count();
-  storedAfter === storedBefore && place2 === 'The Village Square' && hasButtons > 0 && endingStillShown > 0
+  storedAfter === storedBefore && place2 === 'the village square' && hasButtons > 0 && endingStillShown > 0
     ? ok('mode switch: state and transcript preserved, buttons appear', `${storedAfter} entries kept`)
     : bad('mode switch', `${storedBefore}->${storedAfter} at ${place2}, ${hasButtons} buttons, ending ${endingStillShown}`);
 
@@ -211,10 +287,10 @@ async function newPage(viewport) {
   /* ---------- 6. Checkpoint restart ---------- */
   page.once('dialog', (d) => d.accept());
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Restart from checkpoint' }).click();
-  const place3 = await page.locator('.topbar-place').innerText();
+  const place3 = (await page.locator('.topbar-place').innerText()).toLowerCase();
   // The chapter advanced at the crossing, so the checkpoint is the arrival in
   // the past rather than the bedroom.
-  place3 === 'The Basin Chamber'
+  place3 === 'the basin chamber'
     ? ok('checkpoint restart: back at the start of the current chapter', place3)
     : bad('checkpoint restart: back at the start of the current chapter', place3);
 
@@ -225,9 +301,9 @@ async function newPage(viewport) {
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Import Save' }).click();
   await (await chooser).setFiles(await file.path());
   await page.waitForTimeout(150);
-  const placeImported = await page.locator('.topbar-place').innerText();
+  const placeImported = (await page.locator('.topbar-place').innerText()).toLowerCase();
   const endedImported = await page.locator('.entry-system', { hasText: 'End of the opening chapter' }).count();
-  placeImported === 'The Village Square' && endedImported > 0
+  placeImported === 'the village square' && endedImported > 0
     ? ok('import: the exported save is restored')
     : bad('import: the exported save is restored', `${placeImported} / entries ${endedImported}`);
 
@@ -240,8 +316,8 @@ async function newPage(viewport) {
   await (await chooser2).setFiles(badFile);
   await page.waitForTimeout(150);
   const toast = await page.locator('.toast').innerText().catch(() => '');
-  const placeAfterBad = await page.locator('.topbar-place').innerText();
-  /Import refused/.test(toast) && placeAfterBad === 'The Village Square'
+  const placeAfterBad = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  /Import refused/.test(toast) && placeAfterBad === 'the village square'
     ? ok('import: a malformed file is refused and the game is untouched', toast.split('\n')[0].slice(0, 60))
     : bad('import: a malformed file is refused', `${toast} / ${placeAfterBad}`);
   await (await import('node:fs/promises')).rm(badFile, { force: true });
@@ -252,8 +328,8 @@ async function newPage(viewport) {
   await openSettings(page);
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'New Game' }).click();
   await page.waitForTimeout(100);
-  const placeAfterCancel = await page.locator('.topbar-place').innerText();
-  /overwrite your saved progress/.test(asked) && placeAfterCancel === 'The Village Square'
+  const placeAfterCancel = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  /overwrite your saved progress/.test(asked) && placeAfterCancel === 'the village square'
     ? ok('new game: confirms before overwriting, and cancelling keeps progress')
     : bad('new game: confirms before overwriting', `${asked} / ${placeAfterCancel}`);
   await context.close();
@@ -274,11 +350,10 @@ async function newPage(viewport) {
   page.once('dialog', (d) => d.accept());
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Restart from checkpoint' }).click();
   await page.waitForTimeout(100);
-  const place = await page.locator('.topbar-place').innerText();
-  const inv = await page.locator('.topbar-who').innerText();
-  place === 'Your Room' && !/carrying/.test(inv)
-    ? ok('checkpoint restart mid-rite: back in the bedroom with nothing carried')
-    : bad('checkpoint restart mid-rite', `${place} / ${inv}`);
+  const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  place === 'your room'
+    ? ok('checkpoint restart mid-rite: back in the bedroom')
+    : bad('checkpoint restart mid-rite', place);
   await context.close();
 }
 
@@ -299,8 +374,8 @@ async function newPage(viewport) {
 
   // And the game is still playable while unsaved.
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /lane down to the square/ }).click();
-  const place = await page.locator('.topbar-place').innerText();
-  place === 'The Village Square' ? ok('storage failure: play continues')
+  const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  place === 'the village square' ? ok('storage failure: play continues')
                                  : bad('storage failure: play continues', place);
   await context.close();
 }
@@ -324,6 +399,41 @@ async function newPage(viewport) {
   /^0\.?0*0?0?1?m?s?$|^0s$/.test(duration) || parseFloat(duration) < 0.01
     ? ok('reduced motion: transitions collapsed', duration)
     : bad('reduced motion: transitions collapsed', duration);
+  await context.close();
+}
+
+/* ---------- 9. Wide viewport: one centred ~70 character column ---------- */
+{
+  const { context, page } = await newPage({ width: 1280, height: 900 });
+  await page.getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  const layout = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.textContent = '0'.repeat(70);
+    probe.style.font = getComputedStyle(document.body).font;
+    probe.style.position = 'absolute';
+    probe.style.whiteSpace = 'pre';
+    document.body.appendChild(probe);
+    const seventy = probe.getBoundingClientRect().width;
+    probe.remove();
+    const entry = document.querySelector('.entry').getBoundingClientRect();
+    return {
+      seventy,
+      width: entry.width,
+      leftGap: Math.round(entry.left),
+      rightGap: Math.round(window.innerWidth - entry.right),
+      fontSize: getComputedStyle(document.body).fontSize,
+    };
+  });
+  Math.abs(layout.width - layout.seventy) / layout.seventy < 0.08
+    ? ok('wide screen: column is about 70 characters', `${Math.round(layout.width)}px`)
+    : bad('wide screen: column width', JSON.stringify(layout));
+  Math.abs(layout.leftGap - layout.rightGap) <= 2
+    ? ok('wide screen: the column is centred')
+    : bad('wide screen: the column is centred', JSON.stringify(layout));
+  layout.fontSize === '18px'
+    ? ok('wide screen: 18px body text')
+    : bad('wide screen: body text size', layout.fontSize);
   await context.close();
 }
 

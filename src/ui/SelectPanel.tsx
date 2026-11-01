@@ -31,6 +31,10 @@ function ActionButton({
  * Every button here comes from the engine's affordance list, so this component
  * cannot offer an action the typed parser would refuse, and cannot invent a
  * label that gives a puzzle away.
+ *
+ * Styling is plain text and simple outlines: cyan marks an available
+ * interaction, and focus adds an underline as well as a border, so the state
+ * is never carried by colour alone.
  */
 export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
   const [openObject, setOpenObject] = useState<string | null>(null);
@@ -40,11 +44,15 @@ export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
     return (
       <div className="panel">
         <h3 className="panel-title">{affordances.clarification.question}</h3>
-        <div className="btn-row">
+        <div className="btn-col">
           {affordances.clarification.options.map((option) => (
             <ActionButton key={option.key} affordance={option} onAct={onAct} />
           ))}
-          <button type="button" className="btn btn-quiet" onClick={() => onAct({ type: 'CANCEL' }, 'Cancel')}>
+          <button
+            type="button"
+            className="btn btn-quiet"
+            onClick={() => onAct({ type: 'CANCEL' }, 'Cancel')}
+          >
             Cancel
           </button>
         </div>
@@ -74,7 +82,7 @@ export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
         </div>
         <div className="panel-meta">
           {affordances.meta.map((m) => (
-            <ActionButton key={m.key} affordance={m} onAct={onAct} variant="btn-quiet" />
+            <ActionButton key={m.key} affordance={m} onAct={onAct} variant="btn-plain" />
           ))}
         </div>
       </div>
@@ -87,7 +95,9 @@ export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
     return (
       <div className="panel">
         <h3 className="panel-title">
-          {itemFlow.mode === 'use' ? `Use the ${flowItem.name} on what?` : `Put the ${flowItem.name} in what?`}
+          {itemFlow.mode === 'use'
+            ? `Use the ${flowItem.name} on what?`
+            : `Put the ${flowItem.name} in what?`}
         </h3>
         <div className="btn-col">
           {targets.length === 0 ? (
@@ -144,7 +154,7 @@ export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
 
       {affordances.objects.length > 0 ? (
         <section className="panel-section">
-          <h3 className="panel-title">Things here</h3>
+          <h3 className="panel-title">Here</h3>
           <ul className="thing-list">
             {affordances.objects.map((object) => {
               const open = openObject === object.id;
@@ -158,13 +168,13 @@ export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
                   >
                     <span>{object.name}</span>
                     <span className="chev" aria-hidden="true">
-                      {open ? '▾' : '▸'}
+                      {open ? '-' : '+'}
                     </span>
                   </button>
                   {open ? (
                     <div className="btn-row thing-actions">
                       {object.actions.map((a) => (
-                        <ActionButton key={a.key} affordance={a} onAct={onAct} variant="btn-small" />
+                        <ActionButton key={a.key} affordance={a} onAct={onAct} />
                       ))}
                     </div>
                   ) : null}
@@ -184,21 +194,21 @@ export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
                 <span className="thing-name">{item.name}</span>
                 <div className="btn-row thing-actions">
                   {item.actions.map((a) => (
-                    <ActionButton key={a.key} affordance={a} onAct={onAct} variant="btn-small" />
+                    <ActionButton key={a.key} affordance={a} onAct={onAct} />
                   ))}
                   <button
                     type="button"
-                    className="btn btn-small"
+                    className="btn"
                     onClick={() => setItemFlow({ item: item.id, mode: 'use' })}
                   >
-                    Use on…
+                    Use on...
                   </button>
                   <button
                     type="button"
-                    className="btn btn-small"
+                    className="btn"
                     onClick={() => setItemFlow({ item: item.id, mode: 'place' })}
                   >
-                    Put in…
+                    Put in...
                   </button>
                 </div>
               </li>
@@ -209,7 +219,7 @@ export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
 
       <div className="panel-meta">
         {affordances.meta.map((m) => (
-          <ActionButton key={m.key} affordance={m} onAct={onAct} variant="btn-quiet" />
+          <ActionButton key={m.key} affordance={m} onAct={onAct} variant="btn-plain" />
         ))}
       </div>
     </div>
