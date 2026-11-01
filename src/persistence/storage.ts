@@ -1,0 +1,274 @@
+import type { GameState } from '../engine/types';
+import { validateSave, MAX_SAVE_BYTES } from './validate';
+
+/**
+ * Browser persistence.
+ *
+ * Three slots, all namespaced:
+ *   save        the autosave, rewritten after every accepted action
+ *   backup      the previous autosave, kept as a last-known-good
+ *   checkpoint  the state at the start of the current chapter
+ *
+ * A fourth slot, `quarantine`, holds the raw bytes of a save that failed to
+ * load, so a broken file is never silently replaced by a new game.
+ *
+ * Saves are per browser origin. They do not sync between devices or browsers,
+ * and a preview deployment address has its own separate storage.
+ */
+
+const NS = 'cave-of-absolution';
+export const KEYS = {
+  save: `${NS}:save`,
+  backup: `${NS}:backup`,
+  checkpoint: `${NS}:checkpoint`,
+  quarantine: `${NS}:quarantine`,
+  prefs: `${NS}:prefs`,
+} as const;
+
+export type StorageSlot = 'save' | 'backup' | 'checkpoint';
+
+export interface StorageStatus {
+  /** False once a write has failed; the UI shows a persistent warning. */
+  working: boolean;
+  /** Player-facing reason the last write failed, if any. */
+  message: string | null;
+}
+
+export interface LoadOutcome {
+  state: GameState | null;
+  /** Which slot the state came from. */
+  slot: StorageSlot | null;
+  /** Non-fatal notes worth telling the player about. */
+  notes: string[];
+  /** True when bytes existed but none of them could be read. */
+  quarantined: boolean;
+}
+
+function area(): Storage | null {
+  try {
+    const ls = globalThis.localStorage;
+    if (!ls) return null;
+    // Safari in private mode exposes localStorage but throws on write.
+    const probe = `${NS}:probe`;
+    ls.setItem(probe, '1');
+    ls.removeItem(probe);
+    return ls;
+  } catch {
+    return null;
+  }
+}
+
+export function storageAvailable(): boolean {
+  return area() !== null;
+}
+
+function readRaw(key: string): string | null {
+  try {
+    return area()?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writeRaw(key: string, value: string): StorageStatus {
+  const store = area();
+  if (!store) {
+    return {
+      working: false,
+      message:
+        'This browser is not letting the game store anything, so progress is not being saved. ' +
+        'Use Export Save to keep a copy.',
+    };
+  }
+  try {
+    store.setItem(key, value);
+    return { working: true, message: null };
+  } catch (error) {
+    const quota =
+      error instanceof DOMException &&
+      (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
+    return {
+      working: false,
+      message: quota
+        ? 'Browser storage is full, so progress is not being saved. Use Export Save to keep a ' +
+          'copy, then clear some site data.'
+        : 'Saving failed, so progress is not being saved. Use Export Save to keep a copy.',
+    };
+  }
+}
+
+function removeRaw(key: string): void {
+  try {
+    area()?.removeItem(key);
+  } catch {
+    /* nothing to do: removal failing is not worth reporting */
+  }
+}
+
+export function serialize(state: GameState): string {
+  return JSON.stringify(state);
+}
+
+/**
+ * Writes the autosave, rotating the previous one into the backup slot first.
+ * Reports failure honestly: the caller must not claim a save succeeded.
+ */
+export function writeAutosave(state: GameState): StorageStatus {
+  const previous = readRaw(KEYS.save);
+  const payload = serialize(state);
+  if (payload.length > MAX_SAVE_BYTES) {
+    return {
+      working: false,
+      message: 'This save has grown too large to store. Use Export Save to keep a copy.',
+    };
+  }
+  const result = writeRaw(KEYS.save, payload);
+  if (result.working && previous !== null && previous !== payload) {
+    // Best effort. A failed backup rotation does not invalidate the autosave.
+    writeRaw(KEYS.backup, previous);
+  }
+  return result;
+}
+
+export function writeCheckpoint(state: GameState): StorageStatus {
+  return writeRaw(KEYS.checkpoint, serialize(state));
+}
+
+export function readSlot(slot: StorageSlot): { state: GameState | null; error: string | null } {
+  const raw = readRaw(KEYS[slot]);
+  if (raw === null) return { state: null, error: null };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { state: null, error: 'The stored save is not readable JSON.' };
+  }
+  const result = validateSave(parsed, raw.length);
+  return result.ok ? { state: result.state, error: null } : { state: null, error: result.error };
+}
+
+/**
+ * Loads the best available state, trying the autosave, then the backup, then
+ * the chapter checkpoint. If bytes exist but none of them validate, the raw
+ * autosave is copied to the quarantine slot so it can still be recovered by
+ * hand, and nothing is overwritten.
+ */
+export function loadBest(): LoadOutcome {
+  const notes: string[] = [];
+  const order: StorageSlot[] = ['save', 'backup', 'checkpoint'];
+  const labels: Record<StorageSlot, string> = {
+    save: 'autosave',
+    backup: 'backup save',
+    checkpoint: 'chapter checkpoint',
+  };
+
+  let sawBytes = false;
+  for (const slot of order) {
+    const raw = readRaw(KEYS[slot]);
+    if (raw !== null) sawBytes = true;
+    const { state, error } = readSlot(slot);
+    if (state) {
+      if (slot !== 'save' && sawBytes) {
+        notes.push(`Your most recent save could not be read, so the ${labels[slot]} was loaded.`);
+      }
+      return { state, slot, notes, quarantined: false };
+    }
+    if (error) notes.push(`The ${labels[slot]} could not be read: ${error}`);
+  }
+
+  if (sawBytes) {
+    const raw = readRaw(KEYS.save);
+    if (raw !== null && readRaw(KEYS.quarantine) === null) {
+      writeRaw(KEYS.quarantine, raw);
+      notes.push(
+        'The unreadable save has been kept aside rather than deleted, in case it can be ' +
+          'recovered. Starting a new game will not erase it.'
+      );
+    }
+    return { state: null, slot: null, notes, quarantined: true };
+  }
+
+  return { state: null, slot: null, notes, quarantined: false };
+}
+
+export function hasAnySave(): boolean {
+  return (
+    readRaw(KEYS.save) !== null ||
+    readRaw(KEYS.backup) !== null ||
+    readRaw(KEYS.checkpoint) !== null
+  );
+}
+
+export function clearProgress(): void {
+  // The quarantine slot is deliberately left alone.
+  removeRaw(KEYS.save);
+  removeRaw(KEYS.backup);
+  removeRaw(KEYS.checkpoint);
+}
+
+/* ------------------------------------------------------------------ *
+ * Preferences — stored apart from story progress, so switching input
+ * mode or restarting the chapter never touches the other.
+ * ------------------------------------------------------------------ */
+
+export type InputMode = 'type' | 'select';
+
+export interface Prefs {
+  inputMode: InputMode;
+  /** Larger body text for comfort, independent of browser zoom. */
+  largeText: boolean;
+}
+
+export const DEFAULT_PREFS: Prefs = { inputMode: 'select', largeText: false };
+
+export function readPrefs(): Prefs {
+  const raw = readRaw(KEYS.prefs);
+  if (!raw) return { ...DEFAULT_PREFS };
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return { ...DEFAULT_PREFS };
+    const record = parsed as Record<string, unknown>;
+    return {
+      inputMode: record.inputMode === 'type' || record.inputMode === 'select'
+        ? record.inputMode
+        : DEFAULT_PREFS.inputMode,
+      largeText: typeof record.largeText === 'boolean' ? record.largeText : false,
+    };
+  } catch {
+    return { ...DEFAULT_PREFS };
+  }
+}
+
+export function writePrefs(prefs: Prefs): void {
+  writeRaw(KEYS.prefs, JSON.stringify(prefs));
+}
+
+/* ------------------------------------------------------------------ *
+ * Export / import
+ * ------------------------------------------------------------------ */
+
+/** Deliberately generic: the filename gives nothing about the story away. */
+export const EXPORT_FILENAME = 'adventure-save.json';
+
+export function exportBlob(state: GameState): Blob {
+  return new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+}
+
+export function importFromText(
+  text: string
+): { ok: true; state: GameState } | { ok: false; error: string } {
+  if (text.length > MAX_SAVE_BYTES) {
+    return {
+      ok: false,
+      error: `That file is too large to be a save for this story (limit ${MAX_SAVE_BYTES / 1024} KB).`,
+    };
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { ok: false, error: 'That file is not valid JSON, so it cannot be a save.' };
+  }
+  const result = validateSave(parsed, text.length);
+  return result.ok ? { ok: true, state: result.state } : { ok: false, error: result.error };
+}

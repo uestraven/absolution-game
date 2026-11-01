@@ -1,0 +1,164 @@
+# Canon, provisional content, and open questions
+
+**Not for players.** This states the story's reveals.
+
+Three tiers, kept strictly apart:
+
+1. **Canon** — approved. The prototype is built to be consistent with all of it.
+2. **Provisional** — invented for this build to make it playable. Revisable
+   without touching canon.
+3. **Undecided** — explicitly not settled. This build makes no claim either way,
+   and nothing in it should be read as having settled any of it.
+
+---
+
+## 1. Canon
+
+### The opening situation
+
+- The protagonist has just turned sixteen. The player chooses **Basil**
+  (he/him) or **Basilia** (she/her). Both have the same opportunities, puzzles
+  and central story.
+- Sixteen-year-olds are permitted to attempt the Cave of Absolution as a village
+  rite of passage.
+- Some people decline it. Others enter and flee, get lost and need rescuing, or
+  find nothing. Basil/Basilia alone works out the puzzles and finds a route
+  deeper in.
+- The village is preparing for an end-of-world prophecy. It describes a monster
+  called **the Wanderer** as a cyclops who brings a cataclysm, and says someone
+  who braves the Cave of Absolution will have the power to stop it.
+
+### The shape of the whole story
+
+- The adventure eventually takes the hero to the **same village in the past**,
+  before it has this prophecy. Their attempt to warn the villagers becomes the
+  original source of the prophecy already known in the opening.
+- A later crossing reaches the **future**, after the catastrophe. Damage
+  accumulates through the hero's adventure and culminates in that future.
+- During the adventure the hero **loses an eye** and comes to embody the
+  Wanderer, while also holding the power to stop the catastrophe.
+- The hero eventually returns to their original period to **stop their earlier
+  self**. Both believe they are doing what is right.
+- The hero's original journey did **not** include meeting their future self. The
+  final intervention happens for the first time. There is no opening encounter
+  with the future hero, no obligatory repeating cycle, and no branching
+  universes.
+- The hero **retains their experiences** even when intervening in their earlier
+  journey. The warning was always part of the original village's history.
+- The final confrontation takes place in the cave and should result in **closing
+  its portal**.
+- The cave differs in each era. Age, inhabitants, water, damage and access
+  routes should eventually affect exploration and puzzles.
+
+### How this build honours each of those
+
+| Canon point | In the prototype |
+| --- | --- |
+| Rite at sixteen, open to all | `present.home` establishes the birthday; Orla states plainly that being allowed is the whole of it |
+| Mixed outcomes for others | Tolv found nothing; Nessa was lost and rescued; "H." fled the echo chamber; Bren declined and nothing happened to him; Jens turned back, Mira sat down, Hal counted to a hundred |
+| The hero figures it out by observation, not destiny | The puzzle is relief → alcove → support → light → seam. Orla and Aldren both push back explicitly on the chosen-one reading |
+| The prophecy's content | The chalked plank and Orla's dialogue: one eye, a cataclysm, and the one who braves the cave gaining the power to turn it aside |
+| The prophecy already old in the opening | Orla says the Wanderer-words are generations old and said at midwinter; what is *new* is Hanne dreaming a date for them. This is what makes a warning given in the past consistent with the opening |
+| The cave differs by era | The past cave has no gallery, no crawl, no squeeze, no rope: a worked stair straight down, still being cut, with daylight reaching further in. The route out is correspondingly shorter |
+| Landmarks echo with differences | Living tree where the stump is; unworn well cap; roofless frame on the workshop's footprint; no lintel inscription; no cord of lanterns |
+| The twist is not pre-announced | Asserted by test: no player-facing string names time travel, the Wanderer's identity, the eye, a future self or a paradox |
+| No future-self encounter | There is none, and no mechanism implying one |
+
+### Deliberately avoided, because not approved
+
+- **No evacuation plan.** The village's preparations are observance, not
+  logistics: unlit lanterns strung for a vigil, a bowl of salt nobody can
+  justify, a chalked plank people keep re-reading. Marda's complaint is that
+  eleven days of this is eleven days of roofs not being mended.
+- **No portal-sustained damage.** The threshold is described as unnatural depth
+  and a second room's weather bleeding through. No cost, drain or decay is
+  attached to it.
+- **No chosen-one bloodline.** Nothing about the protagonist's lineage is
+  mentioned at all, and the two characters who have most authority on the
+  subject both say nobody has ever come out of that cave with a power.
+- **No cult.** The villagers disagree with each other: Orla keeps the plank
+  accurately while finding the salt useless, Marda thinks it is nonsense and
+  still wants the hero home safe, Hesk is thrilled, Tolv is simply behaving as
+  though there will be a midwinter, Aldren refuses to ask more of a child's
+  birthday than the birthday.
+
+---
+
+## 2. Provisional
+
+All of this is invention for playability. None of it constrains canon.
+
+**Names.** Orla, Marda, Hesk (village square); Tolv (joiner); Nessa, Aldren
+(cave path); Sabra, Pell (past square). Mentioned but unseen: Hanne, who dreamed
+the date; Edda, whose idea the salt was; Lonn and his sons, cutting the stair in
+the past; Jens, Mira, Hal, Bren, this year's other sixteen-year-olds; Mirri, who
+dropped a coin in the basin; "H.", who fled.
+
+**The village has no name anywhere in the build**, because that is undecided —
+see below. Player-facing text says "the village", "the square", "home".
+
+**The prophecy's exact wording**, including the lines *The hill will open. The
+water will answer. What stands will not stand.* and the second hand writing
+*and will they, though.* underneath. The canonical claims are the one eye, the
+cataclysm and the power; the rest is texture.
+
+**The vigil, the strung lanterns and the bowl of salt** as the specific form the
+village's preparation takes, including that the salt arrived this spring.
+
+**The lintel inscription** — `GO IN. COME OUT. BE EASIER WITH YOURSELF.` — and
+the idea that nobody knows who cut it. This is the only place the prototype
+leans on the cave's name meaning anything.
+
+**The knotted rope** from an iron ring at the mouth to a pillar in the gallery,
+and Aldren's role keeping the path.
+
+**The whole first puzzle.** The relief's imagery, the sliding shutter in cut
+grooves, the ankle-height smoke-blackened alcove with a dished floor, the
+pierced eye, the scale pattern, the pivoted slab. Also the oak wedge as the
+freely-offered tool and the striker fixed to the lantern's base.
+
+**Location names and era subtitles**, e.g. *The Sealed Chamber*, *The Basin
+Chamber*, "The same room, and nothing like it".
+
+**Everything about the past era's detail**: the stair being cut in its third
+season, the coins and bone pin in the basin, the chalk setting-out line, the
+leather bucket and tight-headed mallet, the great tree with a rope swing, the
+new well, the roofless frame, Sabra calling the cave just "the cave".
+
+**The household at home.** Bread on a stool, a hooked-back shutter, a cloth tag
+reading *Sixteen. Go carefully.* and the line "Nobody in this house signs
+things." Chosen to imply someone cares without asserting any family facts.
+
+**All opening dialogue.**
+
+---
+
+## 3. Undecided — do not read this build as settling any of it
+
+- The village's name.
+- The protagonist's family details.
+- The ultimate rescue plan.
+- The cause and timing of the eye injury.
+- The full physical rules of temporal damage.
+- The return crossing from the future.
+- The closure mechanism for the portal, and its cost.
+- The ending.
+- Full combat and progression systems.
+
+The prototype contains no combat, levelling, hunger, durability, timers or
+consumable resources, so nothing here presumes a system for any of them.
+
+---
+
+## Spoiler hygiene, and its limit
+
+Reveals are kept out of player-facing descriptions, journal entries, UI labels,
+objective text and save filenames. `content/content.test.ts` enforces the first
+of those with a pattern list, and the export filename is the deliberately
+anonymous `adventure-save.json`.
+
+This is presentation only. The build is static client-side JavaScript: every
+string, every flag name and every location id ships to the browser and can be
+read by anyone who opens the bundle or this repository. No claim is made that
+the source conceals anything. If the build is public, treat the source as
+public.
