@@ -183,12 +183,13 @@ player-visible credit before any deployment, or replace the tracks.
 
 ## 11. Nobody has listened to the music in the game — *limitation*
 
-> **One real defect found here and fixed:** the soundtrack played each track
-> once and then fell silent on iOS. Cause: two media elements crossfaded with
-> `volume`, which iOS forbids on both counts — one audio stream at a time, and
-> `volume` not settable from script. The controller now decodes to an
-> `AudioBuffer` and loops in the audio graph. Reported on iOS Chrome (WebKit)
-> against the deployed site; **not yet confirmed fixed on a device.**
+> **One real defect found here, fixed, and confirmed on the device:** the
+> soundtrack played each track once and then fell silent on iOS. Cause: two
+> media elements crossfaded with `volume`, which iOS forbids on both counts —
+> one audio stream at a time, and `volume` not settable from script. The
+> controller now decodes to an `AudioBuffer` and loops in the audio graph.
+> Reported and then verified fixed on **iOS Chrome (WebKit) against the
+> deployed site**, 2026-11-02.
 
 
 **What:** Playback is verified by machine, not by ear. The served-build pass
@@ -205,10 +206,11 @@ its room.
   is no hole — but three of the eight step by over a decibel, which may be
   heard as a bump. That is a property of the recordings, not of playback: the
   loop itself is now sample-exact. Measurements in `art/music/README.md`.
-- **Whether iOS is actually fixed.** The cause is understood, the mechanism
-  that caused it is gone, and the replacement is what Apple's own documented
-  constraints leave available. **It was fixed from documentation and reasoning,
-  not from a reproduction**, because there is no iOS browser here.
+- **Everything about iOS except the loop.** Looping is confirmed working on
+  iOS Chrome by the owner. The crossfade between areas, the volume slider, the
+  25% default and the hidden-page suspend all use the same graph and all
+  *should* follow, but none of them has been checked on the device — only that
+  tracks no longer stop after one pass.
 - **Whether the wrap is audible.** Measured in Chromium across a natural loop,
   with the whole file buffered, the stall is **~17 ms (WebM/Opus)** and **~33 ms
   (MP3)** — one or two frames. A media element seeks to loop (`seeking`,
@@ -229,8 +231,10 @@ its room.
 
 ## 12. Mobile audio is untested, and has known platform limits — *limitation*
 
-**What:** No real phone has played a note. All audio verification is headless
-Chromium on Linux.
+**What:** One thing has been confirmed on a real device: looping works on iOS
+Chrome, on the deployed site. Everything else — the crossfade, volume, mute,
+backgrounding, Android, and how any of it sounds — is still headless Chromium
+on Linux only.
 
 **Known platform limits that apply regardless:**
 
