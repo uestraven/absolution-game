@@ -213,6 +213,11 @@ The full mapping with location ids is in
 - **Tracks crossfade over 1.5 seconds**, and never more than two sources exist.
   Re-entering a room, examining something, opening settings, switching input
   mode and every rerender leave the current track alone.
+- **Looping happens in the audio graph**, not in a media element: each track is
+  decoded to PCM and looped sample-exactly, so there is no seek at the wrap and
+  nothing to stall. This is not a refinement — media elements cannot do this
+  job on iOS at all, where Apple documents one audio stream at a time and
+  `volume` as unsettable from script.
 - **A hidden tab pauses** and resumes from the same place.
 - **Settings** has an on/off switch and a volume slider that shows its number.
   Both take effect immediately and neither restarts anything.

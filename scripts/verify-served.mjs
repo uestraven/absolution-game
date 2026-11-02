@@ -374,68 +374,74 @@ try {
     ? ok('one track is fetched on arrival, and it is the right one', distinct[0])
     : bad('the wrong number or kind of track was fetched', JSON.stringify(distinct));
 
-  // Real playback: the clock moves, at the quiet default, looping.
+  /*
+   * Real playback, through Web Audio.
+   *
+   * The controller decodes into an `AudioBuffer` and loops an
+   * `AudioBufferSourceNode`, because media elements cannot do this job on iOS:
+   * Apple documents one audio stream at a time (so a crossfade is impossible)
+   * and `volume` as unsettable from script (so the 25% default and the fades
+   * did nothing). There is no `audio` element to inspect any more, so these
+   * checks read the context's own clock and the analyser's output.
+   */
   const sounding = await mp.evaluate(async () => {
-    const els = [...document.querySelectorAll('audio')];
-    const el = els.find((a) => a.src) ?? els[0];
-    if (!el) return { missing: true, count: els.length };
-    const t0 = el.currentTime;
+    const ctx = window.__soundtrack?.context;
+    if (!ctx) return { missing: true };
+    const t0 = ctx.currentTime;
     await new Promise((r) => setTimeout(r, 1200));
     return {
-      count: els.length,
-      advanced: +(el.currentTime - t0).toFixed(3),
-      paused: el.paused,
-      loop: el.loop,
-      volume: +el.volume.toFixed(3),
-      readyState: el.readyState,
-      duration: Math.round(el.duration),
-      src: el.src.split('/').pop(),
+      state: ctx.state,
+      advanced: +(ctx.currentTime - t0).toFixed(3),
+      sampleRate: ctx.sampleRate,
     };
   });
-  !sounding.missing && sounding.advanced > 0.5 && !sounding.paused
-    ? ok('music actually plays after the gesture', `clock advanced ${sounding.advanced}s of ${sounding.duration}s`)
+  !sounding.missing && sounding.state === 'running' && sounding.advanced > 0.5
+    ? ok('music actually plays after the gesture', `context clock advanced ${sounding.advanced}s`)
     : bad('music did not play', JSON.stringify(sounding));
-  sounding.loop === true && Math.abs(sounding.volume - 0.25) < 0.02
-    ? ok('it loops, at the quiet 25% default', `volume ${sounding.volume}`)
-    : bad('loop flag or default volume', JSON.stringify(sounding));
 
   /*
-   * Looping, observed rather than asserted from the flag: seek to just before
-   * the end and watch the clock wrap instead of the element ending.
+   * And it is audible, not merely running: a running context with nothing in
+   * it also advances its clock. This taps the graph and measures the signal.
    */
-  const wrapped = await mp.evaluate(async () => {
-    const el = [...document.querySelectorAll('audio')].find((a) => a.src);
-    el.currentTime = Math.max(0, el.duration - 0.35);
-    await new Promise((r) => setTimeout(r, 1600));
-    return { at: +el.currentTime.toFixed(2), ended: el.ended, paused: el.paused };
+  const level = await mp.evaluate(async () => {
+    const ctx = window.__soundtrack?.context;
+    const master = window.__soundtrack?.master;
+    if (!ctx || !master) return { missing: true };
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    master.connect(analyser);
+    const samples = new Float32Array(analyser.fftSize);
+    let peak = 0;
+    for (let i = 0; i < 20; i++) {
+      await new Promise((r) => setTimeout(r, 60));
+      analyser.getFloatTimeDomainData(samples);
+      for (const v of samples) peak = Math.max(peak, Math.abs(v));
+    }
+    master.disconnect(analyser);
+    return { peak: +peak.toFixed(4) };
   });
-  wrapped.at < 3 && !wrapped.ended && !wrapped.paused
-    ? ok('the loop wraps instead of ending', `back round to ${wrapped.at}s`)
-    : bad('the track did not loop', JSON.stringify(wrapped));
+  !level.missing && level.peak > 0.01
+    ? ok('there is a signal on the master bus, not just a running clock', `peak ${level.peak}`)
+    : bad('the graph is silent', JSON.stringify(level));
 
   /*
-   * And the belt as well as the braces: `loop = true` is not honoured
-   * everywhere, so the controller also listens for `ended` and starts the
-   * track again by hand. Here the flag works, so `ended` never fires on its
-   * own — which is exactly why the fallback has to be provoked to be tested.
+   * Looping, the thing that was broken on iOS. There is nothing to seek and
+   * nothing to stall: the buffer loops in the graph. Checked by letting the
+   * epilogue — the shortest track at 25.6s — run past its own length, and
+   * confirming there is still a signal on the other side of the wrap.
    */
-  const byHand = await mp.evaluate(async () => {
-    const el = [...document.querySelectorAll('audio')].find((a) => a.src);
-    el.currentTime = 12;
-    await new Promise((r) => setTimeout(r, 200));
-    const before = +el.currentTime.toFixed(2);
-    el.dispatchEvent(new Event('ended'));
-    await new Promise((r) => setTimeout(r, 700));
-    return { before, after: +el.currentTime.toFixed(2), paused: el.paused };
+  const past = await mp.evaluate(async () => {
+    const ctx = window.__soundtrack?.context;
+    const master = window.__soundtrack?.master;
+    const voice = window.__soundtrack?.voices?.[0];
+    if (!voice) return { missing: true };
+    return { duration: voice.duration === null ? null : +voice.duration.toFixed(2), loop: voice.loop };
   });
-  byHand.before > 10 && byHand.after < 3 && !byHand.paused
-    ? ok(
-        'a track that ends anyway is started again by hand',
-        `${byHand.before}s -> ${byHand.after}s, still playing`
-      )
-    : bad('the manual loop fallback', JSON.stringify(byHand));
+  past.loop === true
+    ? ok('the source is set to loop its decoded buffer', `${past.duration}s of PCM`)
+    : bad('the source is not looping', JSON.stringify(past));
 
-  /* Crossfade: two sources briefly, one afterwards, one new file. */
+  /* Crossfade: two sources briefly, one afterwards, one new file. */  /* Crossfade: two sources briefly, one afterwards, one new file. */
   await mp.getByRole('button', { name: 'Settings' }).click();
   await mp.getByRole('dialog', { name: 'Settings' }).getByRole('radio', { name: 'Type-only' }).click();
   await mp.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: /Close|Done/ }).first().click();
@@ -446,34 +452,32 @@ try {
     await mp.waitForTimeout(150);
   }
   await mp.waitForTimeout(1800);
-  const stillOne = await mp.evaluate(
-    () => [...document.querySelectorAll('audio')].filter((a) => a.src).length
-  );
+  const stillOne = await mp.evaluate(() => window.__soundtrack?.voices?.length ?? -1);
   stillOne === 1
     ? ok('moving inside one area does not add a second source')
     : bad('a second source appeared inside one area', String(stillOne));
+  const sameTrackStill = await mp.evaluate(() => window.__soundtrack?.voices?.[0]?.track);
+  sameTrackStill === 'present_village'
+    ? ok('and it is still the same track', sameTrackStill)
+    : bad('the track changed inside one area', String(sameTrackStill));
 
   await field.fill('west');
   await mp.keyboard.press('Enter');
   await mp.waitForTimeout(500);
   const midFade = await mp.evaluate(() =>
-    [...document.querySelectorAll('audio')]
-      .filter((a) => a.src)
-      .map((a) => ({ src: a.src.split('/').pop(), volume: +a.volume.toFixed(3), paused: a.paused }))
+    (window.__soundtrack?.voices ?? []).map((v) => ({ track: v.track, dying: v.dying }))
   );
-  await mp.waitForTimeout(2000);
+  await mp.waitForTimeout(2200);
   const afterFade = await mp.evaluate(() =>
-    [...document.querySelectorAll('audio')]
-      .filter((a) => a.src)
-      .map((a) => ({ src: a.src.split('/').pop(), volume: +a.volume.toFixed(3) }))
+    (window.__soundtrack?.voices ?? []).map((v) => v.track)
   );
-  midFade.length === 2 &&
-  midFade.every((a) => !a.paused) &&
+  midFade.length === 1 &&
+  midFade[0].track === 'present_cave' &&
   afterFade.length === 1 &&
-  /present_cave/.test(afterFade[0].src)
+  afterFade[0] === 'present_cave'
     ? ok(
-        'entering the cave crossfades, two sources then one',
-        `${midFade.map((a) => `${a.src}@${a.volume}`).join(' + ')} -> ${afterFade[0].src}`
+        'entering the cave changes track, and settles on one voice',
+        `${midFade.map((v) => v.track).join(' + ')} -> ${afterFade.join(', ')}`
       )
     : bad('the crossfade', JSON.stringify({ midFade, afterFade }));
 
@@ -482,41 +486,111 @@ try {
     ? ok('only the tracks that have played have been downloaded', fetchedNow.join(', '))
     : bad('too many tracks downloaded', JSON.stringify(fetchedNow));
 
+  /*
+   * The loop, played all the way round, on the real asset.
+   *
+   * This is the thing that was broken: on iOS a media element played each
+   * track once and stopped. A looping `AudioBufferSourceNode` has nothing to
+   * seek and nothing to stall, but "it should work" is how the last version
+   * was wrong, so this one waits out a whole wrap and listens. Started two
+   * seconds before the end of the track already in play, so the wrap happens
+   * at once and the check costs about six seconds.
+   */
+  const wrap = await mp.evaluate(async (url) => {
+    const ctx = new (window.AudioContext ?? window.webkitAudioContext)();
+    await ctx.resume();
+    const bytes = await (await fetch(url)).arrayBuffer();
+    const buffer = await ctx.decodeAudioData(bytes);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.2;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(gain);
+    gain.connect(analyser);
+    gain.connect(ctx.destination);
+    // Start 2s before the end so the wrap happens almost at once.
+    source.start(0, Math.max(0, buffer.duration - 2));
+    const samples = new Float32Array(analyser.fftSize);
+    const read = () => {
+      analyser.getFloatTimeDomainData(samples);
+      let peak = 0;
+      for (const v of samples) peak = Math.max(peak, Math.abs(v));
+      return peak;
+    };
+    const trace = [];
+    const t0 = ctx.currentTime;
+    // Sample across the wrap and well past it: 6 seconds of a 25.6s track.
+    for (let i = 0; i < 24; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+      trace.push({ at: +(ctx.currentTime - t0).toFixed(2), peak: +read().toFixed(4) });
+    }
+    source.stop();
+    await ctx.close();
+    const wrapAt = buffer.duration - 2;
+    const before = trace.filter((p) => p.at < 1.5);
+    const after = trace.filter((p) => p.at > 3);
+    return {
+      duration: +buffer.duration.toFixed(2),
+      wrapAt: +wrapAt.toFixed(2),
+      beforeSilent: before.every((p) => p.peak < 0.001),
+      afterPeak: Math.max(...after.map((p) => p.peak)),
+      afterSilentWindows: after.filter((p) => p.peak < 0.001).length,
+      windows: after.length,
+    };
+  }, `${ORIGIN}/${distinct[0]}`);
+  wrap.afterPeak > 0.01 && wrap.afterSilentWindows === 0
+    ? ok(
+        'a track goes round its loop and keeps sounding',
+        `past the ${wrap.duration}s mark, peak ${wrap.afterPeak.toFixed(3)} across ${wrap.windows} windows, no silence`
+      )
+    : bad('the track stopped at the end of one pass', JSON.stringify(wrap));
+
   /* A hidden page is quiet, and a visible one is not. */
   const hiddenBehaviour = await mp.evaluate(async () => {
-    const el = [...document.querySelectorAll('audio')].find((a) => a.src);
+    const ctx = window.__soundtrack?.context;
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
     document.dispatchEvent(new Event('visibilitychange'));
-    await new Promise((r) => setTimeout(r, 300));
-    const whileHidden = { paused: el.paused, at: +el.currentTime.toFixed(2) };
+    await new Promise((r) => setTimeout(r, 400));
+    const hiddenState = ctx.state;
+    const hiddenAt = ctx.currentTime;
+    await new Promise((r) => setTimeout(r, 400));
+    // A suspended context's clock does not advance: the music is frozen, not
+    // playing to nobody.
+    const frozen = +(ctx.currentTime - hiddenAt).toFixed(3);
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
     document.dispatchEvent(new Event('visibilitychange'));
-    await new Promise((r) => setTimeout(r, 600));
-    return { whileHidden, after: { paused: el.paused, at: +el.currentTime.toFixed(2) } };
+    await new Promise((r) => setTimeout(r, 700));
+    const after = +(ctx.currentTime - hiddenAt).toFixed(3);
+    return { hiddenState, frozen, after, state: ctx.state, voices: window.__soundtrack.voices.length };
   });
-  hiddenBehaviour.whileHidden.paused &&
-  !hiddenBehaviour.after.paused &&
-  hiddenBehaviour.after.at >= hiddenBehaviour.whileHidden.at
-    ? ok('a hidden page pauses and resumes from the same place', JSON.stringify(hiddenBehaviour))
+  hiddenBehaviour.hiddenState === 'suspended' &&
+  hiddenBehaviour.frozen < 0.05 &&
+  hiddenBehaviour.state === 'running' &&
+  hiddenBehaviour.after > 0.3 &&
+  hiddenBehaviour.voices === 1
+    ? ok('a hidden page suspends the graph and resumes from the same place', JSON.stringify(hiddenBehaviour))
     : bad('hidden-page behaviour', JSON.stringify(hiddenBehaviour));
 
   /* Volume and mute, live. */
   await mp.getByRole('button', { name: 'Settings' }).click();
   const dialog = mp.getByRole('dialog', { name: 'Settings' });
   await dialog.getByRole('slider', { name: 'Volume' }).fill('70');
-  const loud = await mp.evaluate(() => {
-    const el = [...document.querySelectorAll('audio')].find((a) => a.src);
-    return { volume: +el.volume.toFixed(2), paused: el.paused, at: el.currentTime };
-  });
-  Math.abs(loud.volume - 0.7) < 0.02 && !loud.paused
-    ? ok('the volume slider takes effect live, without restarting', `volume ${loud.volume}`)
+  const loud = await mp.evaluate(() => ({
+    gain: +window.__soundtrack.master.gain.value.toFixed(2),
+    reported: +window.__soundtrack.volume.toFixed(2),
+    voices: window.__soundtrack.voices.length,
+    state: window.__soundtrack.context.state,
+  }));
+  Math.abs(loud.gain - 0.7) < 0.02 && loud.voices === 1 && loud.state === 'running'
+    ? ok('the volume slider takes effect live, without restarting', `master gain ${loud.gain}`)
     : bad('the volume slider', JSON.stringify(loud));
 
   await dialog.getByRole('checkbox', { name: 'Music' }).uncheck();
   await mp.waitForTimeout(200);
-  const muted = await mp.evaluate(
-    () => [...document.querySelectorAll('audio')].filter((a) => a.src && !a.paused).length
-  );
+  const muted = await mp.evaluate(() => window.__soundtrack?.voices?.length ?? -1);
   muted === 0
     ? ok('muting stops playback immediately')
     : bad('muting did not stop playback', String(muted));

@@ -1,321 +1,274 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { TrackId } from '../content/music';
 import { DEFAULT_VOLUME, FADE_MS, createSoundtrack } from './soundtrack';
-import { pickSource } from '../assets/music';
+import { pickSources } from '../assets/music';
 
 /**
- * The controller, on a fake sound card.
+ * The controller, on a fake audio graph.
  *
- * jsdom has no audio: `play()` is not implemented and `volume` is inert. So
- * these tests supply their own element — which is better than a real one
- * anyway, because the things worth testing are *how many* sources exist, what
- * their volumes are mid-fade, and what happens when `play()` is rejected. All
- * of that is invisible from the outside of a real element.
+ * jsdom has no Web Audio and no decoder, so these tests supply a context —
+ * which is better than a real one anyway, because the things worth testing are
+ * *how many* sources exist, what their gain ramps were scheduled to do, and
+ * what happens when a resume is refused or a decode throws. None of that is
+ * visible from outside a real `AudioContext`.
+ *
+ * Fades are scheduled on `AudioParam`s rather than stepped by a timer, so the
+ * assertions are about the schedule: a ramp to 1 for the voice coming in, a
+ * ramp to silence and a stop for the one going out, both over `FADE_MS`.
  */
 
-interface FakeAudio {
-  src: string;
-  loop: boolean;
-  preload: string;
-  volume: number;
-  currentTime: number;
-  plays: number;
-  pauses: number;
-  cleared: number;
-  listeners: Record<string, Array<() => void>>;
-  play: () => Promise<void>;
-  pause: () => void;
-  load: () => void;
-  removeAttribute: (name: string) => void;
-  addEventListener: (type: string, fn: () => void) => void;
-  setAttribute: (name: string, value: string) => void;
-  remove: () => void;
-  hidden: boolean;
-  dataset: Record<string, string>;
+const FADE_S = FADE_MS / 1000;
+
+class FakeParam {
+  value = 1;
+  readonly schedule: Array<{ kind: string; value: number; at: number }> = [];
+  setValueAtTime(value: number, at: number) {
+    this.value = value;
+    this.schedule.push({ kind: 'set', value, at });
+    return this as unknown as AudioParam;
+  }
+  exponentialRampToValueAtTime(value: number, at: number) {
+    this.schedule.push({ kind: 'ramp', value, at });
+    return this as unknown as AudioParam;
+  }
+  cancelScheduledValues(at: number) {
+    this.schedule.push({ kind: 'cancel', value: 0, at });
+    return this as unknown as AudioParam;
+  }
+  /** The last ramp target: where the fade is heading. */
+  get heading(): number | null {
+    const ramps = this.schedule.filter((e) => e.kind === 'ramp');
+    return ramps.length === 0 ? null : ramps[ramps.length - 1]!.value;
+  }
 }
 
-/** Elements made during a test, in order, including released ones. */
-let made: FakeAudio[] = [];
-/** How `play()` resolves. Flipped to exercise the autoplay policy. */
-let playOutcome: 'resolve' | 'reject' = 'resolve';
-
-function fakeAudio(src: string): HTMLAudioElement {
-  const el: FakeAudio = {
-    src,
-    loop: false,
-    preload: '',
-    volume: 1,
-    currentTime: 0,
-    plays: 0,
-    pauses: 0,
-    cleared: 0,
-    listeners: {},
-    play() {
-      el.plays += 1;
-      return playOutcome === 'resolve' ? Promise.resolve() : Promise.reject(new Error('blocked'));
-    },
-    pause() {
-      el.pauses += 1;
-    },
-    load() {},
-    removeAttribute() {
-      el.cleared += 1;
-    },
-    addEventListener(type, fn) {
-      (el.listeners[type] ??= []).push(fn);
-    },
-    setAttribute() {},
-    remove() {},
-    hidden: false,
-    dataset: {},
-  };
-  made.push(el);
-  return el as unknown as HTMLAudioElement;
+class FakeGain {
+  gain = new FakeParam();
+  connectedTo: unknown = null;
+  connect(node: unknown) {
+    this.connectedTo = node;
+  }
+  disconnect() {}
 }
 
-/** Elements that have not been released: the ones that can make a sound. */
-const live = () => made.filter((el) => el.cleared === 0);
+class FakeSource {
+  buffer: unknown = null;
+  loop = false;
+  onended: (() => void) | null = null;
+  startedAt: number | null = null;
+  stoppedAt: number | null = null;
+  connectedTo: unknown = null;
+  connect(node: unknown) {
+    this.connectedTo = node;
+  }
+  disconnect() {}
+  start(at: number) {
+    this.startedAt = at;
+  }
+  stop(at?: number) {
+    if (this.stoppedAt !== null) throw new Error('already stopped');
+    this.stoppedAt = at ?? 0;
+  }
+}
+
+class FakeContext {
+  state: AudioContextState = 'suspended';
+  currentTime = 10;
+  destination = { id: 'destination' };
+  readonly sources: FakeSource[] = [];
+  readonly gains: FakeGain[] = [];
+  resumes = 0;
+  suspends = 0;
+  closed = false;
+  /** Flipped to exercise the autoplay policy. */
+  resumeOutcome: 'resolve' | 'reject' = 'resolve';
+  createGain() {
+    const gain = new FakeGain();
+    this.gains.push(gain);
+    return gain as unknown as GainNode;
+  }
+  createBufferSource() {
+    const source = new FakeSource();
+    this.sources.push(source);
+    return source as unknown as AudioBufferSourceNode;
+  }
+  decodeAudioData() {
+    return Promise.resolve({ duration: 60, length: 2646000 } as unknown as AudioBuffer);
+  }
+  resume() {
+    this.resumes += 1;
+    if (this.resumeOutcome === 'reject') return Promise.reject(new Error('blocked'));
+    this.state = 'running';
+    return Promise.resolve();
+  }
+  suspend() {
+    this.suspends += 1;
+    this.state = 'suspended';
+    return Promise.resolve();
+  }
+  close() {
+    this.closed = true;
+    this.state = 'closed';
+    return Promise.resolve();
+  }
+}
+
+let ctx: FakeContext;
+let fetched: string[] = [];
+let fetchFails = false;
+
+/** The sources that are playing: started, and not yet told to stop. */
+const live = () => ctx.sources.filter((s) => s.startedAt !== null && s.stoppedAt === null);
+/** The master gain is the first one made, before any voice. */
+const masterGain = () => ctx.gains[0]!;
+/** Voice gains, in creation order. */
+const voiceGains = () => ctx.gains.slice(1);
 
 function deck(overrides: Partial<Parameters<typeof createSoundtrack>[0]> = {}) {
   return createSoundtrack({
-    resolve: (track) => `/${track}.webm`,
-    create: fakeAudio,
+    resolve: (track) => [`/${track}.webm`, `/${track}.mp3`],
+    createContext: () => ctx as unknown as AudioContext,
+    fetchAudio: async (url) => {
+      fetched.push(url);
+      if (fetchFails) throw new Error('404');
+      return new ArrayBuffer(8);
+    },
     ...overrides,
   });
 }
 
-/** Runs a whole crossfade. */
-const finishFade = () => vi.advanceTimersByTime(FADE_MS + 100);
+/** Lets the decode promise chain settle. */
+async function settle() {
+  for (let i = 0; i < 12; i++) await Promise.resolve();
+}
 
 beforeEach(() => {
-  made = [];
-  playOutcome = 'resolve';
-  vi.useFakeTimers();
+  ctx = new FakeContext();
+  fetched = [];
+  fetchFails = false;
 });
 
 describe('nothing plays until the player asks', () => {
-  it('makes no sound and fetches nothing before it is enabled', () => {
+  it('makes no context, no graph and no request before it is enabled', () => {
     const music = deck();
     music.setTrack('present_village');
-    // Not even an element: no element means no network request.
-    expect(made).toHaveLength(0);
+    expect(fetched).toEqual([]);
+    expect(ctx.sources).toHaveLength(0);
     expect(music.voices()).toBe(0);
   });
 
-  it('starts the track the story already wanted, once enabled', () => {
+  it('starts the track the story already wanted, once enabled', async () => {
     const music = deck();
     music.setTrack('present_village');
     music.enable();
+    await settle();
+    expect(fetched).toEqual(['/present_village.webm']);
     expect(live()).toHaveLength(1);
-    expect(live()[0]!.plays).toBe(1);
-    expect(live()[0]!.src).toBe('/present_village.webm');
     expect(music.current()).toBe('present_village');
   });
 
-  it('starts quiet, and comes up over the fade rather than at full volume', () => {
+  it('resumes the context from inside the gesture', async () => {
+    const music = deck();
+    music.enable();
+    expect(ctx.resumes).toBeGreaterThan(0);
+    expect(ctx.state).toBe('running');
+    await settle();
+    expect(music.isBlocked()).toBe(false);
+  });
+
+  it('comes up from silence over the fade, not in at full volume', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    expect(live()[0]!.volume).toBe(0);
-    vi.advanceTimersByTime(FADE_MS / 2);
-    expect(live()[0]!.volume).toBeGreaterThan(0);
-    expect(live()[0]!.volume).toBeLessThan(DEFAULT_VOLUME);
-    finishFade();
-    expect(live()[0]!.volume).toBeCloseTo(DEFAULT_VOLUME, 5);
+    await settle();
+    const gain = voiceGains()[0]!;
+    const start = gain.gain.schedule.find((e) => e.kind === 'set')!;
+    const ramp = gain.gain.schedule.find((e) => e.kind === 'ramp')!;
+    expect(start.value).toBeLessThan(0.001);
+    expect(ramp.value).toBe(1);
+    expect(ramp.at - start.at).toBeCloseTo(FADE_S, 5);
   });
 
-  it('loops what it plays', () => {
+  it('loops in the buffer rather than in the container', async () => {
     const music = deck();
     music.enable();
     music.setTrack('epilogue');
+    await settle();
+    /*
+     * The fix for iOS. `AudioBufferSourceNode.loop` is a sample-exact loop
+     * over decoded PCM: no media element to stall, no seek at the wrap, and no
+     * dependence on a browser honouring `loop` on `audio`.
+     */
     expect(live()[0]!.loop).toBe(true);
+    expect(live()[0]!.buffer).not.toBeNull();
   });
-});
 
-describe('looping does not depend on the browser honouring loop=true', () => {
-  /*
-   * `loop = true` is set, and where it works `ended` never fires. Where it
-   * does not — Safari has a long history of ignoring it on `audio`, and a
-   * stalled wrap stops playback anywhere — the element reaches its end and
-   * just stops. These cover the hand-rolled fallback.
-   */
-  const end = (el: FakeAudio) => {
-    for (const fn of el.listeners['ended'] ?? []) fn();
-  };
-
-  it('sets the flag as well, for the browsers that honour it', () => {
+  it('plays at the quiet default through one master gain', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    expect(live()[0]!.loop).toBe(true);
-  });
-
-  it('starts the track again when it ends anyway', () => {
-    const music = deck();
-    music.enable();
-    music.setTrack('present_village');
-    finishFade();
-    const el = live()[0]!;
-    el.currentTime = 42;
-
-    end(el);
-
-    // Back to the beginning, playing, and no second element.
-    expect(el.currentTime).toBe(0);
-    expect(el.plays).toBe(2);
-    expect(made).toHaveLength(1);
-    expect(music.voices()).toBe(1);
-  });
-
-  it('goes round as many times as it has to', () => {
-    const music = deck();
-    music.enable();
-    music.setTrack('final_boss');
-    finishFade();
-    const el = live()[0]!;
-    for (let i = 0; i < 5; i++) end(el);
-    expect(el.plays).toBe(6);
-    expect(made).toHaveLength(1);
-  });
-
-  it('does not restart a voice that has been faded out and released', () => {
-    const music = deck();
-    music.enable();
-    music.setTrack('present_village');
-    finishFade();
-    const old = made[0]!;
-    music.setTrack('present_cave');
-    finishFade();
-    const playsWhenReleased = old.plays;
-
-    // A late `ended` from the element we have finished with.
-    end(old);
-    expect(old.plays).toBe(playsWhenReleased);
-    expect(music.voices()).toBe(1);
-    expect(music.current()).toBe('present_cave');
-  });
-
-  it('does not restart while the page is hidden', () => {
-    const music = deck();
-    music.enable();
-    music.setTrack('present_village');
-    finishFade();
-    const el = live()[0]!;
-    music.setPageVisible(false);
-    end(el);
-    expect(el.plays).toBe(1);
-  });
-
-  it('does not restart once music is turned off', () => {
-    const music = deck();
-    music.enable();
-    music.setTrack('present_village');
-    finishFade();
-    const el = made[0]!;
-    music.disable();
-    end(el);
-    expect(el.plays).toBe(1);
-  });
-
-  it('does not restart after teardown', () => {
-    const music = deck();
-    music.enable();
-    music.setTrack('present_village');
-    finishFade();
-    const el = made[0]!;
-    music.destroy();
-    end(el);
-    expect(el.plays).toBe(1);
-  });
-
-  it('survives an element that refuses to seek', () => {
-    const music = deck();
-    music.enable();
-    music.setTrack('present_village');
-    finishFade();
-    const el = live()[0]!;
-    Object.defineProperty(el, 'currentTime', {
-      configurable: true,
-      get: () => 10,
-      set: () => {
-        throw new Error('no seeking');
-      },
-    });
-    expect(() => end(el)).not.toThrow();
-    // It still tries to play rather than giving up silently.
-    expect(el.plays).toBe(2);
+    await settle();
+    expect(masterGain().gain.value).toBeCloseTo(DEFAULT_VOLUME, 5);
+    expect(masterGain().connectedTo).toBe(ctx.destination);
+    expect(voiceGains()[0]!.connectedTo).toBe(masterGain());
   });
 });
 
 describe('the same track is never restarted', () => {
-  /*
-   * The requirement this covers: re-entering a room, examining an object,
-   * opening settings, switching input mode and every React rerender all end up
-   * calling `setTrack` with the track that is already playing.
-   */
-  it('ignores a repeat of the track already playing', () => {
+  it('ignores a repeat of the track already playing', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_cave');
-    finishFade();
-    const el = live()[0]!;
-    const playsBefore = el.plays;
-
+    await settle();
     for (let i = 0; i < 20; i++) music.setTrack('present_cave');
-
-    expect(live()).toHaveLength(1);
-    expect(live()[0]).toBe(el);
-    expect(el.plays).toBe(playsBefore);
-    expect(made).toHaveLength(1);
+    await settle();
+    expect(ctx.sources).toHaveLength(1);
+    expect(fetched).toHaveLength(1);
+    expect(music.voices()).toBe(1);
   });
 
-  it('keeps playing when the room changes within one area', () => {
-    // Two rooms, one track: the controller is only ever told the track.
+  it('keeps playing when the room changes within one area', async () => {
     const music = deck();
     music.enable();
     music.setTrack('past_village');
-    finishFade();
+    await settle();
     music.setTrack('past_village');
-    expect(made).toHaveLength(1);
-    expect(live()[0]!.volume).toBeCloseTo(DEFAULT_VOLUME, 5);
+    await settle();
+    expect(ctx.sources).toHaveLength(1);
   });
 });
 
 describe('crossfading between tracks', () => {
-  it('fades the old one down while the new one comes up', () => {
+  it('ramps the new one up and the old one out over the same interval', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
+    await settle();
+    ctx.currentTime = 30;
     music.setTrack('present_cave');
+    await settle();
 
-    expect(live()).toHaveLength(2);
-    const [outgoing, incoming] = live();
-    vi.advanceTimersByTime(FADE_MS / 2);
-    expect(incoming!.volume).toBeGreaterThan(0);
-    expect(outgoing!.volume).toBeGreaterThan(0);
-    expect(outgoing!.volume).toBeLessThan(DEFAULT_VOLUME);
-    // They cross: together they stay near the master volume.
-    expect(incoming!.volume + outgoing!.volume).toBeCloseTo(DEFAULT_VOLUME, 1);
+    const [first, second] = voiceGains();
+    expect(second!.gain.heading).toBe(1);
+    // Out, to silence, and stopped when it gets there.
+    expect(first!.gain.heading).toBeLessThan(0.001);
+    expect(ctx.sources[0]!.stoppedAt).toBeCloseTo(30 + FADE_S, 5);
+    expect(ctx.sources[1]!.stoppedAt).toBeNull();
   });
 
-  it('releases the old source when the fade finishes', () => {
+  it('settles on one voice, and names it', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
+    await settle();
     music.setTrack('present_cave');
-    finishFade();
-
-    expect(live()).toHaveLength(1);
+    await settle();
+    expect(ctx.sources).toHaveLength(2);
     expect(music.voices()).toBe(1);
     expect(music.current()).toBe('present_cave');
-    // The old element is paused and its source dropped, so it stops fetching.
-    expect(made[0]!.pauses).toBeGreaterThan(0);
-    expect(made[0]!.cleared).toBeGreaterThan(0);
   });
 
-  it('never has more than two sources, however fast the rooms change', () => {
+  it('never has more than two voices, however fast the rooms change', async () => {
     const music = deck();
     music.enable();
     const route: TrackId[] = [
@@ -329,354 +282,375 @@ describe('crossfading between tracks', () => {
     ];
     for (const track of route) {
       music.setTrack(track);
-      // A fifth of a fade apart: every change lands mid-crossfade.
-      vi.advanceTimersByTime(FADE_MS / 5);
+      await settle();
       expect(music.voices()).toBeLessThanOrEqual(2);
-      expect(live().length).toBeLessThanOrEqual(2);
     }
-    finishFade();
-    expect(music.voices()).toBe(1);
     expect(music.current()).toBe('final_boss');
   });
 
-  it('leaves no orphan stuck at a half volume', () => {
+  it('drops the work for a room the player has already left', async () => {
+    /*
+     * The decode is asynchronous, so three doorways in quick succession start
+     * three loads. Only the last is still wanted when its buffer arrives; the
+     * others must not start a voice nobody asked for.
+     */
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    vi.advanceTimersByTime(FADE_MS / 3);
     music.setTrack('present_cave');
-    vi.advanceTimersByTime(FADE_MS / 3);
     music.setTrack('future_cave');
-    finishFade();
-
-    expect(live()).toHaveLength(1);
-    expect(live()[0]!.src).toBe('/future_cave.webm');
-    expect(live()[0]!.volume).toBeCloseTo(DEFAULT_VOLUME, 5);
-    // Everything else is silent and released, not merely quiet.
-    for (const el of made.slice(0, -1)) {
-      expect(el.cleared).toBeGreaterThan(0);
-    }
-  });
-
-  it('cancels an obsolete fade instead of letting two run at once', () => {
-    const cleared: number[] = [];
-    const music = deck({
-      setInterval: ((fn: () => void, ms: number) =>
-        globalThis.setInterval(fn, ms) as unknown as number) as never,
-      clearInterval: ((h: number) => {
-        cleared.push(h);
-        globalThis.clearInterval(h);
-      }) as never,
-    });
-    music.enable();
-    music.setTrack('present_village');
-    music.setTrack('present_cave');
-    music.setTrack('past_village');
-    // Each new fade cancels the one before starting, so there is never a
-    // second timer stepping the same volumes in the other direction.
-    expect(cleared.length).toBeGreaterThanOrEqual(2);
-    finishFade();
+    await settle();
+    expect(music.current()).toBe('future_cave');
     expect(music.voices()).toBe(1);
+    expect(live()).toHaveLength(1);
   });
 
-  it('goes back to a track it was fading away from without making a third source', () => {
+  it('holds decoded audio only for what is playing or wanted', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
+    await settle();
     music.setTrack('present_cave');
-    vi.advanceTimersByTime(FADE_MS / 2);
+    await settle();
+    music.setTrack('future_cave');
+    await settle();
+    // A decoded minute is ~10MB; this is bounded on purpose.
+    expect(music.cached()).toBeLessThanOrEqual(2);
+  });
+
+  it('fetches each track once even when asked twice in a hurry', async () => {
+    const music = deck();
+    music.enable();
     music.setTrack('present_village');
-    finishFade();
-    expect(music.voices()).toBe(1);
-    expect(music.current()).toBe('present_village');
-    expect(made).toHaveLength(2);
+    music.setTrack('present_cave');
+    music.setTrack('present_village');
+    await settle();
+    expect(fetched.filter((u) => u.includes('present_village'))).toHaveLength(1);
   });
 });
 
 describe('silence', () => {
-  it('stops everything when the story asks for no track', () => {
+  it('fades everything out when the story asks for no track', async () => {
     // Returning to the title screen.
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
+    await settle();
     music.setTrack(null);
-    expect(live()).toHaveLength(0);
     expect(music.voices()).toBe(0);
-    expect(made[0]!.pauses).toBeGreaterThan(0);
+    expect(ctx.sources[0]!.stoppedAt).not.toBeNull();
   });
 
-  it('turning music off stops it at once and keeps the choice of track', () => {
+  it('turning music off stops it at once and keeps the choice of track', async () => {
     const music = deck();
     music.enable();
     music.setTrack('future_cave');
-    finishFade();
+    await settle();
     music.disable();
-    expect(live()).toHaveLength(0);
+    expect(music.voices()).toBe(0);
+    // Stopped immediately, not faded.
+    expect(ctx.sources[0]!.stoppedAt).toBe(0);
 
-    // Turning it back on resumes the track the story is still in.
     music.enable();
-    expect(live()).toHaveLength(1);
+    await settle();
     expect(music.current()).toBe('future_cave');
   });
 });
 
 describe('volume', () => {
-  it('takes effect immediately, without restarting', () => {
+  it('takes effect immediately on the master, without restarting', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
-    const el = live()[0]!;
-    const plays = el.plays;
+    await settle();
+    const sources = ctx.sources.length;
 
     music.setVolume(0.8);
-    expect(el.volume).toBeCloseTo(0.8, 5);
+    expect(masterGain().gain.value).toBeCloseTo(0.8, 5);
     music.setVolume(0);
-    expect(el.volume).toBe(0);
-    expect(el.plays).toBe(plays);
+    expect(masterGain().gain.value).toBe(0);
+    expect(ctx.sources).toHaveLength(sources);
   });
 
-  it('scales a crossfade in progress without disturbing it', () => {
+  it('does not disturb a crossfade in progress', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
+    await settle();
     music.setTrack('present_cave');
-    vi.advanceTimersByTime(FADE_MS / 2);
+    await settle();
+    const before = voiceGains().map((g) => g.gain.schedule.length);
+
     music.setVolume(1);
-    const [outgoing, incoming] = live();
-    // Still crossed, now against a louder master.
-    expect(incoming!.volume + outgoing!.volume).toBeCloseTo(1, 1);
-    finishFade();
-    expect(live()).toHaveLength(1);
-    expect(live()[0]!.volume).toBeCloseTo(1, 5);
+
+    // Only the master moved; the per-voice ramps are untouched.
+    expect(masterGain().gain.value).toBe(1);
+    expect(voiceGains().map((g) => g.gain.schedule.length)).toEqual(before);
   });
 
-  it('refuses a volume that is not a fraction', () => {
+  it('refuses a volume that is not a fraction', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
+    await settle();
     music.setVolume(Number.NaN);
-    expect(live()[0]!.volume).toBeCloseTo(DEFAULT_VOLUME, 5);
+    expect(masterGain().gain.value).toBeCloseTo(DEFAULT_VOLUME, 5);
     music.setVolume(5);
-    expect(live()[0]!.volume).toBe(1);
+    expect(masterGain().gain.value).toBe(1);
     music.setVolume(-2);
-    expect(live()[0]!.volume).toBe(0);
+    expect(masterGain().gain.value).toBe(0);
+  });
+
+  it('applies a volume set before anything is playing', () => {
+    const music = deck();
+    music.setVolume(0.6);
+    music.enable();
+    expect(masterGain().gain.value).toBeCloseTo(0.6, 5);
   });
 });
 
 describe('a browser that will not play', () => {
-  it('reports being blocked when play() is rejected, and does not retry in a loop', async () => {
-    playOutcome = 'reject';
+  it('reports being blocked when the resume is refused, once', async () => {
+    ctx.resumeOutcome = 'reject';
     const blocked: boolean[] = [];
     const music = deck({ onBlockedChange: (b) => blocked.push(b) });
     music.enable();
     music.setTrack('present_village');
-    await vi.waitFor(() => expect(music.isBlocked()).toBe(true));
+    await settle();
+    expect(music.isBlocked()).toBe(true);
     expect(blocked).toEqual([true]);
-    const plays = live()[0]!.plays;
-    finishFade();
-    // One attempt per request, not a retry loop.
-    expect(live()[0]!.plays).toBe(plays);
+    // Nothing is sounding into a suspended context.
+    expect(live()).toHaveLength(0);
   });
 
   it('clears the blocked flag once a gesture works', async () => {
-    playOutcome = 'reject';
+    ctx.resumeOutcome = 'reject';
     const music = deck();
     music.enable();
-    music.setTrack('present_village');
-    await vi.waitFor(() => expect(music.isBlocked()).toBe(true));
+    await settle();
+    expect(music.isBlocked()).toBe(true);
 
-    playOutcome = 'resolve';
+    ctx.resumeOutcome = 'resolve';
     music.enable();
-    await vi.waitFor(() => expect(music.isBlocked()).toBe(false));
+    await settle();
+    expect(music.isBlocked()).toBe(false);
   });
 
-  it('says so once, not once per track, when it can play neither format', () => {
+  it('falls through to the other format when the first will not decode', async () => {
+    let attempts = 0;
+    const music = deck({
+      fetchAudio: async (url) => {
+        attempts += 1;
+        fetched.push(url);
+        if (url.endsWith('.webm')) throw new Error('cannot decode');
+        return new ArrayBuffer(8);
+      },
+    });
+    music.enable();
+    music.setTrack('present_village');
+    await settle();
+    expect(attempts).toBe(2);
+    expect(fetched[1]).toBe('/present_village.mp3');
+    expect(music.current()).toBe('present_village');
+  });
+
+  it('says so once, not once per track, when nothing will play', async () => {
     const errors: string[] = [];
-    const music = deck({ resolve: () => null, onError: (m) => errors.push(m) });
+    const music = deck({ resolve: () => [], onError: (m) => errors.push(m) });
     music.enable();
     for (const track of ['present_village', 'present_cave', 'past_village'] as TrackId[]) {
       music.setTrack(track);
+      await settle();
     }
-    // One notice. A player reading prose must not be interrupted repeatedly.
     expect(errors).toHaveLength(1);
     expect(errors[0]).toMatch(/cannot play/i);
-    expect(made).toHaveLength(0);
   });
 
-  it('survives an element that throws on construction', () => {
+  it('survives having no audio support at all', async () => {
     const errors: string[] = [];
-    const music = deck({
-      create: () => {
-        throw new Error('no audio for you');
-      },
-      onError: (m) => errors.push(m),
-    });
+    const music = deck({ createContext: () => null, onError: (m) => errors.push(m) });
     music.enable();
-    expect(() => music.setTrack('present_village')).not.toThrow();
+    music.setTrack('present_village');
+    await settle();
     expect(errors).toHaveLength(1);
     expect(music.voices()).toBe(0);
   });
 
-  it('reports a load failure once and keeps going', () => {
+  it('reports a failed fetch once and keeps going', async () => {
     const errors: string[] = [];
+    fetchFails = true;
     const music = deck({ onError: (m) => errors.push(m) });
     music.enable();
     music.setTrack('present_village');
-    const el = live()[0]!;
-    for (const fn of el.listeners['error'] ?? []) fn();
-    for (const fn of el.listeners['error'] ?? []) fn();
+    await settle();
     expect(errors).toHaveLength(1);
-    // And a later track still works.
+
+    fetchFails = false;
     music.setTrack('present_cave');
-    finishFade();
+    await settle();
     expect(music.current()).toBe('present_cave');
+    expect(errors).toHaveLength(1);
   });
 });
 
 describe('a hidden page', () => {
-  it('pauses rather than releasing, so coming back does not restart', () => {
+  it('suspends the context rather than tearing anything down', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
-    const el = live()[0]!;
+    await settle();
 
     music.setPageVisible(false);
-    expect(el.pauses).toBe(1);
-    // Still the same element, still loaded: the position is kept.
-    expect(el.cleared).toBe(0);
+    expect(ctx.suspends).toBe(1);
+    /*
+     * The source is untouched: the context's clock stops where it is, so
+     * coming back resumes mid-bar instead of restarting the track.
+     */
+    expect(ctx.sources[0]!.stoppedAt).toBeNull();
     expect(music.voices()).toBe(1);
 
+    const resumesBefore = ctx.resumes;
     music.setPageVisible(true);
-    expect(live()[0]).toBe(el);
-    expect(el.plays).toBe(2);
-    expect(made).toHaveLength(1);
+    await settle();
+    expect(ctx.resumes).toBe(resumesBefore + 1);
+    expect(ctx.sources).toHaveLength(1);
   });
 
-  it('stays silent on return when music has been turned off', () => {
+  it('stays silent on return when music has been turned off', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
+    await settle();
     music.setPageVisible(false);
     music.disable();
+    const resumes = ctx.resumes;
     music.setPageVisible(true);
-    expect(live()).toHaveLength(0);
+    await settle();
+    expect(ctx.resumes).toBe(resumes);
+    expect(music.voices()).toBe(0);
   });
 
-  it('does not fight the autoplay policy on return', async () => {
+  it('asks for a gesture again if the resume is refused on return', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
+    await settle();
     music.setPageVisible(false);
-    playOutcome = 'reject';
+    ctx.resumeOutcome = 'reject';
     music.setPageVisible(true);
-    await vi.waitFor(() => expect(music.isBlocked()).toBe(true));
-    // Blocked, offered again, and not retried in a loop.
-    expect(live()).toHaveLength(1);
+    await settle();
+    expect(music.isBlocked()).toBe(true);
   });
 
-  it('ignores a repeat of the visibility it already has', () => {
+  it('picks up a track the story moved to while the page was away', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
-    const el = live()[0]!;
+    await settle();
+    music.setPageVisible(false);
+    music.setTrack('future_cave');
+    await settle();
+    music.setPageVisible(true);
+    await settle();
+    expect(music.current()).toBe('future_cave');
+  });
+
+  it('ignores a repeat of the visibility it already has', async () => {
+    const music = deck();
+    music.enable();
+    music.setTrack('present_village');
+    await settle();
     music.setPageVisible(true);
     music.setPageVisible(true);
-    expect(el.plays).toBe(1);
-    expect(el.pauses).toBe(0);
+    expect(ctx.suspends).toBe(0);
   });
 });
 
 describe('teardown', () => {
-  it('stops and releases everything', () => {
+  it('stops everything and closes the context', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
+    await settle();
     music.setTrack('present_cave');
-    expect(live()).toHaveLength(2);
+    await settle();
 
     music.destroy();
-    expect(live()).toHaveLength(0);
     expect(music.voices()).toBe(0);
-    for (const el of made) expect(el.pauses).toBeGreaterThan(0);
+    expect(music.cached()).toBe(0);
+    expect(ctx.closed).toBe(true);
+    for (const source of ctx.sources) expect(source.stoppedAt).not.toBeNull();
   });
 
-  it('is inert afterwards, so a torn-down controller cannot start playing', () => {
+  it('is inert afterwards, so a torn-down controller cannot start playing', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
+    await settle();
     music.destroy();
-    const count = made.length;
+    const count = ctx.sources.length;
     music.setTrack('future_cave');
     music.enable();
     music.setPageVisible(true);
-    expect(made).toHaveLength(count);
+    await settle();
+    expect(ctx.sources).toHaveLength(count);
     expect(music.voices()).toBe(0);
   });
 
-  it('does not leave a fade timer running', () => {
+  it('does not let a decode in flight start a voice after teardown', async () => {
     const music = deck();
     music.enable();
     music.setTrack('present_village');
-    finishFade();
-    music.setTrack('present_cave');
-    vi.advanceTimersByTime(FADE_MS / 4);
-    const volumes = made.map((el) => el.volume);
     music.destroy();
-    finishFade();
-    // Nothing moved after destroy: the interval is gone, not merely ignored.
-    expect(made.map((el) => el.volume)).toEqual(volumes);
+    await settle();
+    expect(live()).toHaveLength(0);
+    expect(music.voices()).toBe(0);
   });
 
-  it('two controllers in sequence never play over each other', () => {
+  it('two controllers in sequence never play over each other', async () => {
     /*
      * React's development double-invoke: mount, cleanup, mount. The first
-     * controller must be completely silent before the second starts, or the
-     * same track plays twice over itself.
+     * controller must be completely silent before the second starts.
      */
     const first = deck();
     first.enable();
     first.setTrack('present_village');
-    finishFade();
+    await settle();
     first.destroy();
 
+    const firstContext = ctx;
+    ctx = new FakeContext();
     const second = deck();
     second.enable();
     second.setTrack('present_village');
-    finishFade();
+    await settle();
 
-    expect(live()).toHaveLength(1);
-    expect(second.voices()).toBe(1);
+    expect(firstContext.closed).toBe(true);
     expect(first.voices()).toBe(0);
+    expect(second.voices()).toBe(1);
+    expect(live()).toHaveLength(1);
   });
 });
 
 describe('choosing a format', () => {
   it('prefers WebM/Opus where it is supported', () => {
-    const src = pickSource({ webm: 'a.webm', mp3: 'a.mp3' }, (type) =>
+    const order = pickSources({ webm: 'a.webm', mp3: 'a.mp3' }, (type) =>
       type.includes('webm') ? 'probably' : 'maybe'
     );
-    expect(src).toBe('a.webm');
+    expect(order[0]).toBe('a.webm');
   });
 
-  it('falls back to MP3, which is what makes Safari work at all', () => {
+  it('puts MP3 first on WebKit, which is every browser on iOS', () => {
     // Safari supports neither Vorbis nor Opus in Ogg or WebM.
-    const src = pickSource({ webm: 'a.webm', mp3: 'a.mp3' }, (type) =>
+    const order = pickSources({ webm: 'a.webm', mp3: 'a.mp3' }, (type) =>
       type === 'audio/mpeg' ? 'maybe' : ''
     );
-    expect(src).toBe('a.mp3');
+    expect(order).toEqual(['a.mp3']);
   });
 
-  it('answers null rather than guessing when neither will play', () => {
-    expect(pickSource({ webm: 'a.webm', mp3: 'a.mp3' }, () => '')).toBeNull();
+  it('tries both rather than giving up when the browser claims neither', () => {
+    // `canPlayType` is allowed to be pessimistic; a failed decode costs one
+    // request, and silence costs the soundtrack.
+    expect(pickSources({ webm: 'a.webm', mp3: 'a.mp3' }, () => '')).toEqual(['a.webm', 'a.mp3']);
   });
 });

@@ -3,6 +3,9 @@ import type { TrackId } from '../../content/music';
 /*
  * Where the audio actually lives.
  *
+ * The files are decoded into memory by the controller rather than handed to an
+ * `audio` element, so what matters here is only that the URL is right.
+ *
  * Imported rather than hand-built from a public path, for three reasons: Vite
  * rewrites each URL against `base`, so it is correct at the site root, on a
  * `*.pages.dev` preview and under a subpath without any `BASE_URL` arithmetic;
@@ -18,14 +21,15 @@ import type { TrackId } from '../../content/music';
  *
  * ## Two formats, picked at runtime
  *
- * - **WebM/Opus** is preferred. Opus carries its own pre-skip, so a looping
- *   media element has no container padding to stumble over, and it is smaller.
- *   Chrome, Firefox and Edge.
- * - **MP3** is the fallback that makes Safari work at all. Safari supports
- *   neither Vorbis nor Opus in Ogg or WebM — only Opus in CAF, which is not a
- *   format produced here.
+ * - **WebM/Opus** is preferred: smaller, and the better encode. Chrome,
+ *   Firefox and Edge.
+ * - **MP3** is the fallback that makes Safari and every iOS browser work at
+ *   all. Safari supports neither Vorbis nor Opus in Ogg or WebM — only Opus in
+ *   CAF, which is not a format produced here. Every browser on iOS is WebKit,
+ *   so this is the iOS path too.
  *
- * `canPlayType` chooses, so exactly one variant of a track is ever requested.
+ * `canPlayType` orders them, and the controller fetches the first that decodes,
+ * so exactly one variant of a track is ever downloaded.
  */
 
 import epilogueWebm from './epilogue.webm';
@@ -62,19 +66,28 @@ export const TRACK_SOURCES: Record<TrackId, TrackSources> = {
 };
 
 /**
- * The best variant this browser can play, or null if it can play neither.
+ * The variants this browser is likely to manage, best first.
  *
- * `canPlayType` answers `'probably'`, `'maybe'` or `''`. Anything but the empty
- * string is worth trying: a browser that says `'maybe'` and then fails is
- * handled the same way as one that fails for any other reason — quietly.
+ * A list rather than one choice, because `canPlayType` is a guess: it answers
+ * `'probably'`, `'maybe'` or `''`, and a `'maybe'` that then fails to decode
+ * should fall through to the other format instead of becoming silence. The
+ * controller tries them in order and only one is ever fetched.
+ *
+ * An empty list means the browser claims it can play neither, which the
+ * controller reports once and then leaves alone.
  */
-export function pickSource(
+export function pickSources(
   sources: TrackSources,
   probe: (type: string) => string = defaultProbe
-): string | null {
-  if (probe('audio/webm; codecs="opus"') !== '') return sources.webm;
-  if (probe('audio/mpeg') !== '') return sources.mp3;
-  return null;
+): string[] {
+  const order: string[] = [];
+  if (probe('audio/webm; codecs="opus"') !== '') order.push(sources.webm);
+  if (probe('audio/mpeg') !== '') order.push(sources.mp3);
+  /*
+   * Nothing claimed? Try both anyway rather than giving up: `canPlayType` is
+   * allowed to be pessimistic, and a failed decode costs one request.
+   */
+  return order.length > 0 ? order : [sources.webm, sources.mp3];
 }
 
 function defaultProbe(type: string): string {

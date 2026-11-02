@@ -4,36 +4,52 @@ import { loops } from '../content/music';
 /**
  * The soundtrack controller.
  *
- * One of these for the whole app. It owns at most **two** `HTMLAudioElement`s —
- * the one playing and the one it is crossfading to — and nothing else in the
- * program is allowed to make a sound.
+ * One of these for the whole app. It owns an `AudioContext` and at most **two**
+ * playing sources — the one playing and the one it is crossfading to — and
+ * nothing else in the program is allowed to make a sound.
  *
  * ## It follows the story and never touches it
  *
  * Everything here is driven by `setTrack(id | null)`, called from an effect
  * that watches game state. There is no path from this file into the engine: no
  * action is dispatched, no flag is set, no turn is taken, and nothing that
- * happens to audio appears in the transcript. A browser that refuses to play,
- * a 404 on a track, a decoder that gives up — all of it is swallowed here, and
+ * happens to audio appears in the transcript. A context that will not start, a
+ * 404 on a track, a decoder that gives up — all of it is swallowed here, and
  * the game carries on in silence. No puzzle, clue or exit depends on sound.
  *
- * ## Why media elements and not the Web Audio API
+ * ## Why Web Audio, and not two media elements
  *
- * `volume` on two elements is all a crossfade needs, media elements stream
- * progressively instead of holding a decoded buffer (a 64-second mono track is
- * ~11MB of float32 once decoded; two live would be ~22MB), teardown is a
- * `pause()` and a dropped reference, and there is no AudioContext to keep in
- * sync with the page's own suspend/resume rules. Web Audio would buy
- * sample-exact loop points, which matters for MP3 and not for Opus; see the
- * loop note in `art/music/README.md` for what was measured.
+ * It was two `HTMLAudioElement`s crossfaded with `volume`. That is simpler, it
+ * works on desktop, and it is **unfixably wrong on iOS**, where Apple's
+ * documented behaviour is:
+ *
+ *  - *"Only one audio or video stream can play at a time."* A crossfade needs
+ *    two. Starting the second stops the first, and the second's `play()` has no
+ *    user gesture behind it, so it is refused — which is silence from then on.
+ *  - `volume` *"is not settable in JavaScript"* and reading it always returns 1.
+ *    So the quiet 25% default did nothing, the crossfade did nothing, and the
+ *    volume slider did nothing: music played flat out or not at all.
+ *  - `loop` is honoured from iOS 5, but an element that stops for any other
+ *    reason — a stalled seek at the wrap — stops for good *without* firing
+ *    `ended`, so a hand-rolled `ended` listener cannot rescue it either.
+ *
+ * Web Audio has none of those problems. A gain node is real gain on iOS,
+ * mixing happens inside one output stream so a crossfade is one stream and not
+ * two, and `AudioBufferSourceNode.loop` is a sample-exact loop over decoded
+ * PCM — no container, no seek, no gap, nothing to stall.
+ *
+ * What it costs is memory: a decoded minute of 44.1kHz mono is about 10MB of
+ * float32, so two live tracks are about 21MB. Buffers for anything not playing
+ * are dropped. That is the trade, made deliberately and reversed from the
+ * earlier decision because the earlier decision was wrong on a real device.
  *
  * ## Autoplay
  *
- * Nothing starts until `enable()` is called, and `enable()` is only ever
- * reached from a real click. `play()` returns a promise that browsers reject
- * when they do not consider the gesture sufficient — after a reload, most
- * notably — so a rejection flips `blocked` and the UI offers the control
- * again. It never retries in a loop and never reports twice.
+ * A context starts `suspended` and `resume()` needs a real gesture — the same
+ * shape the media elements needed. `enable()` is only ever reached from a
+ * click, and resuming there unlocks the context for every later programmatic
+ * start, including the second voice of a crossfade. If the resume is refused,
+ * `blocked` flips and the UI offers the control again: once, never in a loop.
  */
 
 /** Quiet by default: music under prose, not over it. */
@@ -41,29 +57,31 @@ export const DEFAULT_VOLUME = 0.25;
 
 /** Crossfade length. The brief asks for about a second and a half. */
 export const FADE_MS = 1500;
+const FADE_S = FADE_MS / 1000;
 
-/** How often a fade steps. ~60fps without depending on animation frames. */
-const FADE_STEP_MS = 50;
+/** Floor for a ramp: an exponential ramp cannot reach or pass zero. */
+const SILENT = 0.0001;
+
+type AudioContextCtor = new () => AudioContext;
 
 export interface SoundtrackOptions {
-  /** Resolves a track to a URL this browser can play, or null if it cannot. */
-  resolve: (track: TrackId) => string | null;
-  /** Builds an element. Injected so tests do not need a real decoder. */
-  create?: (src: string) => HTMLAudioElement;
+  /** Resolves a track to the URLs to try, best first. */
+  resolve: (track: TrackId) => string[];
+  /** Injected so tests need neither a decoder nor a network. */
+  createContext?: () => AudioContext | null;
+  fetchAudio?: (url: string) => Promise<ArrayBuffer>;
   /** Called whenever `blocked` changes, so the shell can offer the control. */
   onBlockedChange?: (blocked: boolean) => void;
   /** Notified once per distinct failure, for diagnostics only. */
   onError?: (message: string) => void;
-  now?: () => number;
-  setInterval?: (fn: () => void, ms: number) => number;
-  clearInterval?: (handle: number) => void;
 }
 
 interface Voice {
-  el: HTMLAudioElement;
   track: TrackId;
-  /** Target volume as a fraction of the master volume, 0..1. */
-  level: number;
+  source: AudioBufferSourceNode;
+  gain: GainNode;
+  /** Set once it has been told to stop, so it is never counted or reused. */
+  dying: boolean;
 }
 
 export interface Soundtrack {
@@ -76,44 +94,42 @@ export interface Soundtrack {
   setTrack: (track: TrackId | null) => void;
   /** The page became hidden or visible again. */
   setPageVisible: (visible: boolean) => void;
-  /** Stop everything and release both elements. */
+  /** Stop everything and release the context. */
   destroy: () => void;
   /** Playback was refused and needs another interaction. */
   isBlocked: () => boolean;
   /** For tests and diagnostics. */
   current: () => TrackId | null;
   voices: () => number;
+  /** Decoded tracks held in memory. Bounded on purpose. */
+  cached: () => number;
+}
+
+function defaultContext(): AudioContext | null {
+  try {
+    const scope = globalThis as {
+      AudioContext?: AudioContextCtor;
+      webkitAudioContext?: AudioContextCtor;
+    };
+    // `webkitAudioContext` is still how older iOS spells it.
+    const Ctor = scope.AudioContext ?? scope.webkitAudioContext;
+    return Ctor ? new Ctor() : null;
+  } catch {
+    return null;
+  }
 }
 
 export function createSoundtrack(options: SoundtrackOptions): Soundtrack {
   const {
     resolve,
-    create = (src) => {
-      const el = new Audio();
-      el.src = src;
-      /*
-       * Attached to the document, hidden.
-       *
-       * A media element plays perfectly well detached, so this is not for
-       * playback: it is so that what is playing can be *seen* — by the browser
-       * verification pass, and by anybody with devtools open. `hidden` keeps
-       * it out of the layout and out of the accessibility tree, and there are
-       * never more than two.
-       */
-      try {
-        el.hidden = true;
-        el.setAttribute('aria-hidden', 'true');
-        globalThis.document?.body?.appendChild(el);
-      } catch {
-        // Attaching is a diagnostic nicety and must never be able to stop the
-        // music: a detached element plays just as well.
-      }
-      return el;
+    createContext = defaultContext,
+    fetchAudio = async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(String(response.status));
+      return response.arrayBuffer();
     },
     onBlockedChange,
     onError,
-    setInterval: schedule = (fn, ms) => globalThis.setInterval(fn, ms) as unknown as number,
-    clearInterval: unschedule = (h) => globalThis.clearInterval(h),
   } = options;
 
   /** The track the story currently asks for, whether or not it is audible. */
@@ -123,11 +139,53 @@ export function createSoundtrack(options: SoundtrackOptions): Soundtrack {
   let volume = DEFAULT_VOLUME;
   let blocked = false;
   let destroyed = false;
+  let reported: string | null = null;
 
+  let ctx: AudioContext | null = null;
+  let master: GainNode | null = null;
   /** At most two: the one playing, and the one fading in over it. */
   let voices: Voice[] = [];
-  let fade = 0;
-  let reported: string | null = null;
+  /**
+   * Decoded audio, for the tracks in play only.
+   *
+   * A decoded minute is about 10MB, so this is deliberately not a cache that
+   * grows: anything no longer playing or wanted is dropped on the next change.
+   */
+  const buffers = new Map<TrackId, AudioBuffer>();
+  /** Decodes in flight, so a fast double-change does not fetch twice. */
+  const loading = new Map<TrackId, Promise<AudioBuffer | null>>();
+  /** Guards an async start against the story having moved on. */
+  let generation = 0;
+
+  /**
+   * A window on the graph, for the browser verification pass.
+   *
+   * Nothing in the app reads this. It exists because the controller no longer
+   * uses `audio` elements, so there is nothing in the DOM to inspect — and a
+   * check that cannot see whether a signal is actually on the bus is a check
+   * that cannot tell playing from pretending.
+   */
+  const expose = () => {
+    try {
+      (globalThis as Record<string, unknown>).__soundtrack = {
+        context: ctx,
+        master,
+        volume,
+        blocked,
+        enabled,
+        wanted,
+        voices: voices.map((v) => ({
+          track: v.track,
+          loop: v.source.loop,
+          dying: v.dying,
+          duration: v.source.buffer?.duration ?? null,
+        })),
+        cached: [...buffers.keys()],
+      };
+    } catch {
+      /* a frozen global, or a test double */
+    }
+  };
 
   const setBlocked = (value: boolean) => {
     if (blocked === value) return;
@@ -136,103 +194,185 @@ export function createSoundtrack(options: SoundtrackOptions): Soundtrack {
   };
 
   const fail = (message: string) => {
-    // Once per distinct message. A track that cannot load must not turn into a
-    // stream of notices while the player is trying to read.
+    // Once per distinct message. A track that will not load must not turn into
+    // a stream of notices while the player is trying to read.
     if (reported === message) return;
     reported = message;
     onError?.(message);
   };
 
-  const apply = () => {
-    for (const voice of voices) {
-      try {
-        voice.el.volume = Math.max(0, Math.min(1, voice.level * volume));
-      } catch {
-        /* a test double, or an element that has gone away */
-      }
+  const context = (): AudioContext | null => {
+    if (destroyed) return null;
+    if (ctx) return ctx;
+    const made = createContext();
+    if (!made) {
+      fail('This browser has no audio support the game can use.');
+      return null;
     }
-  };
-
-  const stopFade = () => {
-    if (fade) {
-      unschedule(fade);
-      fade = 0;
-    }
-  };
-
-  /** Drops a voice and releases its buffer, so nothing keeps downloading. */
-  const release = (voice: Voice) => {
     try {
-      voice.el.pause();
-      // Clearing the source is what actually stops a pending network fetch.
-      voice.el.removeAttribute('src');
-      voice.el.load?.();
-      voice.el.remove?.();
+      const gain = made.createGain();
+      gain.gain.value = volume;
+      gain.connect(made.destination);
+      ctx = made;
+      master = gain;
     } catch {
-      /* nothing to do about an element that will not be quiet */
-    }
-  };
-
-  const start = (voice: Voice) => {
-    if (!enabled || !visible) return;
-    let result: unknown;
-    try {
-      result = voice.el.play?.();
-    } catch {
-      /*
-       * Some environments throw synchronously rather than returning a
-       * rejecting promise — jsdom does, and so does a decoder that has given
-       * up. Either way the game carries on without music.
-       */
       fail('The audio could not be started.');
-      return;
+      return null;
     }
-    if (result && typeof (result as Promise<void>).then === 'function') {
-      (result as Promise<void>).then(
-        () => setBlocked(false),
-        () => {
-          /*
-           * Refused. Almost always the autoplay policy deciding the gesture
-           * that got us here does not count — a reload, typically. Not an
-           * error to shout about: the control comes back and the player can
-           * ask again.
-           */
-          if (!destroyed) setBlocked(true);
+    return ctx;
+  };
+
+  /** Fetches and decodes a track, keeping at most one attempt in flight. */
+  const load = (track: TrackId): Promise<AudioBuffer | null> => {
+    const ready = buffers.get(track);
+    if (ready) return Promise.resolve(ready);
+    const already = loading.get(track);
+    if (already) return already;
+
+    const attempt = (async (): Promise<AudioBuffer | null> => {
+      const sources = resolve(track);
+      if (sources.length === 0) {
+        fail('This browser cannot play either of the audio formats the game ships.');
+        return null;
+      }
+      const live = context();
+      if (!live) return null;
+      /*
+       * Each candidate in turn. `canPlayType` upstream is a good guess and not
+       * a promise, so a format that turns out not to decode falls through to
+       * the next one rather than becoming silence.
+       */
+      for (const url of sources) {
+        try {
+          const bytes = await fetchAudio(url);
+          const decoded = await live.decodeAudioData(bytes);
+          buffers.set(track, decoded);
+          return decoded;
+        } catch {
+          continue;
         }
-      );
+      }
+      fail('A music track could not be loaded.');
+      return null;
+    })();
+
+    loading.set(track, attempt);
+    void attempt.finally(() => loading.delete(track));
+    return attempt;
+  };
+
+  /** Stops a voice, ramping it out if asked, and forgets it. */
+  const kill = (voice: Voice, fade: boolean) => {
+    if (voice.dying) return;
+    voice.dying = true;
+    voices = voices.filter((v) => v !== voice);
+    const live = ctx;
+    try {
+      // Let the graph go whenever it actually ends.
+      voice.source.onended = () => {
+        try {
+          voice.source.disconnect();
+          voice.gain.disconnect();
+        } catch {
+          /* already gone */
+        }
+      };
+      if (live && fade) {
+        const now = live.currentTime;
+        voice.gain.gain.cancelScheduledValues(now);
+        voice.gain.gain.setValueAtTime(Math.max(SILENT, voice.gain.gain.value), now);
+        voice.gain.gain.exponentialRampToValueAtTime(SILENT, now + FADE_S);
+        voice.source.stop(now + FADE_S);
+      } else {
+        voice.source.stop();
+      }
+    } catch {
+      /* a source that never started, or a test double */
+    }
+  };
+
+  /** Drops decoded audio for anything not playing and not wanted. */
+  const trim = () => {
+    const keep = new Set<TrackId>(voices.map((v) => v.track));
+    if (wanted !== null) keep.add(wanted);
+    for (const track of [...buffers.keys()]) {
+      if (!keep.has(track)) buffers.delete(track);
     }
   };
 
   /**
-   * Steps every live voice towards its target and tidies up at the end.
+   * Starts a track and fades everything else out.
    *
-   * One timer for the whole fade, so starting a new one cannot leave an old
-   * one running: `stopFade` is called first, every time.
+   * The decode is awaited, so this is asynchronous — and `generation` is what
+   * makes that safe. Three doorways in two seconds produce three calls; only
+   * the last one's generation still matches when its buffer arrives, and the
+   * others drop their work rather than starting a voice nobody asked for. The
+   * outgoing track keeps playing meanwhile, so a slow decode costs a late
+   * crossfade rather than a gap.
    */
-  const runFade = (incoming: Voice, outgoing: Voice[]) => {
-    stopFade();
-    const steps = Math.max(1, Math.round(FADE_MS / FADE_STEP_MS));
-    let step = 0;
-    const from = outgoing.map((voice) => voice.level);
+  const swapTo = async (track: TrackId) => {
+    const mine = ++generation;
+    const buffer = await load(track);
+    if (destroyed || mine !== generation || !enabled || wanted !== track || !buffer) return;
 
-    const tick = () => {
-      step += 1;
-      const t = Math.min(1, step / steps);
-      incoming.level = t;
-      outgoing.forEach((voice, i) => {
-        voice.level = from[i]! * (1 - t);
-      });
-      apply();
-      if (t < 1) return;
-      stopFade();
-      for (const voice of outgoing) {
-        release(voice);
+    const live = context();
+    if (!live || !master) return;
+
+    /*
+     * Resume first. A context can drop back to `suspended` on its own — iOS
+     * does it when the page has been in the background — and starting a source
+     * into a suspended context is indistinguishable from silence.
+     */
+    if (live.state === 'suspended') {
+      try {
+        await live.resume();
+      } catch {
+        if (!destroyed) setBlocked(true);
+        return;
       }
-      voices = voices.filter((voice) => !outgoing.includes(voice));
-      apply();
-    };
+      if (destroyed || mine !== generation || wanted !== track) return;
+    }
+    setBlocked(false);
 
-    fade = schedule(tick, FADE_STEP_MS);
+    let voice: Voice;
+    try {
+      const source = live.createBufferSource();
+      source.buffer = buffer;
+      // The loop, such as it is: decoded PCM, sample-exact, nothing to stall.
+      source.loop = loops(track);
+      const gain = live.createGain();
+      source.connect(gain);
+      gain.connect(master);
+      voice = { track, source, gain, dying: false };
+    } catch {
+      fail('The audio could not be started.');
+      return;
+    }
+
+    const now = live.currentTime;
+    const outgoing = voices.slice();
+    try {
+      // Up from silence over the fade, so nothing arrives at full volume.
+      voice.gain.gain.setValueAtTime(SILENT, now);
+      voice.gain.gain.exponentialRampToValueAtTime(1, now + FADE_S);
+      voice.source.start(now);
+    } catch {
+      fail('The audio could not be started.');
+      return;
+    }
+    voices.push(voice);
+
+    // Everything else out over the same interval: two sources, briefly.
+    for (const old of outgoing) kill(old, true);
+    trim();
+    expose();
+  };
+
+  const stopEverything = (fade: boolean) => {
+    generation += 1;
+    for (const voice of voices.slice()) kill(voice, fade);
+    voices = [];
+    expose();
   };
 
   const setTrack = (track: TrackId | null) => {
@@ -244,146 +384,79 @@ export function createSoundtrack(options: SoundtrackOptions): Soundtrack {
     wanted = track;
 
     if (track === null) {
-      /*
-       * Silence — the title screen, or a state with no track. Fade out rather
-       * than cut, and do not leave a voice behind.
-       */
-      stopFade();
-      for (const voice of voices) release(voice);
-      voices = [];
+      // Silence — the title screen, or a state with no track.
+      stopEverything(true);
+      trim();
       return;
     }
-
     if (!enabled) return;
-    swapTo(track);
-  };
-
-  /**
-   * Brings a track in and takes everything else out.
-   *
-   * Cancelling the previous fade before starting is what makes rapid room
-   * changes safe: any voice that was still fading is released here rather than
-   * left to finish, so three doorways in two seconds cannot stack up four
-   * elements or orphan one at a low volume for ever.
-   */
-  const swapTo = (track: TrackId) => {
-    const src = resolve(track);
-    if (src === null) {
-      fail('This browser cannot play either of the audio formats the game ships.');
-      return;
-    }
-
-    stopFade();
-
-    const existing = voices.find((voice) => voice.track === track);
-    if (existing && voices.length === 1) {
-      // Already the only thing playing; just make sure it is up and audible.
-      existing.level = 1;
-      apply();
-      start(existing);
-      return;
-    }
-
-    /*
-     * Never more than two sources: the one coming in, and one to fade from.
-     *
-     * The voice we are switching *to* is kept even if it is mid-fade-out —
-     * turning round in a doorway must not release the element that is already
-     * loaded and then make a second one. Everything else beyond the most
-     * recent is released now; it is inaudible mid-fade anyway, and keeping it
-     * would mean three elements downloading at once.
-     */
-    const others = voices.filter((voice) => voice !== existing);
-    for (const voice of others.slice(0, -1)) release(voice);
-    const fadeFrom = others.slice(-1);
-
-    let incoming: Voice;
-    if (existing) {
-      incoming = existing;
-      incoming.level = 0;
-      // Incoming last, so `current()` names it.
-      voices = [...fadeFrom, incoming];
-    } else {
-      voices = fadeFrom;
-      let el: HTMLAudioElement;
-      try {
-        el = create(src);
-      } catch {
-        fail('The audio could not be started.');
-        return;
-      }
-      el.loop = loops(track);
-      el.preload = 'auto';
-      el.addEventListener?.('error', () => fail('A music track could not be loaded.'));
-      if (el.dataset) el.dataset.track = track;
-      incoming = { el, track, level: 0 };
-      /*
-       * Loop it again, by hand.
-       *
-       * `loop = true` is set above and is what does the work where it works —
-       * but it is not reliable everywhere. Safari has a long history of
-       * ignoring it on `audio`, and a media element that reaches its end for
-       * any other reason (a stalled seek at the wrap, a decoder giving up on
-       * the last packet) also just stops. `ended` is the signal that it has
-       * happened, and the answer is the same in every case: go back to the
-       * start and carry on.
-       *
-       * Where `loop` works this never fires, so it costs nothing. The guard
-       * matters: a released voice, a muted controller or a hidden page must
-       * not be restarted by a late event.
-       */
-      const again = incoming;
-      el.addEventListener?.('ended', () => {
-        if (destroyed || !enabled || !visible) return;
-        if (!loops(again.track)) return;
-        if (!voices.includes(again)) return;
-        try {
-          again.el.currentTime = 0;
-        } catch {
-          /* an element that will not seek cannot be helped */
-        }
-        start(again);
-      });
-      voices.push(incoming);
-    }
-
-    const outgoing = voices.filter((voice) => voice !== incoming);
-    if (outgoing.length === 0) {
-      // Nothing to fade from: come up over the same interval rather than
-      // starting at full volume mid-sentence.
-      incoming.level = 0;
-      apply();
-      start(incoming);
-      runFade(incoming, []);
-      return;
-    }
-
-    apply();
-    start(incoming);
-    runFade(incoming, outgoing);
+    void swapTo(track);
   };
 
   return {
     enable() {
       if (destroyed) return;
       enabled = true;
-      setBlocked(false);
-      if (wanted !== null) swapTo(wanted);
+      const live = context();
+      if (!live) return;
+      /*
+       * This runs inside the click, which is what iOS and Chrome's autoplay
+       * policy are waiting for. Resuming here unlocks the context for every
+       * later programmatic start — including the second voice of a crossfade,
+       * which is the thing a second media element could never get on iOS.
+       */
+      try {
+        const resumed: unknown = live.state === 'suspended' ? live.resume() : null;
+        if (resumed && typeof (resumed as Promise<void>).then === 'function') {
+          (resumed as Promise<void>).then(
+            () => {
+              if (!destroyed) setBlocked(false);
+            },
+            () => {
+              if (!destroyed) setBlocked(true);
+            }
+          );
+        } else {
+          setBlocked(false);
+        }
+      } catch {
+        setBlocked(true);
+      }
+      expose();
+      if (wanted !== null && voices.length === 0) void swapTo(wanted);
     },
 
     disable() {
       enabled = false;
-      stopFade();
-      for (const voice of voices) release(voice);
-      voices = [];
+      stopEverything(false);
       setBlocked(false);
+      trim();
     },
 
     setVolume(next) {
       volume = Math.max(0, Math.min(1, Number.isFinite(next) ? next : DEFAULT_VOLUME));
-      // Live, and without restarting anything — including mid-crossfade, where
-      // the per-voice levels are untouched and only the master changes.
-      apply();
+      /*
+       * One master gain, so this is live and immediate and does not disturb a
+       * crossfade in progress: the per-voice ramps are untouched and only what
+       * they feed into changes. This is also the part that simply did not work
+       * on iOS with media elements, where `volume` is read-only.
+       */
+      if (!master) return;
+      try {
+        /*
+         * A plain assignment, not `setValueAtTime`.
+         *
+         * The master carries no automation — every ramp is on a voice gain —
+         * so the baseline *is* the value, and assigning it takes effect on the
+         * next render quantum. Scheduling at `currentTime` instead leaves
+         * `gain.value` reading the old number for the current quantum, which
+         * is how the volume slider was silently a no-op.
+         */
+        master.gain.value = volume;
+      } catch {
+        /* a test double */
+      }
+      expose();
     },
 
     setTrack,
@@ -391,49 +464,65 @@ export function createSoundtrack(options: SoundtrackOptions): Soundtrack {
     setPageVisible(next) {
       if (visible === next) return;
       visible = next;
-      if (destroyed) return;
+      if (destroyed || !ctx) return;
+      /*
+       * Suspending the context stops its clock where it is, so coming back
+       * resumes mid-bar rather than restarting the track. Nothing is torn down
+       * and nothing is fetched again.
+       */
       if (!next) {
-        /*
-         * Hidden: pause rather than release, so coming back resumes the same
-         * position instead of restarting the track. Any fade in flight is
-         * abandoned at its current levels, which is where it would have ended
-         * up in a moment anyway.
-         */
-        stopFade();
-        for (const voice of voices) {
-          try {
-            voice.el.pause();
-          } catch {
-            /* ignore */
-          }
+        try {
+          void ctx.suspend();
+        } catch {
+          /* ignore */
         }
         return;
       }
-      if (!enabled || wanted === null) return;
-      // Visible again. If a fade was cut short, the voice we want may be at a
-      // partial level; put it up and play.
-      const live = voices.find((voice) => voice.track === wanted);
-      if (live) {
-        live.level = 1;
-        for (const voice of voices) if (voice !== live) release(voice);
-        voices = [live];
-        apply();
-        start(live);
-      } else {
-        swapTo(wanted);
+      if (!enabled) return;
+      try {
+        const resumed: unknown = ctx.resume();
+        if (resumed && typeof (resumed as Promise<void>).then === 'function') {
+          (resumed as Promise<void>).then(
+            () => {
+              if (!destroyed) setBlocked(false);
+            },
+            () => {
+              // Some browsers want a fresh gesture after a spell in the
+              // background. Ask for one, once.
+              if (!destroyed) setBlocked(true);
+            }
+          );
+        }
+      } catch {
+        /* ignore */
       }
+      // A track the story moved to while we were away.
+      if (wanted !== null && !voices.some((v) => v.track === wanted)) void swapTo(wanted);
     },
 
     destroy() {
       destroyed = true;
       enabled = false;
-      stopFade();
-      for (const voice of voices) release(voice);
-      voices = [];
+      stopEverything(false);
+      buffers.clear();
+      loading.clear();
+      const live = ctx;
+      ctx = null;
+      master = null;
+      try {
+        void live?.close();
+      } catch {
+        /* already closed */
+      }
+      expose();
     },
 
     isBlocked: () => blocked,
-    current: () => (voices.length === 0 ? null : voices[voices.length - 1]!.track),
+    current: () => {
+      const live = voices.filter((v) => !v.dying);
+      return live.length === 0 ? null : live[live.length - 1]!.track;
+    },
     voices: () => voices.length,
+    cached: () => buffers.size,
   };
 }

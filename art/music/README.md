@@ -97,14 +97,29 @@ Measured, not assumed:
   to PCM returns 2,817,770 frames against the master's 2,817,770 — exactly
   equal, so LAME's Xing/LAME tag is present and its own decoder honours it.
 
-**What has not been established:** whether a given browser honours that tag
-when *looping a media element*, as opposed to decoding the file. A browser that
-ignores it will insert roughly 20–30 ms of encoder delay at each wrap on the MP3
-path. That is the main reason WebM/Opus is preferred where it is available, and
-it is why the loop is described here as measured rather than as seamless.
+### None of that governs playback any more
 
-**Nobody has listened to a loop wrap.** The automated check confirms the clock
-wraps and playback continues; it cannot hear a click. See
+**This is where the first implementation was wrong, and it was wrong only on
+iOS.** It crossfaded two `HTMLAudioElement`s using `volume`, which works on
+desktop and cannot work on iOS, where Apple documents that *"only one audio or
+video stream can play at a time"* and that `volume` *"is not settable in
+JavaScript"*. On a real iPhone each track played once and then stopped.
+
+The controller now decodes each track into an `AudioBuffer` and loops an
+`AudioBufferSourceNode`. That loop is sample-exact over PCM: no container, no
+seek at the wrap, no encoder padding, nothing to stall. So the gapless-tag
+question above no longer affects anything — the measurements are kept because
+they describe the *files*, which are unchanged.
+
+For the record, the media-element behaviour that was measured before the
+change: Chromium wrapped cleanly, with a stall of ~17 ms (WebM/Opus) and ~33 ms
+(MP3) — one or two frames, since looping an element performs a real seek
+(`seeking`, `waiting`, `seeked`).
+
+**Verified after the change:** a real track played past its own length keeps
+sounding — peak 0.107 across twelve sampling windows past the 59.6 s mark, with
+no silent window. **Nobody has listened to a wrap**, and nobody has confirmed
+the iOS fix on a device. See
 [`docs/KNOWN_ISSUES.md`](../../docs/KNOWN_ISSUES.md).
 
 ## Measuring again

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState } from '../engine/types';
 import { trackFor } from '../content/music';
-import { TRACK_SOURCES, pickSource } from '../assets/music';
+import { TRACK_SOURCES, pickSources } from '../assets/music';
 import { createSoundtrack, type Soundtrack } from './soundtrack';
 
 /**
@@ -53,7 +53,7 @@ export function useSoundtrack({
    */
   useEffect(() => {
     const soundtrack = make({
-      resolve: (track) => pickSource(TRACK_SOURCES[track]),
+      resolve: (track) => pickSources(TRACK_SOURCES[track]),
       onBlockedChange: setBlocked,
     });
     deck.current = soundtrack;

@@ -1,10 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { StrictMode } from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { App } from './App';
 import { KEYS } from '../persistence/storage';
 import { TRACK_SOURCES } from '../assets/music';
-import { FADE_MS } from './soundtrack';
 
 /**
  * The soundtrack, wired to the real shell.
@@ -15,93 +14,148 @@ import { FADE_MS } from './soundtrack';
  * and reports no duration, so there is nothing to observe through it.
  */
 
-interface Spy {
-  src: string;
+interface StartedSource {
+  url: string;
   loop: boolean;
-  volume: number;
-  plays: number;
-  pauses: number;
-  cleared: boolean;
+  stopped: boolean;
 }
 
-/*
- * Every element the app built. The format probe (`canPlayType`) makes one and
- * never gives it a source, so "a voice" means one with a source.
+/**
+ * A fake audio graph and a fake network.
+ *
+ * jsdom has neither Web Audio nor a decoder, so the app is given a context it
+ * can drive and a `fetch` that hands back a buffer tagged with the URL it came
+ * from — which is how a test can say "the present village is playing" without
+ * a sound card.
  */
-let built: Spy[] = [];
-const elements = () => built.filter((el) => el.src !== '');
-const live = () => elements().filter((el) => !el.cleared);
-/** The track name inside whatever URL Vite gave the import. */
-const trackOf = (el: Spy) =>
-  (Object.entries(TRACK_SOURCES).find(
-    ([, s]) => el.src.endsWith(s.webm) || el.src.endsWith(s.mp3)
-  ) ?? ['?'])[0];
-const playing = () => live().map(trackOf);
+let started: StartedSource[] = [];
+let fetched: string[] = [];
+let contexts: FakeContext[] = [];
+let masterValue = () => contexts.at(-1)?.master?.gain.value ?? null;
 
-class FakeAudio {
-  src = '';
-  loop = false;
-  volume = 1;
-  preload = '';
-  private spy: Spy;
+const live = () => started.filter((s) => !s.stopped);
+const trackOf = (url: string) =>
+  (Object.entries(TRACK_SOURCES).find(([, s]) => url.endsWith(s.webm) || url.endsWith(s.mp3)) ?? [
+    '?',
+  ])[0];
+const playing = () => live().map((s) => trackOf(s.url));
+
+/** Buffers carry the URL they were decoded from. */
+const bufferUrls = new Map<ArrayBuffer, string>();
+
+class FakeParam {
+  value = 1;
+  setValueAtTime(v: number) {
+    this.value = v;
+    return this;
+  }
+  exponentialRampToValueAtTime() {
+    return this;
+  }
+  cancelScheduledValues() {
+    return this;
+  }
+}
+
+class FakeGain {
+  gain = new FakeParam();
+  connect() {}
+  disconnect() {}
+}
+
+class FakeContext {
+  state = 'suspended';
+  currentTime = 0;
+  destination = {};
+  master: FakeGain | null = null;
+  closed = false;
+  suspends = 0;
   constructor() {
-    this.spy = { src: '', loop: false, volume: 1, plays: 0, pauses: 0, cleared: false };
-    built.push(this.spy);
-    // Keep the spy in step with whatever the controller assigns.
-    return new Proxy(this, {
-      set: (target, key, value) => {
-        (target as unknown as Record<string, unknown>)[key as string] = value;
-        if (key === 'src') this.spy.src = String(value);
-        if (key === 'loop') this.spy.loop = Boolean(value);
-        if (key === 'volume') this.spy.volume = Number(value);
-        return true;
+    contexts.push(this);
+  }
+  createGain() {
+    const gain = new FakeGain();
+    // The first gain made is the master.
+    this.master ??= gain;
+    return gain;
+  }
+  createBufferSource() {
+    const record: StartedSource = { url: '', loop: false, stopped: false };
+    return {
+      set buffer(value: { url?: string } | null) {
+        record.url = value?.url ?? '';
       },
-    });
+      get buffer() {
+        return { url: record.url };
+      },
+      set loop(value: boolean) {
+        record.loop = value;
+      },
+      get loop() {
+        return record.loop;
+      },
+      onended: null,
+      connect() {},
+      disconnect() {},
+      start() {
+        started.push(record);
+      },
+      stop() {
+        record.stopped = true;
+      },
+    };
   }
-  canPlayType(type: string) {
-    return type.includes('webm') ? 'probably' : 'maybe';
+  decodeAudioData(bytes: ArrayBuffer) {
+    return Promise.resolve({ url: bufferUrls.get(bytes) ?? '', duration: 60 });
   }
-  play() {
-    this.spy.plays += 1;
+  resume() {
+    this.state = 'running';
     return Promise.resolve();
   }
-  pause() {
-    this.spy.pauses += 1;
+  suspend() {
+    this.suspends += 1;
+    this.state = 'suspended';
+    return Promise.resolve();
   }
-  load() {}
-  removeAttribute() {
-    this.spy.cleared = true;
+  close() {
+    this.closed = true;
+    return Promise.resolve();
   }
-  addEventListener() {}
-  removeEventListener() {}
-  setAttribute() {}
-  remove() {}
-  hidden = false;
-  dataset: Record<string, string> = {};
 }
 
-const original = globalThis.Audio;
+const originalContext = (globalThis as Record<string, unknown>).AudioContext;
+const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
   localStorage.clear();
-  built = [];
-  globalThis.Audio = FakeAudio as unknown as typeof Audio;
-  vi.useFakeTimers({ shouldAdvanceTime: true });
+  started = [];
+  fetched = [];
+  contexts = [];
+  bufferUrls.clear();
+  (globalThis as Record<string, unknown>).AudioContext = FakeContext;
+  globalThis.fetch = (async (input: string) => {
+    const url = String(input);
+    fetched.push(url);
+    const bytes = new ArrayBuffer(8);
+    bufferUrls.set(bytes, url);
+    return { ok: true, arrayBuffer: async () => bytes } as unknown as Response;
+  }) as typeof fetch;
 });
 
 afterEach(() => {
   cleanup();
-  vi.useRealTimers();
-  globalThis.Audio = original;
+  (globalThis as Record<string, unknown>).AudioContext = originalContext;
+  globalThis.fetch = originalFetch;
 });
 
-const settle = () => vi.advanceTimersByTime(FADE_MS + 200);
+/** Lets the fetch-and-decode chain settle. */
+async function settle() {
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+}
 
 /** Starts a game with music enabled from the title screen's own control. */
 async function play(mode: 'select' | 'type' = 'select') {
-  const user = (await import('@testing-library/user-event')).default.setup({
-    advanceTimers: vi.advanceTimersByTime,
-  });
+  const user = (await import('@testing-library/user-event')).default.setup();
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'Enable music' }));
   await user.click(screen.getByRole('button', { name: 'New Game' }));
@@ -109,22 +163,20 @@ async function play(mode: 'select' | 'type' = 'select') {
     await user.click(screen.getByRole('radio', { name: /Type-only/ }));
   }
   await user.click(screen.getByRole('button', { name: 'Play as Basil' }));
-  settle();
+  await settle();
   return user;
 }
 
 describe('the title screen', () => {
   it('plays nothing at all until asked', async () => {
-    const user = (await import('@testing-library/user-event')).default.setup({
-      advanceTimers: vi.advanceTimersByTime,
-    });
+    const user = (await import('@testing-library/user-event')).default.setup();
     render(<App />);
-    expect(elements()).toHaveLength(0);
+    expect(started).toHaveLength(0);
     // Enabling music on the title screen still plays nothing: no track is
     // approved for the title, and this is only the gesture.
     await user.click(screen.getByRole('button', { name: 'Enable music' }));
-    settle();
-    expect(elements()).toHaveLength(0);
+    await settle();
+    expect(started).toHaveLength(0);
   });
 
   it('offers the control without blocking the way past it', async () => {
@@ -136,14 +188,12 @@ describe('the title screen', () => {
   });
 
   it('plays nothing when the player never asks', async () => {
-    const user = (await import('@testing-library/user-event')).default.setup({
-      advanceTimers: vi.advanceTimersByTime,
-    });
+    const user = (await import('@testing-library/user-event')).default.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'New Game' }));
     await user.click(screen.getByRole('button', { name: 'Play as Basil' }));
-    settle();
-    expect(elements()).toHaveLength(0);
+    await settle();
+    expect(started).toHaveLength(0);
     // And the game is perfectly playable.
     expect(screen.getByRole('log', { name: 'Story so far' }).textContent).toMatch(/sixteen/);
   });
@@ -154,17 +204,17 @@ describe('the track follows the place', () => {
     await play();
     expect(playing()).toEqual(['present_village']);
     expect(live()[0]!.loop).toBe(true);
-    expect(live()[0]!.volume).toBeCloseTo(0.25, 2);
+    expect(masterValue()).toBeCloseTo(0.25, 2);
   });
 
   it('keeps playing while the room changes inside one area', async () => {
     const user = await play();
     const panel = () => within(screen.getByRole('region', { name: 'Actions' }));
     await user.click(panel().getByRole('button', { name: /lane down to the square/ }));
-    settle();
-    // home -> square is one area: the same element, never replayed.
-    expect(elements()).toHaveLength(1);
-    expect(live()[0]!.plays).toBe(1);
+    await settle();
+    // home -> square is one area: the same source, never restarted.
+    expect(started).toHaveLength(1);
+    expect(fetched).toHaveLength(1);
   });
 
   it('crossfades at the cave mouth, with two sources and then one', async () => {
@@ -175,17 +225,17 @@ describe('the track follows the place', () => {
       await user.clear(field);
       await user.type(field, `${line}{Enter}`);
     }
-    settle();
+    await settle();
     expect(playing()).toEqual(['present_village']);
-    expect(elements()).toHaveLength(1);
+    expect(started).toHaveLength(1);
 
     // Into the mouth: the cave theme takes over.
     await user.clear(field);
     await user.type(field, 'west{Enter}');
-    expect(live()).toHaveLength(2);
-    expect(playing()).toEqual(['present_village', 'present_cave']);
-    settle();
     expect(playing()).toEqual(['present_cave']);
+    expect(started).toHaveLength(2);
+    // The outgoing one was told to stop when its ramp lands.
+    expect(started[0]!.stopped).toBe(true);
   });
 });
 
@@ -226,17 +276,15 @@ describe('the ending', () => {
     // completed game has to select the epilogue, and still ask permission.
     localStorage.setItem(KEYS.save, serialize(await finishedState()));
 
-    const user = (await import('@testing-library/user-event')).default.setup({
-      advanceTimers: vi.advanceTimersByTime,
-    });
+    const user = (await import('@testing-library/user-event')).default.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Enable music' }));
-    expect(elements()).toHaveLength(0);
+    expect(started).toHaveLength(0);
 
     await user.click(screen.getByRole('button', { name: /^Continue/ }));
-    settle();
+    await settle();
     expect(playing()).toEqual(['epilogue']);
-    const el = live()[0]!;
+    const source = live()[0]!;
 
     // Reading it again is reading, not replaying: the track carries on.
     await user.click(
@@ -244,23 +292,21 @@ describe('the ending', () => {
         name: 'Read the ending again',
       })
     );
-    settle();
-    expect(elements()).toHaveLength(1);
-    expect(live()[0]).toBe(el);
-    expect(el.plays).toBe(1);
+    await settle();
+    expect(started).toHaveLength(1);
+    expect(live()[0]).toBe(source);
+    expect(fetched).toHaveLength(1);
   });
 
   it('crossfades from the confrontation to the epilogue, not from the cave', async () => {
     const { serialize } = await import('../persistence/storage');
     localStorage.setItem(KEYS.save, serialize(await atTheReturn()));
 
-    const user = (await import('@testing-library/user-event')).default.setup({
-      advanceTimers: vi.advanceTimersByTime,
-    });
+    const user = (await import('@testing-library/user-event')).default.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Enable music' }));
     await user.click(screen.getByRole('button', { name: /^Continue/ }));
-    settle();
+    await settle();
     // The last chapter's room would otherwise take the present-cave theme.
     expect(playing()).toEqual(['final_boss']);
 
@@ -270,25 +316,25 @@ describe('the ending', () => {
         name: /Close|Done/,
       })
     );
-    settle();
+    await settle();
     // Opening and closing settings is not a change of place.
-    expect(elements()).toHaveLength(1);
+    expect(started).toHaveLength(1);
   });
 });
 
 describe('settings', () => {
   it('mutes at once and resumes the same track', async () => {
     const user = await play();
-    const el = live()[0]!;
+    const source = live()[0]!;
 
     await user.click(screen.getByRole('button', { name: 'Settings' }));
     const dialog = () => screen.getByRole('dialog', { name: 'Settings' });
     await user.click(within(dialog()).getByRole('checkbox', { name: 'Music' }));
     expect(live()).toHaveLength(0);
-    expect(el.pauses).toBeGreaterThan(0);
+    expect(source.stopped).toBe(true);
 
     await user.click(within(dialog()).getByRole('checkbox', { name: 'Music' }));
-    settle();
+    await settle();
     expect(playing()).toEqual(['present_village']);
   });
 
@@ -297,14 +343,14 @@ describe('settings', () => {
     await user.click(screen.getByRole('button', { name: 'Settings' }));
     const dialog = screen.getByRole('dialog', { name: 'Settings' });
     const slider = within(dialog).getByRole('slider', { name: 'Volume' });
-    const el = live()[0]!;
-    const plays = el.plays;
+    const sources = started.length;
 
     // A range input is moved, not typed in: fireEvent sets the value through
     // React's own value tracker, which a raw dispatch does not.
     fireEvent.change(slider, { target: { value: '70' } });
-    expect(el.volume).toBeCloseTo(0.7, 2);
-    expect(el.plays).toBe(plays);
+    // One master gain, so nothing restarts.
+    expect(masterValue()).toBeCloseTo(0.7, 2);
+    expect(started).toHaveLength(sources);
     expect(within(dialog).getByText('70%')).toBeTruthy();
   });
 
@@ -313,7 +359,7 @@ describe('settings', () => {
     expect(JSON.parse(localStorage.getItem(KEYS.prefs)!).music).toBe(true);
     expect(JSON.parse(localStorage.getItem(KEYS.prefs)!).musicVolume).toBe(0.25);
     cleanup();
-    built = [];
+    started = [];
 
     // A reload with the preference on. The control says "Music on" because the
     // stored answer is yes, and the track starts from the stored preference —
@@ -329,13 +375,12 @@ describe('teardown', () => {
     expect(live()).toHaveLength(1);
     cleanup();
     expect(live()).toHaveLength(0);
-    expect(elements()[0]!.pauses).toBeGreaterThan(0);
+    expect(started[0]!.stopped).toBe(true);
+    expect(contexts.at(-1)!.closed).toBe(true);
   });
 
   it('does not double up under React development double-invoke', async () => {
-    const user = (await import('@testing-library/user-event')).default.setup({
-      advanceTimers: vi.advanceTimersByTime,
-    });
+    const user = (await import('@testing-library/user-event')).default.setup();
     render(
       <StrictMode>
         <App />
@@ -344,7 +389,7 @@ describe('teardown', () => {
     await user.click(screen.getByRole('button', { name: 'Enable music' }));
     await user.click(screen.getByRole('button', { name: 'New Game' }));
     await user.click(screen.getByRole('button', { name: 'Play as Basil' }));
-    settle();
+    await settle();
     /*
      * StrictMode mounts, tears down and mounts again. If the first controller
      * were not destroyed, its element would still be playing the same track

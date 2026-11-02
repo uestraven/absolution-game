@@ -41,10 +41,10 @@ own last response at entry 24, fully visible, with the stale mark's entry 7 now
 | --- | --- |
 | `npm ci` | clean install from `package-lock.json`, 0 vulnerabilities |
 | `npm run typecheck` (`tsc --noEmit`) | clean, no diagnostics |
-| `npm run test` (vitest) | **514 passed / 514**, 17 files |
+| `npm run test` (vitest) | **511 passed / 511**, 17 files |
 | `npm run build:only` (vite) | built; emits the 500kB chunk-size advisory, [discussed below](#5-bundle-and-packaging) |
 | `node scripts/verify-browser.mjs dist` | **127 passed / 127** |
-| `node scripts/verify-served.mjs dist` | **30 passed / 30** |
+| `node scripts/verify-served.mjs dist` | **31 passed / 31** |
 
 `npm run verify` runs the build and both browser passes in sequence.
 
@@ -282,6 +282,8 @@ the mouth.** `cave_path` is the open hill and keeps the village theme;
 | Stop and clean up on teardown | `destroy()` pauses, clears sources, removes elements and kills the timer; the controller is inert afterwards. A test mounts, destroys and mounts again — React's development double-invoke — and finds one source, not two |
 | Title screen stops gameplay music; no title theme | `playing` is false outside play, so `trackFor` is never consulted there. Enabling music on the title screen plays nothing, by design and by test |
 | Seven area tracks loop; epilogue inspected | All eight loop. The epilogue has **no composed ending** — its level holds flat through the final four seconds — so playing it once would end the game mid-phrase. Measurements and the method in `art/music/README.md` |
+| Looping works on iOS | **Fixed after a real-device report.** Media elements cannot do this job on iOS: Apple documents one audio stream at a time (so a crossfade is impossible) and `volume` as unsettable from script (so the 25% default, the fades and the slider were silently no-ops). The controller now decodes to an `AudioBuffer` and loops an `AudioBufferSourceNode` — sample-exact over PCM, no container, no seek, nothing to stall. Verified by playing a real track past its own length: peak 0.107 across twelve windows, no silent window. **Not yet confirmed on a device** |
+| There is a signal, not just a running clock | An analyser tapped onto the master bus during a real playthrough: peak 0.1344 |
 | Looping does not depend on `loop = true` | The flag is set **and** `ended` restarts the track by hand, because Safari has a long history of ignoring it on `audio`. Guarded so a released voice, a muted controller, a hidden page or a destroyed controller is never restarted by a late event. Eight unit tests, plus a served-build check that provokes `ended` against the real asset: 12.13s → 0.62s, still playing |
 | Loop seams inspected, not assumed | No leading or trailing silence on any track; the level step across the wrap is 0.2–1.6 dB; the MP3s carry correct gapless tags (a decode round-trip returns the master's exact frame count). Observed in the browser: the clock wraps and playback continues, with the stall across a natural wrap measured at ~17ms (WebM/Opus) and ~33ms (MP3). **Not established: whether a browser honours the gapless tag when looping, and nobody has listened.** See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) #11 |
 | No musical material cut or altered | The conversions are whole-file encodes. Nothing trimmed, faded, re-normalised or re-timed |

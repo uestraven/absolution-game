@@ -183,6 +183,14 @@ player-visible credit before any deployment, or replace the tracks.
 
 ## 11. Nobody has listened to the music in the game — *limitation*
 
+> **One real defect found here and fixed:** the soundtrack played each track
+> once and then fell silent on iOS. Cause: two media elements crossfaded with
+> `volume`, which iOS forbids on both counts — one audio stream at a time, and
+> `volume` not settable from script. The controller now decodes to an
+> `AudioBuffer` and loops in the audio graph. Reported on iOS Chrome (WebKit)
+> against the deployed site; **not yet confirmed fixed on a device.**
+
+
 **What:** Playback is verified by machine, not by ear. The served-build pass
 confirms that the right track is fetched, that the clock advances, that the
 volume is 0.25, that a crossfade has two audible sources and then one, that the
@@ -195,7 +203,12 @@ its room.
 - **Whether the loop seams are audible.** The masters have no leading or
   trailing silence and the level step across the wrap is 0.2–1.6 dB, so there
   is no hole — but three of the eight step by over a decibel, which may be
-  heard as a bump. Measurements in `art/music/README.md`.
+  heard as a bump. That is a property of the recordings, not of playback: the
+  loop itself is now sample-exact. Measurements in `art/music/README.md`.
+- **Whether iOS is actually fixed.** The cause is understood, the mechanism
+  that caused it is gone, and the replacement is what Apple's own documented
+  constraints leave available. **It was fixed from documentation and reasoning,
+  not from a reproduction**, because there is no iOS browser here.
 - **Whether the wrap is audible.** Measured in Chromium across a natural loop,
   with the whole file buffered, the stall is **~17 ms (WebM/Opus)** and **~33 ms
   (MP3)** — one or two frames. A media element seeks to loop (`seeking`,
@@ -221,21 +234,21 @@ Chromium on Linux.
 
 **Known platform limits that apply regardless:**
 
-- **iOS Safari requires a user gesture per audio element**, not merely once per
-  page, and is stricter than desktop about what counts. The crossfade creates a
-  second element mid-play, without a fresh gesture: if iOS refuses it, the
-  outgoing track fades out and the incoming one stays silent, so a room change
-  could land in silence until the next gesture. The controller handles the
-  rejection quietly and the *Start music* prompt reappears, but **the
-  crossfade's second source is the most likely thing to fail on iOS and it has
-  not been tested there.**
-- **iOS respects the hardware mute switch** for media-element audio in some
-  configurations, so music can be silent with everything set correctly.
+- **One gesture unlocks the whole graph**, which is why Web Audio is the right
+  shape here: the `AudioContext` is resumed inside the click, and every later
+  programmatic start — including the second voice of a crossfade — runs inside
+  the unlocked context. A second *media element* could never get that, which is
+  what broke it the first time.
+- **iOS respects the hardware mute switch** in some configurations, so music
+  can be silent with everything set correctly in the game.
 - **Backgrounding on mobile** suspends audio by OS policy as well as by the
   `visibilitychange` handling here; the two should agree, and that has not been
   observed on a device.
-- MP3 is the format iOS gets, so it is also the path with the loop-seam
-  question above.
+- **MP3 is the format every iOS browser gets**, since WebKit supports neither
+  Vorbis nor Opus in Ogg or WebM. It decodes to the same PCM, so the loop is
+  the same loop.
+- **Memory.** Two decoded minutes is about 21MB of float32. Comfortable on
+  desktop; untested against a low-memory phone.
 
 **Workaround:** none needed to play — music is optional everywhere. Test on a
 real iPhone and a real Android device before claiming mobile audio works.
