@@ -72,6 +72,8 @@ describe('selectable mode', () => {
   it('expands a thing to reveal its ordinary verbs', async () => {
     const user = await startPlaying('select');
     const panel = screen.getByRole('region', { name: 'Actions' });
+    // Things are behind their category now, so the story gets the screen.
+    await user.click(within(panel).getByRole('button', { name: /^Things/ }));
     await user.click(within(panel).getByRole('button', { name: /hooded lantern/ }));
     expect(within(panel).getByRole('button', { name: 'Take' })).toBeTruthy();
     await user.click(within(panel).getByRole('button', { name: 'Take' }));
@@ -143,6 +145,7 @@ describe('dialogue options in each mode', () => {
     const user = await startPlaying('select');
     const panel = () => within(screen.getByRole('region', { name: 'Actions' }));
     await user.click(panel().getByRole('button', { name: /lane down to the square/ }));
+    await user.click(panel().getByRole('button', { name: /^People/ }));
     await user.click(panel().getByRole('button', { name: 'Talk to Sage' }));
 
     expect(panel().getByRole('button', { name: '1. the prophecy' })).toBeTruthy();
@@ -176,10 +179,31 @@ describe('accessibility affordances', () => {
     expect(log.getAttribute('tabindex')).toBe('0');
   });
 
-  it('shows the current objective as text, not only as colour', async () => {
+  it('keeps the location visible without spending lines on the rest', async () => {
     await startPlaying('select');
+    // The location stays on screen; the subtitle and objective fold away, so
+    // the story gets those lines back.
+    expect(screen.getByRole('button', { name: /show subtitle and objective/ })).toBeTruthy();
+    expect(screen.getAllByText('Your Room').length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText('Current objective')).toBeNull();
+  });
+
+  it('shows the objective as text, one keystroke away, when expanded', async () => {
+    const user = await startPlaying('select');
+    const toggle = screen.getByRole('button', { name: /show subtitle and objective/ });
+    await user.click(toggle);
     const objective = screen.getByLabelText('Current objective');
     expect(objective.textContent).toContain('Undertake the rite');
+    // And the choice is remembered, so it is not a per-session nuisance.
+    expect(JSON.parse(localStorage.getItem('cave-of-absolution:prefs')!).showStatus).toBe(true);
+  });
+
+  it('reaches the disclosure with the keyboard', async () => {
+    const user = await startPlaying('select');
+    const toggle = screen.getByRole('button', { name: /show subtitle and objective/ });
+    toggle.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByLabelText('Current objective')).toBeTruthy();
   });
 
   it('does not steal focus from the transcript while reading', async () => {

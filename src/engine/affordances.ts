@@ -198,12 +198,12 @@ export function getAffordances(state: GameState): Affordances {
   });
 
   const meta: Affordance[] = [
-    { key: 'meta-look', label: 'Look around', action: { type: 'LOOK' } },
-    { key: 'meta-exits', label: 'Ways out', action: { type: 'EXITS' } },
-    { key: 'meta-inventory', label: 'Inventory', action: { type: 'INVENTORY' } },
-    { key: 'meta-journal', label: 'Journal', action: { type: 'JOURNAL' } },
-    { key: 'meta-hint', label: 'Hint', action: { type: 'HINT' } },
-    { key: 'meta-help', label: 'Help', action: { type: 'HELP' } },
+    { key: 'meta-look', label: 'look', action: { type: 'LOOK' } },
+    { key: 'meta-exits', label: 'exits', action: { type: 'EXITS' } },
+    { key: 'meta-inventory', label: 'inventory', action: { type: 'INVENTORY' } },
+    { key: 'meta-journal', label: 'journal', action: { type: 'JOURNAL' } },
+    { key: 'meta-hint', label: 'hint', action: { type: 'HINT' } },
+    { key: 'meta-help', label: 'help', action: { type: 'HELP' } },
   ];
 
   // Items resting in a fixture can always be recovered.

@@ -56,7 +56,7 @@ export function TypeInput({ onSubmit, placeholder, label, disabled }: TypeInputP
 
   return (
     <form className="type-input" onSubmit={submit}>
-      <label className="type-label" htmlFor="command-input">
+      <label className="sr-only" htmlFor="command-input">
         {label}
       </label>
       <div className="type-row">
@@ -85,9 +85,11 @@ export function TypeInput({ onSubmit, placeholder, label, disabled }: TypeInputP
           enter
         </button>
       </div>
-      <p className="type-hint">
-        look · examine &lt;thing&gt; · go &lt;exit&gt; · talk to &lt;person&gt; · help · hint
-      </p>
+      {value.length === 0 ? (
+        <p className="type-hint">
+          look · examine &lt;thing&gt; · go &lt;exit&gt; · talk to &lt;person&gt; · help · hint
+        </p>
+      ) : null}
     </form>
   );
 }

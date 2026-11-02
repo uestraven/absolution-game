@@ -2,6 +2,22 @@ import { useState } from 'react';
 import type { Affordance, Affordances } from '../engine/affordances';
 import type { GameAction } from '../engine/types';
 
+type Category = 'go' | 'people' | 'things';
+
+const CATEGORIES: Category[] = ['go', 'people', 'things'];
+
+const CATEGORY_LABEL: Record<Category, string> = {
+  go: 'Go',
+  people: 'People',
+  things: 'Things',
+};
+
+function countFor(category: Category, affordances: Affordances): number {
+  if (category === 'go') return affordances.exits.length;
+  if (category === 'people') return affordances.people.length;
+  return affordances.objects.length + affordances.items.length;
+}
+
 export interface SelectPanelProps {
   affordances: Affordances;
   onAct: (action: GameAction, label: string) => void;
@@ -11,18 +27,31 @@ function ActionButton({
   affordance,
   onAct,
   variant,
+  compact,
 }: {
   affordance: Affordance;
   onAct: (action: GameAction, label: string) => void;
   variant?: string;
+  compact?: boolean;
 }) {
+  /*
+   * Chips drop a leading article and the parenthesised compass direction: a
+   * reader who is clicking does not need "(north)", and on a 360px screen
+   * three exits with it wrap to three rows instead of two. The full label
+   * stays the accessible name and the transcript echo, so screen readers,
+   * typed play and the history all still see the direction.
+   */
+  const shown = compact
+    ? affordance.label.replace(/^the\s+/i, '').replace(/\s*\([^)]*\)\s*$/, '')
+    : affordance.label;
   return (
     <button
       type="button"
       className={`btn ${variant ?? ''}`}
+      {...(shown === affordance.label ? {} : { 'aria-label': affordance.label })}
       onClick={() => onAct(affordance.action, affordance.label)}
     >
-      {affordance.label}
+      {shown}
     </button>
   );
 }
@@ -37,8 +66,13 @@ function ActionButton({
  * is never carried by colour alone.
  */
 export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
-  const [openObject, setOpenObject] = useState<string | null>(null);
+  /** Which chip is expanded, prefixed `o:` for an object and `i:` for an item. */
+  const [openThing, setOpenThing] = useState<string | null>(null);
+  const [openCategory, setOpenCategory] = useState<Category | null>('go');
   const [itemFlow, setItemFlow] = useState<{ item: string; mode: 'use' | 'place' } | null>(null);
+
+  const openObjectEntry = affordances.objects.find((o) => `o:${o.id}` === openThing);
+  const openItemEntry = affordances.items.find((i) => `i:${i.id}` === openThing);
 
   if (affordances.clarification) {
     return (
@@ -132,89 +166,113 @@ export function SelectPanel({ affordances, onAct }: SelectPanelProps) {
 
   return (
     <div className="panel">
-      <section className="panel-section">
-        <h3 className="panel-title">Go</h3>
-        <div className="btn-row">
+      {/*
+        One row of categories, one open at a time. Showing Go, People and
+        Things all at once takes eleven buttons, which on a narrow screen is
+        half the window — and the story needs that half more than the buttons
+        do. Go is open by default, because moving is the commonest action.
+      */}
+      <div className="chip-row category-row">
+        {CATEGORIES.map((category) => {
+          const count = countFor(category, affordances);
+          if (count === 0) return null;
+          const open = openCategory === category;
+          return (
+            <button
+              key={category}
+              type="button"
+              className="btn btn-chip btn-category"
+              aria-expanded={open}
+              onClick={() => {
+                setOpenThing(null);
+                setOpenCategory(open ? null : category);
+              }}
+            >
+              {CATEGORY_LABEL[category]} <span className="chip-count">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {openCategory === 'go' ? (
+        <div className="chip-row category-open">
           {affordances.exits.map((exit) => (
-            <ActionButton key={exit.key} affordance={exit} onAct={onAct} />
+            <ActionButton
+              key={exit.key}
+              affordance={exit}
+              onAct={onAct}
+              variant="btn-chip"
+              compact
+            />
           ))}
         </div>
-      </section>
+      ) : null}
 
-      {affordances.people.length > 0 ? (
-        <section className="panel-section">
-          <h3 className="panel-title">People</h3>
-          <div className="btn-row">
-            {affordances.people.map((person) => (
-              <ActionButton key={person.key} affordance={person} onAct={onAct} />
+      {openCategory === 'people' ? (
+        <div className="chip-row category-open">
+          {affordances.people.map((person) => (
+            <ActionButton key={person.key} affordance={person} onAct={onAct} variant="btn-chip" />
+          ))}
+        </div>
+      ) : null}
+
+      {openCategory === 'things' ? (
+        <>
+          <div className="chip-row category-open">
+            {affordances.objects.map((object) => (
+              <button
+                key={object.id}
+                type="button"
+                className="btn btn-chip"
+                aria-expanded={openThing === `o:${object.id}`}
+                onClick={() =>
+                  setOpenThing(openThing === `o:${object.id}` ? null : `o:${object.id}`)
+                }
+              >
+                {object.name}
+              </button>
+            ))}
+            {affordances.items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="btn btn-chip"
+                aria-expanded={openThing === `i:${item.id}`}
+                onClick={() => setOpenThing(openThing === `i:${item.id}` ? null : `i:${item.id}`)}
+              >
+                {item.name} <span className="chip-held">(held)</span>
+              </button>
             ))}
           </div>
-        </section>
-      ) : null}
-
-      {affordances.objects.length > 0 ? (
-        <section className="panel-section">
-          <h3 className="panel-title">Here</h3>
-          <ul className="thing-list">
-            {affordances.objects.map((object) => {
-              const open = openObject === object.id;
-              return (
-                <li className="thing" key={object.id}>
-                  <button
-                    type="button"
-                    className="btn btn-thing"
-                    aria-expanded={open}
-                    onClick={() => setOpenObject(open ? null : object.id)}
-                  >
-                    <span>{object.name}</span>
-                    <span className="chev" aria-hidden="true">
-                      {open ? '-' : '+'}
-                    </span>
-                  </button>
-                  {open ? (
-                    <div className="btn-row thing-actions">
-                      {object.actions.map((a) => (
-                        <ActionButton key={a.key} affordance={a} onAct={onAct} />
-                      ))}
-                    </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
-
-      {affordances.items.length > 0 ? (
-        <section className="panel-section">
-          <h3 className="panel-title">Carrying</h3>
-          <ul className="thing-list">
-            {affordances.items.map((item) => (
-              <li className="thing" key={item.id}>
-                <span className="thing-name">{item.name}</span>
-                <div className="btn-row thing-actions">
-                  {item.actions.map((a) => (
-                    <ActionButton key={a.key} affordance={a} onAct={onAct} />
-                  ))}
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => setItemFlow({ item: item.id, mode: 'use' })}
-                  >
-                    Use on...
-                  </button>
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => setItemFlow({ item: item.id, mode: 'place' })}
-                  >
-                    Put in...
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+          {openObjectEntry ? (
+            <div className="chip-actions">
+              {openObjectEntry.actions.map((a) => (
+                <ActionButton key={a.key} affordance={a} onAct={onAct} />
+              ))}
+            </div>
+          ) : null}
+          {openItemEntry ? (
+            <div className="chip-actions">
+              {openItemEntry.actions.map((a) => (
+                <ActionButton key={a.key} affordance={a} onAct={onAct} />
+              ))}
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setItemFlow({ item: openItemEntry.id, mode: 'use' })}
+              >
+                Use on...
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setItemFlow({ item: openItemEntry.id, mode: 'place' })}
+              >
+                Put in...
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       <div className="panel-meta">

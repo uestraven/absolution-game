@@ -48,6 +48,7 @@ export function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  const [feedNudge, setFeedNudge] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const loaded = useRef(false);
   /** Mirrors `state` for synchronous reads inside `act`. */
@@ -141,6 +142,18 @@ export function App() {
     },
     [persist]
   );
+
+  /**
+   * The anchored command line gets a short nudge when a heavy block lands
+   * above it, so it reads as being pushed down by the text. Reduced-motion is
+   * handled in CSS, where the keyframe is neutralised.
+   */
+  const onHeavyFeed = useCallback(() => {
+    setFeedNudge(false);
+    // Two frames, so the class is genuinely removed and re-added and the
+    // keyframe restarts even on consecutive heavy blocks.
+    requestAnimationFrame(() => requestAnimationFrame(() => setFeedNudge(true)));
+  }, []);
 
   const topics = useMemo(() => (state ? activeTopics(state) : []), [state]);
 
@@ -317,10 +330,20 @@ export function App() {
       </a>
 
       <header className="topbar">
-        <div className="topbar-where">
-          <h1 className="topbar-place">{location.name}</h1>
-          <p className="topbar-sub">{location.subtitle(state)}</p>
-        </div>
+        <button
+          type="button"
+          className="btn btn-plain topbar-toggle"
+          aria-expanded={prefs.showStatus}
+          onClick={() => updatePrefs({ ...prefs, showStatus: !prefs.showStatus })}
+        >
+          <span className="chev" aria-hidden="true">
+            {prefs.showStatus ? '\u25be' : '\u25b8'}
+          </span>
+          <span className="topbar-place">{location.name}</span>
+          <span className="sr-only">
+            {prefs.showStatus ? ' — hide details' : ' — show subtitle and objective'}
+          </span>
+        </button>
         <nav className="topbar-meta" aria-label="Game information">
           {headerMeta.map((m) => (
             <button
@@ -343,13 +366,18 @@ export function App() {
         </nav>
       </header>
 
-      <p
-        className={`objective ${state.ended ? 'objective-done' : ''}`}
-        aria-label="Current objective"
-      >
-        <span className="objective-tag">objective:</span>{' '}
-        <span className="objective-text">{state.objective}</span>
-      </p>
+      {prefs.showStatus ? (
+        <div className="status">
+          <p className="status-sub">{location.subtitle(state)}</p>
+          <p
+            className={`objective ${state.ended ? 'objective-done' : ''}`}
+            aria-label="Current objective"
+          >
+            <span className="objective-tag">objective:</span>{' '}
+            <span className="objective-text">{state.objective}</span>
+          </p>
+        </div>
+      ) : null}
 
       {!storage.working && storage.message ? (
         <p className="warn" role="alert">
@@ -358,14 +386,29 @@ export function App() {
       ) : null}
 
       <main className="main">
-        <Transcript entries={state.transcript} showOptionLists={prefs.inputMode === 'type'} />
+        <Transcript
+          entries={state.transcript}
+          showOptionLists={prefs.inputMode === 'type'}
+          onHeavyFeed={onHeavyFeed}
+        />
       </main>
 
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}
       </div>
 
-      <section className="controls" id="main-controls" aria-label="Actions">
+      <section
+        className={[
+          'controls',
+          prefs.inputMode === 'type' ? 'controls-type' : '',
+          feedNudge ? 'controls-nudge' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        onAnimationEnd={() => setFeedNudge(false)}
+        id="main-controls"
+        aria-label="Actions"
+      >
         {prefs.inputMode === 'type' ? (
           <TypeInput label="What do you do?" placeholder={placeHint} onSubmit={submitTyped} />
         ) : (

@@ -76,13 +76,45 @@ async function newPage(viewport) {
                      : bad('360px: touch targets >= 40px tall', JSON.stringify(small));
 
   // Play a few turns with buttons only and confirm the story moves.
+  await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /^Things/ }).click();
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /hooded lantern/ }).click();
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: 'Take', exact: true }).click();
+  // Opening Things closed Go; reopen it to walk.
+  await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /^Go/ }).click();
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /lane down to the square/ }).click();
   const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
   place === 'the village square' ? ok('selectable mode: buttons move the story')
                                  : bad('selectable mode: buttons move the story', place);
 
+  const room = await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    const probe = document.createElement('div');
+    probe.className = 'para';
+    probe.textContent = 'X';
+    t.appendChild(probe);
+    const lh = parseFloat(getComputedStyle(probe).lineHeight);
+    probe.remove();
+    const cs = getComputedStyle(t);
+    const inner = t.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    return {
+      lines: Math.floor(inner / lh),
+      share: Math.round((t.clientHeight / window.innerHeight) * 100),
+    };
+  });
+  room.share >= 55
+    ? ok('the transcript owns most of the window', `${room.share}%, ${room.lines} lines`)
+    : bad('the transcript owns most of the window', JSON.stringify(room));
+
+  const folded = await page.evaluate(() => ({
+    toggle: !!document.querySelector('.topbar-toggle'),
+    statusShown: !!document.querySelector('.status'),
+    place: (document.querySelector('.topbar-place')?.textContent || '').trim().length > 0,
+  }));
+  folded.toggle && !folded.statusShown && folded.place
+    ? ok('location stays visible; subtitle and objective are folded away')
+    : bad('status disclosure', JSON.stringify(folded));
+
+  await page.waitForTimeout(250);
   const scrolling = await page.evaluate(() => {
     const t = document.querySelector('.transcript');
     return {
@@ -101,8 +133,52 @@ async function newPage(viewport) {
   overflow2 <= 0 ? ok('360px: still no horizontal scrolling mid-play')
                  : bad('360px: still no horizontal scrolling mid-play', `${overflow2}px`);
 
+  const glide = await page.evaluate(async () => {
+    const t = document.querySelector('.transcript');
+    t.scrollTop = Math.max(0, t.scrollHeight - t.clientHeight);
+    const before = t.scrollTop;
+    // A real action, so there is genuinely new output to glide to.
+    [...document.querySelectorAll('.panel-meta button')]
+      .find((b) => b.textContent.trim() === 'look')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const samples = [];
+    await new Promise((resolve) => {
+      let n = 0;
+      const tick = () => {
+        samples.push(t.scrollTop);
+        if (++n < 12) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+    await new Promise((r) => setTimeout(r, 250));
+    const distanceToBottom = t.scrollHeight - t.scrollTop - t.clientHeight;
+    // Deltas between frames: an exponential ease-out decelerates sharply.
+    const deltas = samples.slice(1).map((v, i) => Math.abs(v - samples[i])).filter((d) => d > 0);
+    return {
+      samples: samples.slice(0, 4).map((v) => +v.toFixed(2)),
+      deltas: deltas.slice(0, 4),
+      decelerates: deltas.length >= 2 && deltas[0] > deltas[deltas.length - 1] * 2,
+      distanceToBottom: +distanceToBottom.toFixed(2),
+      settled: distanceToBottom < 2,
+      animated: new Set(samples.map((v) => Math.round(v))).size > 1,
+    };
+  });
+  glide.settled && glide.animated
+    ? ok(
+        'the kinetic glide animates and lands at the bottom',
+        `${glide.samples.join(' -> ')} ... ${glide.distanceToBottom}px`
+      )
+    : bad('the kinetic glide', JSON.stringify(glide));
+  glide.decelerates
+    ? ok(
+        'the glide eases out rather than stepping by rows',
+        `frame deltas ${glide.deltas.join(', ')}px`
+      )
+    : bad('the glide eases out', JSON.stringify(glide));
+
   await page.evaluate(() => { document.querySelector('.transcript').scrollTop = 0; });
-  await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: 'Look around' }).click();
+  await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: 'look' }).click();
   await page.waitForTimeout(80);
   const held = await page.evaluate(() => document.querySelector('.transcript').scrollTop);
   held < 40 ? ok('reading history is not yanked back to the bottom', `scrollTop ${held}`)
@@ -156,6 +232,10 @@ async function newPage(viewport) {
   ended > 0 ? ok('keyboard only: chapter completed to the end-of-prototype message')
             : bad('keyboard only: chapter completed to the end-of-prototype message');
 
+  // The objective folds away by default now; open the disclosure to read it.
+  if ((await page.locator('.status').count()) === 0) {
+    await page.locator('.topbar-toggle').click();
+  }
   const objective = await page.getByLabel('Current objective').innerText();
   objective.includes('End of the opening chapter') ? ok('end state: objective updated')
                                                    : bad('end state: objective updated', objective);
@@ -167,6 +247,9 @@ async function newPage(viewport) {
   stillPlayable.includes('rope swing') ? ok('end state: inspection still possible')
                                        : bad('end state: inspection still possible');
 
+  if ((await page.locator('.status').count()) === 0) {
+    await page.locator('.topbar-toggle').click();
+  }
   const completed = await page.locator('.objective').getAttribute('class');
   /objective-done/.test(completed || '')
     ? ok('completed objective is marked, not only coloured')
@@ -444,6 +527,20 @@ async function newPage(viewport) {
   await page.goto(`${ORIGIN}/index.html`);
   await page.getByRole('button', { name: 'New Game' }).click();
   await page.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  const jumped = await page.evaluate(async () => {
+    const t = document.querySelector('.transcript');
+    t.scrollTop = 0;
+    [...document.querySelectorAll('.panel-meta button')]
+      .find((b) => b.textContent.trim() === 'look')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    // One frame only: with motion reduced there must be nothing left to animate.
+    await new Promise((r) => requestAnimationFrame(() => r()));
+    return t.scrollHeight - t.scrollTop - t.clientHeight;
+  });
+  jumped < 2
+    ? ok('reduced motion: the glide is replaced by a jump', `${jumped.toFixed(2)}px after one frame`)
+    : bad('reduced motion: glide not suppressed', String(jumped));
+
   const duration = await page.evaluate(() =>
     getComputedStyle(document.querySelector('.btn')).transitionDuration);
   /^0\.?0*0?0?1?m?s?$|^0s$/.test(duration) || parseFloat(duration) < 0.01

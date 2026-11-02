@@ -30,6 +30,46 @@ assets, served from relative paths, so it works from any URL path.
 
 ## Look and feel
 
+### Layout
+
+The transcript gets the window. Measured in Chromium on the built bundle:
+
+| | Story share | Visible lines |
+| --- | --- | --- |
+| Desktop, type-only (1280×900) | 84% | 25 |
+| Laptop, type-only (1440×800) | 83% | 22 |
+| Mobile, type-only (390×844) | 81% | 25 |
+| Desktop, selectable (1280×900) | 76% | 22 |
+| Mobile, selectable (360×740) | 57% | 14 |
+
+Three things pay for that. The **location folds**: the room name stays on
+screen with a disclosure button, and the subtitle and objective live behind it
+(remembered per browser; the objective is reprinted in the transcript whenever
+it changes, so nothing is lost by leaving it shut). The **command line is two
+lines**, with its label for screen readers only and the verb reminder shown
+only while the field is empty. And in selectable mode the actions are **one row
+of categories** — Go, People, Things, with counts — opening one at a time,
+because showing all three at once takes eleven buttons and half of a phone.
+
+Selectable mode on a narrow screen is the weakest case and is floor-limited:
+legible exit names at 44px tap height cannot be made much smaller.
+
+### Motion
+
+New text appears immediately. What moves is the scroll position: when a block
+lands, the transcript glides up to meet it over 60–100 ms on an exponential
+ease-out, driven from `requestAnimationFrame` rather than CSS so the target can
+be re-read while content settles. Measured frame deltas on a long block:
+637, 328, 104, 32 px — deceleration, not a row-by-row jump. A heavy block also
+nudges the anchored command line down 3px and back, so it reads as being pushed
+by the text.
+
+Nothing waits on it: any glide is cancelled the moment a reader touches the
+wheel, a scrollbar or the screen, a reader who has scrolled up is never
+animated at all, and a restored transcript snaps rather than replaying. Under
+`prefers-reduced-motion` the glide becomes the jump, verified as settling
+within one frame.
+
 A minimal terminal: soft white on near-black, one monospace face at 18px
 (16–18px on mobile) with 1.6 line spacing, and a single centred reading column
 about 70 characters wide. Text appears immediately — no typewriter effect,
@@ -157,7 +197,8 @@ than overwritten.
   hue: see **Look and feel** above.
 - Comfortable 44px touch targets where the pointer is coarse, left compact for a
   mouse.
-- `prefers-reduced-motion` and `prefers-contrast: more` are both honoured.
+- `prefers-reduced-motion` and `prefers-contrast: more` are both honoured; the
+  kinetic scroll degrades to an instant jump.
 - Type-only mode is completable with the keyboard alone; Selectable Actions mode
   is completable without typing anything.
 

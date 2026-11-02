@@ -132,9 +132,10 @@ invents no steps for versions that never existed.
 | Component | Role |
 | --- | --- |
 | `App` | Owns state, persistence, preferences and screen routing. The only place `resolve` is called |
-| `Transcript` | Scrolling log. Follows new output only when the reader is already at the bottom. Hides `options` entries in selectable mode, where the same choices are buttons |
+| `Transcript` | Scrolling log. Follows new output only when the reader is already at the bottom, and does it as a glide rather than a jump. Hides `options` entries in selectable mode, where the same choices are buttons |
+| `cascade.ts` | The kinetic line-feed: `requestAnimationFrame` interpolation of `scrollTop` on an exponential ease-out, 60–100 ms, scaled by distance. Cancels on reader input, snaps on first paint, and becomes a jump under `prefers-reduced-motion` |
 | `TypeInput` | Labelled command field, command history on Up/Down. Focuses once on mount, never again |
-| `SelectPanel` | Renders the engine's affordance list. Holds only transient menu state (which thing is expanded, which item is mid-"use on…") |
+| `SelectPanel` | Renders the engine's affordance list as one row of categories (Go / People / Things) opening one at a time. Holds only transient menu state: the open category, the open thing, and which item is mid-"use on…". Chips show a shortened label and keep the full one as their accessible name |
 | `SettingsDialog` | Input mode, text size, saves, checkpoint restart |
 | `RichText` | Paragraphs, `*emphasis*`, and all colour — as React nodes |
 

@@ -113,6 +113,7 @@ describe('under StrictMode', () => {
   it('commits one action per click in selectable mode', async () => {
     const user = await startStrict('select');
     const panel = () => within(screen.getByRole('region', { name: 'Actions' }));
+    await user.click(panel().getByRole('button', { name: /^Things/ }));
     await user.click(panel().getByRole('button', { name: /hooded lantern/ }));
     await user.click(panel().getByRole('button', { name: 'Take' }));
 

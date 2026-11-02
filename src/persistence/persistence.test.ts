@@ -261,10 +261,10 @@ describe('storage failure is reported, never pretended away', () => {
 
 describe('preferences are stored apart from progress', () => {
   it('survives clearing progress', () => {
-    writePrefs({ inputMode: 'type', largeText: true });
+    writePrefs({ inputMode: 'type', largeText: true, showStatus: true });
     writeAutosave(begin());
     clearProgress();
-    expect(readPrefs()).toEqual({ inputMode: 'type', largeText: true });
+    expect(readPrefs()).toEqual({ inputMode: 'type', largeText: true, showStatus: true });
     expect(hasAnySave()).toBe(false);
   });
 
@@ -272,7 +272,7 @@ describe('preferences are stored apart from progress', () => {
     localStorage.setItem(KEYS.prefs, 'not json');
     expect(readPrefs().inputMode).toBe('select');
     localStorage.setItem(KEYS.prefs, '{"inputMode":"telepathy","largeText":"yes"}');
-    expect(readPrefs()).toEqual({ inputMode: 'select', largeText: false });
+    expect(readPrefs()).toEqual({ inputMode: 'select', largeText: false, showStatus: false });
   });
 });
 

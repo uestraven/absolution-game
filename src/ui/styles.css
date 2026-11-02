@@ -167,7 +167,7 @@ body {
 .btn-col {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.2rem;
   align-items: stretch;
 }
 
@@ -298,52 +298,59 @@ body {
 .topbar {
   flex: 0 0 auto;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  flex-wrap: nowrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.3rem 1rem;
+  gap: 0.5rem;
   width: 100%;
   max-width: var(--measure);
   margin: 0 auto;
-  padding: 0.6rem 1rem 0.5rem;
+  padding: 0.3rem 1rem;
   border-bottom: 1px solid var(--rule);
 }
-.topbar-where {
+
+/* The location stays visible; the subtitle and objective fold away behind it. */
+.topbar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   min-width: 0;
+  padding: 0.2rem 0.3rem;
+  color: var(--ink);
 }
 .topbar-place {
-  margin: 0;
-  display: inline;
   font-size: 1rem;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-}
-.topbar-sub {
-  margin: 0;
-  display: inline;
-  color: var(--ink-dim);
-}
-.topbar-sub::before {
-  content: ' · ';
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .topbar-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.1rem 0.25rem;
-  margin-left: auto;
+  flex-wrap: nowrap;
+  gap: 0 0.1rem;
+  flex: none;
 }
-.objective {
+
+.status {
   flex: 0 0 auto;
   width: 100%;
   max-width: var(--measure);
   margin: 0 auto;
-  padding: 0.4rem 1rem 0.5rem;
-  color: var(--ink-dim);
+  padding: 0.3rem 1rem 0.4rem;
   border-bottom: 1px solid var(--rule);
 }
-/* An objective in progress is supporting text; green is reserved for one that
-   has been completed. */
+.status-sub {
+  margin: 0;
+  color: var(--ink-dim);
+}
+.objective {
+  margin: 0;
+  color: var(--ink-dim);
+}
+/* An objective in progress is supporting text; green is for one completed. */
 .objective-tag {
   color: var(--ink-dim);
 }
@@ -375,18 +382,21 @@ body {
   position: relative;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 1.2rem 1rem 2rem;
+  padding: 0.6rem 1rem 0.9rem;
+  /* The glide is driven from JS at sub-pixel precision, so the browser's own
+     smooth-scroll must stay out of the way. */
+  scroll-behavior: auto;
 }
 
 .entry {
   max-width: var(--measure);
-  margin: 0 auto 1.4rem;
+  margin: 0 auto 0.9rem;
 }
 .entry:last-child {
   margin-bottom: 0;
 }
 .entry-head {
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.45rem;
 }
 .entry-title {
   font-size: 1rem;
@@ -400,7 +410,7 @@ body {
   color: var(--ink-dim);
 }
 .para {
-  margin: 0 0 0.9rem;
+  margin: 0 0 0.7rem;
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
@@ -436,22 +446,47 @@ em {
 .controls {
   flex: 0 0 auto;
   width: 100%;
-  max-width: var(--measure);
+  /* Wider than the reading measure on purpose: a row of exits that wraps
+     costs the story a line, and control chips do not need to be 70ch. */
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0.6rem 1rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+  padding: 0.45rem 1rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--rule);
-  max-height: 46%;
+  max-height: 34%;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
-.type-input {
-  margin: 0;
+/* Typing needs two lines, not a panel. Let it size to its content so the
+   story gets the rest of the window. */
+.controls-type {
+  max-height: none;
+  overflow: visible;
 }
-.type-label {
-  display: block;
-  color: var(--ink-dim);
-  margin-bottom: 0.3rem;
+
+/*
+ * The anchored input is nudged when a heavy block lands above it: a short
+ * settle, not a spring. Neutralised by the reduced-motion rule below.
+ */
+@keyframes anchor-nudge {
+  0% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(3px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+.controls-nudge {
+  animation: anchor-nudge 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.type-input {
+  /* Lines up with the reading column, so the prompt sits under the text. */
+  max-width: var(--measure);
+  margin: 0 auto;
 }
 .type-row {
   display: flex;
@@ -484,23 +519,30 @@ em {
   opacity: 1;
 }
 .type-hint {
-  margin: 0.5rem 0 0;
+  margin: 0.3rem 0 0;
   color: var(--ink-dim);
+  font-size: 0.85em;
 }
 
 .panel {
-  margin: 0;
+  /* Wider than the reading column so a row of exits does not wrap, but still
+     centred on it rather than hugging the left edge. */
+  max-width: min(100%, 56rem);
+  margin: 0 auto;
 }
 .panel-section {
-  margin: 0 0 0.7rem;
+  margin: 0 0 0.4rem;
+}
+.panel-section .btn-row {
+  gap: 0.3rem;
 }
 .panel-title {
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 400;
   color: var(--ink-dim);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.2rem;
 }
 .panel-note {
   color: var(--ink-dim);
@@ -511,8 +553,52 @@ em {
   flex-wrap: wrap;
   gap: 0.1rem 0.25rem;
   border-top: 1px solid var(--rule);
-  padding-top: 0.5rem;
-  margin-top: 0.6rem;
+  padding-top: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+/* Wrapped rows of chips: the compact form of "what is in this room". */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.btn-chip {
+  color: var(--cyan);
+  padding: 0.3rem 0.6rem;
+}
+.category-row {
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.35rem;
+}
+.btn-category {
+  color: var(--ink-dim);
+}
+.btn-category[aria-expanded='true'] {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  text-decoration: underline;
+}
+.chip-count {
+  color: var(--ink-dim);
+}
+.category-open {
+  margin-top: 0.35rem;
+}
+.chip-held {
+  color: var(--green);
+}
+.btn-chip[aria-expanded='true'] {
+  border-color: var(--cyan);
+  text-decoration: underline;
+}
+.chip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--rule-strong);
 }
 
 .thing-list {
@@ -521,7 +607,7 @@ em {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.15rem;
 }
 .thing {
   padding: 0;
@@ -532,8 +618,8 @@ em {
   gap: 0.75rem;
   width: 100%;
   border-color: transparent;
-  padding: 0.3rem 0.4rem;
-  min-height: 2rem;
+  padding: 0.2rem 0.4rem;
+  min-height: 1.9rem;
 }
 .btn-thing:hover,
 .btn-thing:focus-visible,
@@ -543,7 +629,7 @@ em {
 .thing-name {
   display: block;
   color: var(--cyan);
-  padding: 0.3rem 0.4rem 0.1rem;
+  padding: 0.2rem 0.4rem 0.05rem;
 }
 .thing-actions {
   padding: 0.1rem 0 0.3rem 1.2rem;
@@ -672,7 +758,20 @@ em {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }
-  /* Keep the four information links on one line at 360px. */
+  /*
+   * At 360px the location and four information links cannot share a row
+   * without the location being ellipsed to nothing — and the location has to
+   * stay visible. So the bar wraps, and the padding is trimmed to pay for it.
+   */
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: 0;
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+  }
+  .topbar-toggle {
+    flex: 1 0 100%;
+  }
   .topbar-meta {
     margin-left: 0;
     gap: 0 0.1rem;
@@ -688,7 +787,10 @@ em {
     display: block;
   }
   .controls {
-    max-height: 56%;
+    max-height: 46%;
+  }
+  .controls-type {
+    max-height: none;
   }
   .character-btn {
     min-width: 0;

@@ -270,9 +270,19 @@ export interface Prefs {
   inputMode: InputMode;
   /** Larger body text for comfort, independent of browser zoom. */
   largeText: boolean;
+  /**
+   * Whether the subtitle and objective are expanded under the location.
+   * Collapsed by default: those two lines are worth about two lines of story,
+   * and the objective is repeated in the transcript whenever it changes.
+   */
+  showStatus: boolean;
 }
 
-export const DEFAULT_PREFS: Prefs = { inputMode: 'select', largeText: false };
+export const DEFAULT_PREFS: Prefs = {
+  inputMode: 'select',
+  largeText: false,
+  showStatus: false,
+};
 
 export function readPrefs(): Prefs {
   const raw = readRaw(KEYS.prefs);
@@ -286,6 +296,7 @@ export function readPrefs(): Prefs {
         ? record.inputMode
         : DEFAULT_PREFS.inputMode,
       largeText: typeof record.largeText === 'boolean' ? record.largeText : false,
+      showStatus: typeof record.showStatus === 'boolean' ? record.showStatus : false,
     };
   } catch {
     return { ...DEFAULT_PREFS };
