@@ -13,10 +13,11 @@ So there is no third-party licence to honour and nothing to clear: the game
 ships the owner's own music. Nothing further is required before release, and
 this file does not invent terms that were not given.
 
-Two things that remain the owner's choice rather than an obligation:
+**Credited in the game**, after the ending marker: *Music by Paul Cohen — eight
+tracks, written for this game.*
 
-- **A credit in the game.** There is none at present. Worth one if the music is
-  to be attributed to a person by name anywhere a player can see.
+One thing that remains the owner's choice rather than an obligation:
+
 - **A licence, if the files are ever published separately** from the game — in
   a repository, a soundtrack release, or anywhere a third party might reuse
   them. Not needed for shipping them inside the game.

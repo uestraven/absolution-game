@@ -425,6 +425,27 @@ Weather comes over the ridge from the north all afternoon in long grey bands wit
 
 Nobody in that square has ever heard of the Cave of Absolution. There is a hill where it was, with grass on it, and sheep.`;
 
+/**
+ * The credits, after the end.
+ *
+ * Deliberately short, and deliberately not a cast list: this is a small game
+ * with one person behind it, and a page of roles would read as borrowed from
+ * something bigger.
+ *
+ * "A game by" rather than "written by" is a considered choice and is the
+ * owner's to overrule — see the note in the commit that added this.
+ */
+export const CREDITS = `— Credits —
+
+${m('ABSOLUTION')}
+
+A game by Paul Cohen
+
+Music by Paul Cohen
+Eight tracks, written for this game
+
+Thank you for playing it.`;
+
 export const ENDING_MARKER = `— The end —
 
 That is the whole of it. Four chapters, two of them, and one hill.

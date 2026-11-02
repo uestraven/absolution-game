@@ -172,9 +172,9 @@ licence, and none could be invented. **Resolved on 2026-11-02** — the owner
 states that they created all eight tracks themselves, solely, for this game.
 
 So there is no third-party licence to honour and nothing to clear. Recorded in
-[`art/music/README.md`](../art/music/README.md), which also notes the two things
-that remain a choice rather than an obligation: an in-game credit, and a licence
-if the tracks are ever published apart from the game.
+[`art/music/README.md`](../art/music/README.md), and credited in the game after
+the ending. The one thing that remains a choice rather than an obligation is a
+licence, and only if the tracks are ever published apart from the game.
 
 Kept here rather than deleted because it was reported as a blocker and the
 resolution is worth being able to find.

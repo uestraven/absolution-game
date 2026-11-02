@@ -797,8 +797,35 @@ describe('the ending is an ending', () => {
 
   it('counts the chapters it actually has', () => {
     const end = finishTheStory(arrived());
-    const marker = end.transcript.filter((e) => e.kind === 'system').at(-1)!.text;
+    // Found by content, not by position: the credits come after the marker.
+    const marker = end.transcript.find((e) => e.text.startsWith('— The end —'))!.text;
     expect(marker).toContain('Four chapters');
+  });
+
+  it('credits the author, once, after the end', () => {
+    const end = finishTheStory(arrived());
+    const credits = end.transcript.filter((e) => e.text.startsWith('— Credits —'));
+    expect(credits).toHaveLength(1);
+
+    const text = stripMarkup(credits[0]!.text);
+    expect(text).toContain('A game by Paul Cohen');
+    expect(text).toContain('Music by Paul Cohen');
+
+    // After "the end", and last, so it is the final thing read.
+    const order = end.transcript.map((e) => e.text);
+    expect(order.findIndex((t) => t.startsWith('— Credits —'))).toBeGreaterThan(
+      order.findIndex((t) => t.startsWith('— The end —'))
+    );
+    expect(order.at(-1)!.startsWith('— Credits —')).toBe(true);
+  });
+
+  it('shows the credits again with the ending, and adds no second copy', () => {
+    const end = finishTheStory(arrived());
+    const reviewed = typeAll(end, ['review']);
+    const credits = reviewed.transcript.filter((e) => e.text.startsWith('— Credits —'));
+    // Reading it again reprints it; it does not accumulate beyond the reprint.
+    expect(credits).toHaveLength(2);
+    expect(reviewed.transcript.at(-1)!.text.startsWith('— Credits —')).toBe(true);
   });
 
   it('keeps the prophecy exact and does not explain how it fits', () => {

@@ -1446,6 +1446,24 @@ async function newPage(viewport) {
     ? ok('selectable mode: the epilogue is shown')
     : bad('selectable mode: the epilogue is shown');
 
+  // The credits, last, after the end.
+  const credits = await page.evaluate(() => {
+    const entries = [...document.querySelectorAll('.transcript .entry')];
+    const index = entries.findIndex((e) => e.innerText.includes('— Credits —'));
+    const endIndex = entries.findIndex((e) => e.innerText.includes('— The end —'));
+    return {
+      found: index !== -1,
+      last: index === entries.length - 1,
+      afterTheEnd: index > endIndex,
+      names: entries[index]?.innerText.includes('A game by Paul Cohen') ?? false,
+      music: entries[index]?.innerText.includes('Music by Paul Cohen') ?? false,
+      markup: entries[index]?.innerText.includes('{{') ?? true,
+    };
+  });
+  credits.found && credits.last && credits.afterTheEnd && credits.names && credits.music && !credits.markup
+    ? ok('the credits name the author, after the end, with nothing after them')
+    : bad('the credits', JSON.stringify(credits));
+
   /*
    * The last action emits the sacrifice, the hill coming down, a journal
    * entry, the epilogue and the end marker in one response. The requirement

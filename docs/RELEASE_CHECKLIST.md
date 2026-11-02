@@ -41,9 +41,9 @@ own last response at entry 24, fully visible, with the stale mark's entry 7 now
 | --- | --- |
 | `npm ci` | clean install from `package-lock.json`, 0 vulnerabilities |
 | `npm run typecheck` (`tsc --noEmit`) | clean, no diagnostics |
-| `npm run test` (vitest) | **511 passed / 511**, 17 files |
+| `npm run test` (vitest) | **513 passed / 513**, 17 files |
 | `npm run build:only` (vite) | built; emits the 500kB chunk-size advisory, [discussed below](#5-bundle-and-packaging) |
-| `node scripts/verify-browser.mjs dist` | **127 passed / 127** |
+| `node scripts/verify-browser.mjs dist` | **128 passed / 128** |
 | `node scripts/verify-served.mjs dist` | **31 passed / 31** |
 
 `npm run verify` runs the build and both browser passes in sequence.
@@ -307,7 +307,7 @@ the mouth.** `cave_path` is the open hill and keeps the village theme;
 | **Human blind playtest** | **PENDING** — no sessions run, nobody contacted | Pacing, difficulty, whether the killing and the sacrifice land, whether the epilogue needs its own beat. **None of this is verified.** Code readiness does not speak to it |
 | Real mobile browsers and devices | Not done | Software-keyboard behaviour, iOS Safari quirks, touch scrolling feel |
 | A real screen reader | Not done | Whether the announcements are usable in practice, as opposed to structurally correct |
-| Soundtrack attribution | **Resolved** | The owner wrote all eight tracks themselves, for this game (stated 2026-11-02). No third-party licence to honour. An in-game credit remains their choice; a licence would only matter if the tracks were published apart from the game |
+| Soundtrack attribution | **Resolved** | Paul Cohen wrote all eight tracks, for this game (stated 2026-11-02). No third-party licence to honour. Credited in the game after the ending. A licence would only matter if the tracks were published apart from the game |
 | Listening to the music | Not done | Loop seams, crossfade feel, per-track loudness, and whether 25% is right. Machine checks confirm it plays, not that it sounds right |
 | Mobile audio | **Partly done** | Looping is confirmed on iOS Chrome. The crossfade, the volume slider, mute and backgrounding share the same graph but have not been checked on a device, and Android has not been touched |
 | Deployment | Not done, not authorized | Nothing published; no account, project or domain exists |

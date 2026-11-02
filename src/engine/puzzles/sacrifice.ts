@@ -208,6 +208,9 @@ function bringItDown(draft: Draft, events: NarrativeEvent[]): ResolveResult {
   draft.ended = true;
   setObjective(draft, OBJECTIVES.over, events);
   events.push({ kind: 'system', text: T.ENDING_MARKER });
+  // Last, because credits come after "the end" and because the marker's own
+  // last line is what the player can do next.
+  events.push({ kind: 'system', text: T.CREDITS });
   return commit(draft, events, true);
 }
 
@@ -224,6 +227,7 @@ export function reviewEnding(draft: Draft, events: NarrativeEvent[]): ResolveRes
     text: T.EPILOGUE,
   });
   events.push({ kind: 'system', text: T.ENDING_MARKER });
+  events.push({ kind: 'system', text: T.CREDITS });
   return commit(draft, events, false);
 }
 
