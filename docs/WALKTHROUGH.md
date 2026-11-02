@@ -303,7 +303,7 @@ the stair down to the water, third season on it, and young ones walk in on a
 dare. Only the Wanderer prophecy is missing, so no established tradition is
 accidentally erased.
 
-This used to be where the prototype stopped. It is now the hinge: the objective
+This used to be where an early build stopped. It is now the hinge: the objective
 becomes *Find the way back to your own village*, the conversation stays open,
 and the beat is latched on its journal entry (`j.another_time`) rather than on
 `ended`, so a legacy save that has already read it does not read it twice.

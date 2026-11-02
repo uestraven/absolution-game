@@ -94,10 +94,17 @@ entry, then an objective — never scroll separately.
 
 Entering play follows the same idea. **A new game opens at the top of the
 opening** — it is the first response, and the reader has not read a word yet.
-**Continue, an import or a checkpoint opens at the end** of what was restored,
-because resuming is not reading something new. The transcript cannot tell these
-apart from the state, since both arrive with a full history and no actions
-taken, so the shell says which door was used.
+**Continue opens where the reader left off**: the entry they were looking at and
+its offset are kept in a UI-preference key (`cave-of-absolution:reading`), apart
+from the save, so a position never travels in an export and losing it costs
+nothing. Without a usable mark — a first visit to a save, an import, a
+checkpoint restart — it opens at the **start of the last response**, never at
+the end: resuming at the bottom of an epilogue nobody read is the exact failure
+this rule exists to prevent.
+
+The transcript cannot tell beginning from resuming by looking at the state, since
+both arrive with a full history and no actions taken, so the shell says which
+door was used.
 
 Re-renders that are *not* actions hold the reader's place: folding the status
 bar and opening settings move nothing, and switching input mode, which inserts
@@ -111,9 +118,13 @@ to arrow-key through it keeps it.
 
 New text appears immediately. What moves is the scroll position, on a cubic
 ease-out driven from `requestAnimationFrame` rather than CSS so the target can
-be re-read while content settles. A heavy block also nudges the anchored command
-line 3px and back, so it reads as being pushed by the text rather than as a
-separate widget.
+be re-read while content settles.
+
+The command line does not move. It used to bounce 3px when a heavy block landed,
+on the idea that the text was pushing it down — which was true while every
+action scrolled to the bottom. Now that a response opens at its top, the text
+arrives nowhere near the input, and a widget twitching for no visible reason
+competed with the one piece of motion that means something.
 
 Two things keep it legible:
 
@@ -242,7 +253,7 @@ plain JSON file named `adventure-save.json`.
 
 Reading and writing are independent: a browser that has run out of room can
 still load an existing save, so Continue and Export Save keep working when new
-saves do not. Storage keys are unchanged from the first prototype
+saves do not. Storage keys are unchanged from the earliest build
 (`cave-of-absolution:*`).
 
 ### Save compatibility
@@ -309,9 +320,14 @@ than overwritten.
 - Works down to a 360px viewport with no horizontal scrolling.
 - The command field stays visible when a phone keyboard opens.
 - Semantic controls and labelled inputs throughout; visible focus rings.
-- New output is announced through a small live region, not by re-reading the
-  whole transcript. Focus is never taken from someone reading history — moving
-  the transcript's position does not move the keyboard.
+- New output is announced through a small live region carrying only the newest
+  response, not by re-reading the whole transcript. The history itself is a
+  `role="log"` with `aria-live="off"`: a log is implicitly a polite live region,
+  so leaving the default on made a screen reader read every answer twice, once
+  from the announcer and once from the history. The role stays, because it is
+  what lets someone navigate to the history on purpose.
+- Focus is never taken from someone reading history — moving the transcript's
+  position does not move the keyboard.
 - Entry kinds are conveyed by text as well as colour, and no meaning depends on
   hue: see **Look and feel** above.
 - Comfortable 44px touch targets where the pointer is coarse, left compact for a
@@ -344,19 +360,35 @@ optional browser pass over the built output:
 
 ```bash
 npx playwright install chromium   # once; playwright is a devDependency
-npm run build
-npm run verify:browser
+npm run verify                    # build, then both browser passes
 ```
 
-It drives the real built bundle in Chromium through Playwright request
-interception — no server and no listening socket — and checks the 360px layout,
-touch target sizes, keyboard-only completion of the whole chapter, scrolling
-behaviour, mode switching, reload, export, import, refused import, checkpoint
-restart, the New Game confirmation, storage-failure feedback, reduced motion,
-and the visual specification itself — exact palette values, monospace metrics,
-the 70-character column on both narrow and wide viewports, how little of the
-transcript is coloured, that nothing undiscovered is tinted, and the absence of
-gradients, shadows, glow and animation.
+There are **two** browser passes, and they are not redundant.
+
+`npm run verify:browser` drives the real built bundle in Chromium through
+Playwright request interception — no server and no listening socket. It checks
+the 360px layout, touch target sizes, keyboard-only completion of the whole
+story, response positioning, mode switching, reload, export, import, refused
+import, checkpoint restart, the New Game confirmation, storage-failure feedback,
+reduced motion, larger text, 200% zoom, and the visual specification itself:
+exact palette values, monospace metrics, the 70-character column on narrow and
+wide viewports, how little of the transcript is coloured, that nothing
+undiscovered is tinted, and the absence of gradients, shadows, glow and
+animation. Interception is what makes the awkward conditions testable — a full
+storage quota, a save file from a build two formats ago.
+
+`npm run verify:served` serves the same `dist/` over real HTTP from
+**127.0.0.1 on an ephemeral port** and watches the wire. It exists because
+interception answers whatever the page asks for, and so cannot prove the built
+asset paths resolve the way a static host serves them. It checks that every
+asset is served, that the page fetches from no other origin, that no asset is
+pinned to an absolute URL, the compressed transfer size and startup timing, that
+the output contains no credentials, and that a reading position survives a
+reload without being written into the save.
+
 Playwright is a pinned devDependency, so only its browser binary needs the
-one-off install above. See [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) for what each check
-asserts and for the results of the last run.
+one-off install above. A missing download is a verification blocker, not
+evidence that the UI works: the unit tests run in jsdom, which has no layout
+engine. See [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) for what each check
+asserts, and [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) for the
+measured results of a dated run.

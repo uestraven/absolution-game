@@ -13,7 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run test && npm run build:only",
-    "verify:browser": "node scripts/verify-browser.mjs dist"
+    "verify:browser": "node scripts/verify-browser.mjs dist",
+    "verify:served": "node scripts/verify-served.mjs dist",
+    "verify": "npm run build:only && npm run verify:browser && npm run verify:served"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -31,5 +33,8 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22.12 <23"
   }
 }

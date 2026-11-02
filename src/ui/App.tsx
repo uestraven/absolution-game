@@ -288,10 +288,20 @@ export function App() {
       setScreen('play');
       setSettingsOpen(false);
       setStorage(writeAutosave(result.state));
+      /*
+       * The imported position becomes the checkpoint, because it is the only
+       * state the file contains: an export is one moment, not a history, so
+       * there is no chapter-start to recover. That replaces whatever checkpoint
+       * this browser had, which is a real consequence and is said out loud
+       * rather than discovered later by somebody pressing Restart.
+       */
       const checkpoint = writeCheckpoint(result.state);
       if (checkpoint.working) setHasCheckpoint(true);
       setCanContinue(true);
-      setNotice('Save imported.');
+      setNotice(
+        'Save imported. Restart from checkpoint will now bring you back to this point, ' +
+          'not to the start of the chapter.'
+      );
     },
     [state, canContinue]
   );

@@ -804,6 +804,17 @@ async function newPage(viewport) {
     ? ok('import: the exported save is restored')
     : bad('import: the exported save is restored', `${placeImported} / entries ${endedImported}`);
 
+  /*
+   * An export is one moment, not a history, so importing can only put the
+   * checkpoint at the imported position — replacing whatever chapter-start
+   * checkpoint this browser had. That has to be said, not discovered.
+   */
+  const importNotice = await page.locator('.toast, [role=status], [role=alert]').allInnerTexts();
+  const saidIt = importNotice.join(' ');
+  /Restart from checkpoint will now bring you back to this point/.test(saidIt)
+    ? ok('import: says that the checkpoint is now the imported position')
+    : bad('import: did not state the checkpoint consequence', saidIt.slice(0, 120));
+
   /* ---------- 6c. A malformed import is refused and changes nothing ---------- */
   const badFile = path.join(DIST, '..', 'tmp-bad-save.json');
   await (await import('node:fs/promises')).writeFile(badFile, '{"schemaVersion":1}');

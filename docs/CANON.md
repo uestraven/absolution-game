@@ -4,7 +4,7 @@
 
 Three tiers, kept strictly apart:
 
-1. **Canon** — approved. The prototype is built to be consistent with all of it.
+1. **Canon** — approved. The game is built to be consistent with all of it.
 2. **Provisional** — invented for this build to make it playable. Revisable
    without touching canon.
 3. **Undecided** — explicitly not settled. This build makes no claim either way,
@@ -101,7 +101,7 @@ supersede earlier drafting. The reasoning and the detail live in
 
 ### How this build honours each of those
 
-| Canon point | In the prototype |
+| Canon point | In the game |
 | --- | --- |
 | Rite at sixteen, open to all | `present.home` establishes the birthday; Sage states plainly that being allowed is the whole of it |
 | Mixed outcomes for others | Oreg found nothing; Dilly was lost and rescued; "H." fled the echo chamber; Bren declined and nothing happened to him; Jens turned back, Mira sat down, Hal counted to a hundred |
@@ -219,7 +219,7 @@ a wall.
 village's preparation takes, including that the salt arrived this spring.
 
 **The lintel inscription** — `GO IN. COME OUT. BE EASIER WITH YOURSELF.` — and
-the idea that nobody knows who cut it. This is the only place the prototype
+the idea that nobody knows who cut it. This is the only place the game
 leans on the cave's name meaning anything.
 
 **The knotted rope** from an iron ring at the mouth to a pillar in the gallery,
@@ -274,23 +274,35 @@ things." Chosen to imply someone cares without asserting any family facts.
   remain proposals. The rule they obey is canon: never explained, no scientist
   and no stand-in for one.)*
 - The earlier self's exact plan, and why the confrontation ends lethally.
+  *(**Now implemented**, and still proposed rather than canon: they intend to
+  cross, come back out in their own era, and bring back the power the last line
+  promises. It ends lethally because the hero's best argument makes their quest
+  *more* urgent, and because the hands are tried first and are not enough. The
+  game requires one failed nonlethal attempt before the killing is available.)*
 - How the sacrifice destroys the cave and permanently prevents the apocalypse.
-- The final aftermath's viewpoint.
+  *(**Now implemented**, and still proposed: three blows on the worked pillar,
+  the second shutting the only way out, the third taken deliberately from under
+  the span. The chamber, the basin and the fold go under the hill. The game
+  never explains why that ends it — only that nobody will stand in that room
+  again, because there is no room.)*
+- The final aftermath's viewpoint. *(**Now implemented**, and still proposed:
+  the village that evening and after, then the same square a century later.
+  Third person, explicitly signalled, and not the hero — the hero is dead.)*
 - Full combat and progression systems.
-- **Whether anyone in this world has real foreknowledge.** The prototype
-  carefully does not say. Hyssop reads a date out of old lines and may simply be
+- **Whether anyone in this world has real foreknowledge.** The game carefully
+  does not say. Hyssop reads a date out of old lines and may simply be
   wrong; the prophecy originates with the hero's own recitation. Nothing here
   establishes a mechanism by which the original words could have been
   predictive, and nothing here rules one out. **Nor may anything explain the
   rupture** — see the third owner decision above.
 - **Why the protagonist is personally invested in these particular people.**
-  The prototype builds this out of named villagers — Marjoram's dough for
+  The game builds this out of named villagers — Marjoram's dough for
   tomorrow, Parsie waiting five years for his own turn, somebody up a ladder
   being told how to hang a lantern. That is as far as it can honestly go while
   the protagonist's family remains undecided, which is the obvious place deeper
   stakes would come from.
 
-The prototype contains no combat, levelling, hunger, durability, timers or
+The game contains no combat, levelling, hunger, durability, timers or
 consumable resources, so nothing here presumes a system for any of them.
 
 ---
@@ -339,7 +351,7 @@ than owner-approved facts, and implementing one has never promoted it.
 
 **Title.** The game is **Absolution**. The place inside it remains the **Cave of
 Absolution**. Storage keys are unchanged (`cave-of-absolution:*`), kept
-deliberately so that saves from the first prototype still load.
+deliberately so that saves from the earliest builds still load.
 
 **Save compatibility.** `schemaVersion` is still 1 and `contentVersion` is
 still `0.1.0`: the state shape did not change, and neither did any id a save
