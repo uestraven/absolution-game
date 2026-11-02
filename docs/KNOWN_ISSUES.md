@@ -196,12 +196,15 @@ its room.
   trailing silence and the level step across the wrap is 0.2–1.6 dB, so there
   is no hole — but three of the eight step by over a decibel, which may be
   heard as a bump. Measurements in `art/music/README.md`.
-- **Whether browsers honour MP3 gapless metadata when looping a media
-  element.** The files carry correct Xing/LAME tags (a decode round-trip
-  returns exactly the master's frame count), and Chromium loops cleanly in the
-  automated check — but a browser that ignores the tag inserts ~20–30 ms at
-  each wrap on the MP3 path. This is why WebM/Opus is preferred where available
-  and why the loop is described as measured rather than seamless.
+- **Whether the wrap is audible.** Measured in Chromium across a natural loop,
+  with the whole file buffered, the stall is **~17 ms (WebM/Opus)** and **~33 ms
+  (MP3)** — one or two frames. A media element seeks to loop (`seeking`,
+  `waiting`, `seeked`), so it is not zero, and nobody has heard it.
+- **Whether looping works on a browser that ignores `loop`.** The flag is set
+  *and* the controller listens for `ended` and restarts the track by hand,
+  because Safari has a long history of ignoring it on `audio`. The fallback is
+  unit-tested and provoked once against the real asset — but it has never been
+  exercised by a browser that actually needs it, because Chromium does not.
 - **Whether 25% is the right default**, and whether the eight tracks sit at
   comparable loudness in practice. They share a −3.0 dBFS peak, which is not
   the same as sounding equally loud.
