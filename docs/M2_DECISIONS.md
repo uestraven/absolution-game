@@ -5,6 +5,13 @@
 Reconciled against `31866e6`. The design documents have been rewritten to match;
 superseded proposals are removed rather than left standing beside the new plan.
 
+**Revision 4** closes four contradictions and one finale problem found in owner
+review: fixed portal destinations in place of offsets; a prophecy text that
+never drifts; the removal of future testimony with no source; a future cave
+whose seal is an obstacle rather than scenery; and a pillar whose weakness owes
+nothing to a century that never happens. Proposals 1, 2, 5, 6 and 10 below are
+revised accordingly. See `FULL_GAME_WALKTHROUGH.md` → *What revision 4 closed*.
+
 - [`docs/FULL_GAME_DESIGN.md`](FULL_GAME_DESIGN.md) — the full design.
 - [`docs/FULL_GAME_WALKTHROUGH.md`](FULL_GAME_WALKTHROUGH.md) — critical path and audit.
 - [`docs/CANON.md`](CANON.md) — what is settled, with the boundary around what is not.
@@ -135,16 +142,16 @@ be read without the whole document.
 
 | # | Question | Recommendation |
 | --- | --- | --- |
-| 1 | **Rupture symptoms** | Three escalating kinds, never explained. *Out of sequence:* a sound before its cause, weather that un-happens. *Will not stay put:* the crack in the sealed chamber is a different length every time it is measured. *Absence:* water, then light, then seasons. The past gets the first faint ones **while the hero is standing in it**, which is what turns the village against them. |
-| 2 | **Future evidence** | Testimony, not measurement. The settlement's own version of the Wanderer-words, now the central account of how the world ended, saying plainly that the Wanderer came *out of the hill*; an inherited family story about a one-eyed stranger on the night it began; a cave mouth sealed by the village, with their mark on the seal; a memorial naming the year it started; and the hero's own journal to match names and dates against. Responsibility is established. Mechanism is not. |
+| 1 | **Rupture symptoms** | Three escalating kinds, never explained. *Out of sequence:* a sound before its cause, weather that un-happens. *Will not stay put:* a tally that is wrong in a way nobody can account for, a chalk mark that has moved. *Absence:* water, then light, then seasons. The past gets the first faint ones **while the hero is standing in it**, which is what turns the village against them. **Chapter 1 has none** — the tear does not exist until the hero crosses at the end of it. |
+| 2 | **Future evidence** | Testimony, not measurement. The settlement's own version of the Wanderer-words, now the central account of how the world ended, saying plainly that the Wanderer came *out of the hill*; an inherited family story about **a child who went up to the hill for the rite that night and did not come out**; a cave mouth sealed by the village, with their mark on the seal; a memorial naming the year it started; and the hero's own journal to match names and dates against. **Nothing in the chapter witnesses an event that has not happened:** the one-eyed-stranger account is removed, and the Account's *one-eyed* is inherited from the hero's own recitation rather than from any witness. Responsibility is established. Mechanism is not. |
 | 3 | **Subjective duration** | About **three days**. The hero stays sixteen. Appearance: one eye gone, filthy, thinner, a half-healed face — enough that the earlier self does not know them at once. |
 | 4 | **Eye injury** | In the future, at the sealed cave mouth, struck by a stone from **a rockfall that has not happened yet**. A wound from the rupture rather than from clumsiness. Two sentences, no spectacle, no interface gimmick. |
-| 5 | **Crossing rules** | The builders found that the fold answers to a lamp at three heights, and recorded the three destinations they reached: their own era, one century back, one century on. **Three settings, not a dial.** Carried objects travel; nothing is confiscated. |
-| 6 | **Why the hero goes forward rather than home** | Not a mistake. The lamp has to stand in a cut dish to hold the height, and **the dish for the home setting has not been cut yet** — it is the last thing the builders will do. Improvising fails for a stated reason, Lovage will not cut it for a stranger he now distrusts, and the rupture's first symptoms are turning the village against them. Forward is the only setting that works, and the hero takes it knowing it is wrong. |
+| 5 | **Crossing rules** | A lamp at one of three heights makes the fold answer, and the three heights reach **three fixed destinations, not three offsets**: low = year −100, middle = year 0, high = year +100, the same from any era. **Three settings, not a dial.** The builders found all three positions, cut dishes at two, tried only the low one — which from their own century does nothing — and wrote that down without a theory. Carried objects travel; nothing is confiscated. |
+| 6 | **Why the hero goes forward rather than home** | **A reasoned gamble, not a mistake.** From the crew's record that the low height *does nothing* here, plus their own arrival by that height from year 0, the hero correctly deduces that the heights are fixed places and that **one of the three must be home**. It is not the low one. The middle one has no dish — it is the last thing the builders will cut, improvising fails for a stated reason, and Lovage will not cut it for a stranger he now distrusts. That leaves one setting they can light and no way to know whether it is home. They light it. The reasoning is right at every step and the information simply stops. |
 | 7 | **The earlier self's plan** | Cross, find the power the plank promises, come back and stop the Wanderer. They have just solved the puzzle nobody has ever solved and are twenty minutes from the proudest moment of their life. |
 | 8 | **Why it ends lethally** | The player may try talking, proof, restraint and blocking the way; each fails for a stated reason. Chiefly: the stranger matches the cyclops the plank describes, so every proof of identity is proof they should be resisted. The earlier self is the same person, exactly as determined, and does not stay stopped. The encounter's pressure is their next attempt on the threshold, not a clock. |
 | 9 | **Why the cave must be destroyed** | Stopping one crossing stops one journey. **The prophecy the hero wrote guarantees repetition:** the village holds a written promise that braving this cave grants the power to save them, and sixteen-year-olds attempt it every year, forever. The tear cannot be repaired. It can only be denied a door. |
-| 10 | **How the sacrifice destroys it** | The rupture has been loosening the hill for a century. The chamber stands on one worked pillar. Bringing it down needs a mallet, the hill's own weight, and somebody inside when it goes. |
+| 10 | **How the sacrifice destroys it** | **Nothing temporal.** Lovage's crew cut the chamber out and left one worked pillar to hold the roof; a hundred years of ordinary settlement have cracked its base. Bringing it down needs a mallet, the hill's own weight, and somebody inside when it goes. The hero knows where to swing because **Lovage warned them off that pillar to their face** in Chapter 2 and the crack is in Chapter 1's room description. No century of rupture is invoked — that century never happens. |
 | 11 | **Aftermath** | A short authored epilogue in the original era, seen from the village: the night of the vigil, the hill going down, Tyme at the mouth with a coil of rope and nobody to hand it to. The rite ends because the cave does. The prophecy is fulfilled exactly and nobody will ever know how. No playable survivor campaign. |
 
 ### Genuinely unresolved, and not blocking M3
@@ -187,7 +194,7 @@ Neither affects anything Milestone 3 builds.
 | Keep | Why |
 | --- | --- |
 | Optional `TAKE STONE` in `present.outer_gallery` | Parsie asks for one, and a century later it is in the settlement's record chest — an optional payoff that works better under the new plan than the old one |
-| The growing crack in `present.sealed_chamber` | Re-framed as a rupture symptom rather than water strain: a different length each time it is measured |
+| **A pillar** in `present.sealed_chamber`, cracked at the base | Not a rupture symptom and not water strain — **plain tired stone**, because Chapter 1 happens before the tear exists. It is the finale's foreshadowing: cut in front of the hero in Ch2, struck in Ch4 |
 | One Tyme topic about the bench | His payoff is now carried by the line that still keeps the hill a century on |
 
 See `FULL_GAME_DESIGN.md` §9 for the Milestone 3 plan and the save-format work

@@ -214,6 +214,13 @@ leans on the cave's name meaning anything.
 **The knotted rope** from an iron ring at the mouth to a pillar in the gallery,
 and Bay's role keeping the path.
 
+> **Two different pillars.** This one is a natural pillar in
+> `present.outer_gallery` and is shipped. The full design's finale proposes a
+> *worked* pillar holding the roof of `present.sealed_chamber` — a different
+> stone in a different room, cut by Lovage's crew in Chapter 2 and brought down
+> in Chapter 4. Neither is the other, and the rope is never tied to the one
+> that matters.
+
 **The whole first puzzle.** The relief's imagery, the sliding shutter in cut
 grooves, the ankle-height smoke-blackened alcove with a dished floor, the
 pierced eye, the scale pattern, the pivoted slab. Also the oak wedge as the
@@ -243,7 +250,9 @@ things." Chosen to imply someone cares without asserting any family facts.
 - The cause and timing of the eye injury.
 - The hero's subjective journey length and changing appearance.
 - The practical rules for crossings, destinations, object transport and the
-  last return.
+  last return. *(The full design proposes three **fixed** destinations — year
+  −100, year 0, year +100 — reached by a lamp at three heights, the same three
+  from any era. Proposed, not canon.)*
 - The specific symptoms of the rupture, and what evidence future inhabitants
   hold.
 - The earlier self's exact plan, and why the confrontation ends lethally.

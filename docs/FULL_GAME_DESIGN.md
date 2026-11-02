@@ -24,6 +24,18 @@ drawing as the promised power, landmarks changing across eras, Tyme's payoff
 (now carried by his successors), a finale built from collected objects and
 knowledge, and a hero who stays sixteen.
 
+### Revision 4 — five contradictions closed
+
+Found in owner review of revision 3. All five were real.
+
+| Finding | Correction |
+| --- | --- |
+| The settings did not add up: "one century on" from −100 is year 0, not +100 | **Fixed destinations, not offsets.** Three heights reach three fixed points: −100, year 0, +100. Every crossing re-derived from that. §3D, §5 P3 |
+| Transmission still lost an apologetic qualifier and turned *a wanderer* into *the Wanderer*, though the recitation is now the opening text verbatim | **The text never changes.** What grows around it is illustration, commentary and ceremony. §6 |
+| Future testimony described a one-eyed stranger in year 0, which has no source: the intervention has not happened, and in that history it never does | **Removed.** The inherited story is now about a child who went into the hill and did not come out — which *is* in that history, and is the hero |
+| The future walkthrough passed through a sealed cave mouth before breaking the seal | **The seal guards the portal chamber, not the hillside.** The hero leaves the deep chamber by a fissure the subsidence opened, and must break the seal to get *back in* to the dish. §4, §5 P6 |
+| The finale's pillar was "loosened by a century of rupture" — a century that lies in a future which never happens | **Ordinary load-bearing stone, foreshadowed in two eras.** Lovage cut it and says it is the only thing holding the roof; by year 0 it has a settlement crack at its base. §8, §9 |
+
 ### Status legend
 
 | Label | Meaning |
@@ -121,7 +133,7 @@ them were the same child.
 
 Unchanged except three small additions in §9.
 
-### Chapter 2 — The past, one century back
+### Chapter 2 — The past, year −100
 
 | Field | Detail |
 | --- | --- |
@@ -130,11 +142,11 @@ Unchanged except three small additions in §9.
 | **Motivation** | They are a stranger a hundred years from their own bed and the water they came out of is now a hand deep and ordinary. |
 | **Main activity** | A village that does not know them; earning the worksite; the builders' drawing; **the recitation.** |
 | **Complication** | Two things at once. The recitation makes them fascinating and then frightening. And the first symptoms of the rupture begin while they are standing in it — small, wrong, unexplainable — and the village connects them to the stranger, correctly, without understanding anything. |
-| **Discovery** | *Inferred:* the fold answers to a lamp at a measured height. *Confirmed:* the builders found three settings and no more, and the dish for the middle one has not been cut yet. **And:** nobody here has ever heard the prophecy they have known since school. |
+| **Discovery** | *Inferred:* the fold answers to a lamp at a measured height, and the heights are fixed places rather than distances. *Confirmed:* there are three and no more; the low one is this century; the dish for the middle one is not cut. **And:** nobody here has ever heard the prophecy they have known since school. |
 | **Exit action** | `PLACE LANTERN IN HIGH DISH` → `LIGHT LANTERN` → `ENTER APERTURE`. Forward, because forward is the only setting that works. |
 | **Consequences** | Crossing 2 — the one that shatters it. The recitation enters the village's keeping. Lovage's mallet travels. |
 
-### Chapter 3 — The future, one century on
+### Chapter 3 — The future, year +100
 
 | Field | Detail |
 | --- | --- |
@@ -143,7 +155,7 @@ Unchanged except three small additions in §9.
 | **Motivation** | They aimed a century forward to get closer to home. They need to know how far wrong they are before they can correct it. |
 | **Main activity** | A surviving settlement in their own square; two people who help them; reading what is left. |
 | **Complication** | Getting out through the sealed mouth costs them an eye — struck by a stone from a rockfall that has not happened yet. The next person who sees them backs away from a one-eyed figure coming out of the hill and names them from a text the hero themselves wrote. |
-| **Discovery** | *Inferred, immediately:* the world ended. *Confirmed, by testimony and dates:* it began the year they went into the cave, a one-eyed stranger was seen on that night, and the account the settlement lives by is word for word the thing they recited a hundred years before that. |
+| **Discovery** | *Inferred, immediately:* the world ended. *Confirmed, by testimony and dates:* it began the year they went into the cave; the settlement's oldest story is of a child who went up to the hill that night and never came out; and the account they live by is word for word the thing the hero recited a hundred years before that. |
 | **Exit action** | `PLACE LANTERN IN LOW DISH` → `LIGHT LANTERN` → `ENTER APERTURE`. Back, one century, to the moment the seam opens. |
 | **Consequences** | Eye lost. Responsibility established. Carries the mallet home. |
 
@@ -184,10 +196,15 @@ journal's, or an inscription's.
 
 Three escalating kinds of symptom, all presented as observation.
 
+**Nothing is wrong in Chapter 1.** The tear does not exist until the hero
+crosses at the end of it, so the opening era is simply itself — which is also
+why the chamber's one blemish there is an ordinary settlement crack and not a
+portent (§9).
+
 | Kind | Looks like | Where |
 | --- | --- | --- |
-| **Out of sequence** | A sound arrives before its cause. Weather that un-happens. A bell heard, then rung. | Faint in Ch2 while the hero is there; everywhere in Ch3 |
-| **Will not stay put** | The crack in the sealed chamber is a different length each time it is measured. Marks move. A tally is wrong in a way nobody can account for. | Ch1 (visible, unremarked), Ch2, Ch4 |
+| **Out of sequence** | A sound arrives before its cause. Weather that un-happens. A bell heard, then rung. | Faint in Ch2 while the hero is standing in it; everywhere in Ch3 |
+| **Will not stay put** | A tally is wrong in a way nobody can account for. A chalk mark is not where it was left. | Ch2 and Ch3 only |
 | **Absence** | Water goes first, then light, then the seasons. | Ch3 mainly: a dying sky, a cold summer, a sea that came up and stayed |
 
 **Water is a symptom, not the mechanism.** The shipped plank already says *the
@@ -217,10 +234,12 @@ one-eyed — enough that the earlier self does not know them at once.
 
 | Calendar | Event | Who knows |
 | --- | --- | --- |
-| year −100 | Lovage's crew are three seasons into cutting the stair down to the water. They have found the fold and learned three lamp settings. The middle dish is uncut. | the past village |
+| year −100 | Lovage's crew are three seasons into cutting the stair down to the water. They have found that a lamp at three heights makes the air answer, cut dishes at two, tried the low one, and recorded that it does nothing. The middle dish is uncut. **Nobody in this century has been anywhere.** | the past village |
 | year −100 | A stranger comes up out of the basin, earns the worksite, is shocked that nobody has heard the Wanderer-words, and **recites them word for word.** It is written down. | the past village |
 | year −100 | Small wrongnesses begin. The village blames the stranger. The stranger leaves forward, because forward is the only setting that works. **The tear is left open.** | nobody understands it |
-| −100 → 0 | The recitation is copied, read at midwinter, shortened to fit a chant, and carved. *A wanderer* becomes *the Wanderer*. It is taught to children. | everyone, as tradition |
+| −100 → 0 | The recitation is copied, read at midwinter, carved, glossed and dated by commentary, and taught to children. **The five lines are never altered** — the layers grow on top of them. | everyone, as tradition |
+| −100 → 0 | The builders finish the chamber: camouflaged, the middle and high dishes filled, the low one left behind a shutter, the relief cut to show that one height. | nobody by year 0 |
+| −100 → 0 | The chamber's one worked pillar settles. By year 0 it is cracked at the base. | unremarked |
 | year 0, morning | Basil/Basilia turns sixteen. Hyssop has counted a date out of the old lines; the village is eleven days into a vigil. | the village |
 | year 0, dusk | The earlier self solves the relief, lights the lamp, and the seam opens. | the player |
 | **year 0, dusk, the same minute** | **The intervention.** A one-eyed stranger arrives. The earlier self is killed. The hill comes down on the chamber with the stranger inside. | nobody survives it |
@@ -246,11 +265,30 @@ the whole effect and needs nothing retrofitted into the opening.
 
 ### D. Crossings — PROPOSED rules
 
-| # | Motive | Setting used | Destination | Carried | Design consequence |
+**The three settings are fixed destinations, not offsets.** A lamp at one of
+three heights makes the fold answer, and the three places it reaches are the
+same three places from any era:
+
+| Height | Reaches | Called |
+| --- | --- | --- |
+| **low** | year −100 | the builders' own century |
+| **middle** | **year 0** | the opening village's year |
+| **high** | year +100 | — |
+
+Nobody in the game knows this as a rule. The hero works it out, incompletely,
+from one arrival and one craft record (§5 P3).
+
+| # | Motive | Height | From → to | Carried | Design consequence |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Find what the cave is for | the alcove, as the relief shows | year −100 | lantern, wedge | The first tear |
-| 2 | Cannot reach the home setting; forward is the only one that works | the high dish | year +100 | + mallet | **The shattering** |
-| 3 | Reach the minute it starts | the low dish | year 0, the instant the seam opens | + journal | Makes the intervention possible |
+| 1 | Find what the cave is for | the alcove — the one height the relief depicts, and the **low** one | year 0 → **−100** | lantern, wedge | The first tear |
+| 2 | Reasoned gamble: one of the two untried heights must be home, and the home dish is uncut | **high** | −100 → **+100** | + mallet | **The shattering** |
+| 3 | Now knows which height is which | **middle** | +100 → **year 0**, the instant the seam opens | + journal | Makes the intervention possible |
+
+**Why year 0's chamber offers only one height.** The builders cut three dishes;
+when they finished the chamber they filled two and left the low one behind a
+shutter, which is why the relief depicts a single position. In year +100 the
+collapse cracks the fill open again, which is how the hero reaches the middle
+dish at all.
 
 **Object transport** is a gameplay rule and is not presented as law: what the
 hero is holding comes with them, nothing is confiscated, and nothing arrives
@@ -301,7 +339,7 @@ Existing implemented IDs are marked ✅.
 | `home` | ✅ `present.home` | — | — |
 | `square` | ✅ `present.square` | ✅ `past.square` | `future.square` — the settlement, perhaps thirty people |
 | `workshop` | ✅ `present.workshop` | *(the half-built wall in `past.square`)* | *(a roofless shell in `future.square`)* |
-| `cave_path` | ✅ `present.cave_path` | `past.cave_path` | `future.cave_path` |
+| `cave_path` | ✅ `present.cave_path` | `past.cave_path` | `future.cave_path` — the hillside, with **the fissure** and, below it, the sealed mouth |
 | `spring` | — | `past.spring` | *(cut; the dry spring is described from the square)* |
 
 ### Cave
@@ -309,14 +347,30 @@ Existing implemented IDs are marked ✅.
 | Concept | `present` | `past` | `future` |
 | --- | --- | --- | --- |
 | `entrance` | ✅ `present.entrance` | ✅ `past.entrance` | `future.entrance` — **sealed by the village**, their mark on it |
+| *(the fissure)* | — | — | `future.cave_path` → `future.deep_chamber`: a subsidence crack, the hero's **only** way out of the hill and back into it |
 | `outer_gallery` | ✅ `present.outer_gallery` | *(not cut yet)* | *(gone)* |
 | `echo_chamber` | ✅ optional | — | — |
-| `sealed_chamber` | ✅ `present.sealed_chamber` | `past.worksite` | *(crushed; reached only as far as the aperture)* |
+| `sealed_chamber` | ✅ `present.sealed_chamber` | `past.worksite` | *(crushed; **behind the seal**, and the only place the middle dish exists)* |
 | `deep_chamber` | ✅ `present.deep_chamber` | ✅ `past.deep_chamber` | `future.deep_chamber` |
 
 The past has no gallery and no crawl: a worked stair runs from the mouth to the
 worksite. **Both facts are already true in the shipped Chapter 1 text.** The
 future has no gallery either — the hill has moved.
+
+#### The future cave is two separate spaces, and that is the point
+
+A century of subsidence has split the inside of the hill in two, and **the seal
+guards one half only.**
+
+| | Route | State |
+| --- | --- | --- |
+| **The lower half** | `future.cave_path` ⇄ *the fissure* ⇄ `future.deep_chamber` | A crack the hill opened by itself, well above the old mouth. The hero arrives in the deep chamber and **leaves this way**, which is why they reach the settlement without touching the seal |
+| **The upper half** | `future.entrance` → the crushed chamber and **the middle dish** | Shut with fitted stone and the village's mark. **The only way to the dish**, and the reason P6 exists |
+| **Between the two** | the old stair | Choked with fall. Impassable, examinable, and stated the first time the hero tries it |
+
+So the hero can get out of the hill and cannot get back to the portal, which is
+exactly the shape the chapter needs: the village's seal is not scenery the
+walkthrough walks through, it is the last obstacle in the chapter.
 
 ### Compact map
 
@@ -411,19 +465,28 @@ sets.
 | --- | --- |
 | **Purpose** | Deliver the thing the prophecy calls *the power*: the fold answers to a lamp, and its height decides where you come out. This is the chapter's real prize and the hero's only asset afterwards. |
 | **Prerequisites** | P2 |
-| **Visible first** | A half-cut aperture in a thinned panel. The scale pattern chalked out but not carved. **Three positions marked on the floor in chalk — and only two dishes cut.** Where the middle one will go there is rough rock and a chalk outline. |
-| **Clues** | The drawing, complete and numbered. Lovage's crew's own notes: three settings, three places they came back from, written down as a craft record — *where we were, how long we were gone, what we found* — with no theory attached, because they have none. |
+| **Visible first** | A half-cut aperture in a thinned panel. The scale pattern chalked out but not carved. **Three positions marked up the panel in chalk — and only two dishes cut.** Where the middle one will go there is rough rock and a chalk outline. The low one, the hero may notice, is the height they arrived at. |
+| **Clues** | The drawing, complete and numbered. Lovage's crew's own notes, kept as a craft record and not as a theory, because they have none: *the air answers a lamp at three heights. We cut dishes at two. Hoyt stood in the low one and came out of the same hole he went into, so the low one does nothing. We have not tried the other.* |
 | **Why the solution follows** | The relief in Chapter 1 showed one height. The drawing shows three, with the dishes to prove it. The hero has spent a day reading a weathered third of an instruction sheet. |
-| **The limitation, stated plainly and checkable** | The lamp must stand in a cut dish. The dish holds it at the exact height and nothing else does. **The middle dish — the one that comes out in the hero's own year — is the last thing the crew will cut.** The low dish goes back a century; the high dish goes forward a century; those two exist. |
+| **The limitation, stated plainly and checkable** | The lamp must stand in a cut dish. The dish holds it at the exact height and nothing else does. **The middle dish is the last thing the crew will cut**, and Lovage will not cut it early. Low and high exist; middle is a chalk outline on rough rock. |
+| **What the hero can actually work out** | The crew's record says the low setting *does nothing* — and the hero arrived here by a lamp at that same low height, in their own year. So the heights are not distances; they are **places**, the same three places from any century. One of the three must therefore be home. It is not the low one. The middle one cannot be used. **That leaves one usable setting and no way to know in advance whether it is home.** The reasoning is sound and the information genuinely runs out there. |
 | **Every obvious attempt is answered** | `EXAMINE OUTLINE` — chalk on rough rock, no dish. `PLACE LANTERN ON RUBBLE` — it will not sit level, and the light wanders; the fold does not answer. `ASK LOVAGE TO CUT IT` — *"That is a week with two men, and I would not give you an hour."* `WEDGE LANTERN` — the wedge props a shutter, not a lamp at a hand's tolerance; and the dish is cut to a depth you cannot guess at. `WAIT` — available, and the reason it fails is the chapter's complication: the wrongnesses are starting, the village has decided they came in with the stranger, and by the second day the hero is not going to be allowed near the hill at all. |
 | **Solution (to leave at all)** | `EXAMINE DRAWING` → `EXAMINE DISHES` → `PLACE LANTERN IN HIGH DISH` → `LIGHT LANTERN` → `ENTER APERTURE`. |
 | **Flags** | `read_drawing`, `knows_settings` |
-| **Hints** | 1. The drawing is not decoration; there are three positions on it. 2. Three settings, three places. Only two of them have a dish to stand a lamp in. 3. The middle one is uncut and nobody will cut it for you. Take the one that goes forward. |
-| **Cross-era consequence** | **Yes, and it is the catastrophe.** The player is not told that. They are told, by the room and by the village, that going forward is the only door left. |
+| **Hints** | 1. The drawing is not decoration; there are three positions on it. 2. Three heights, three places — the same three places from any year. You came in by the low one. 3. One of the other two is home. The middle has no dish and nobody will cut it for you. |
+| **Cross-era consequence** | **Yes, and it is the catastrophe.** The player is not told that. They are told, correctly, that one of these two is home and only one can be lit. |
 
-**The hero knows it is wrong and goes anyway**, because the alternative is
-staying in year −100 for the rest of their life. That is a decision, not an
-error, and the design should let the player feel the weight of taking it.
+**This is a reasoned gamble, not a mistake.** The hero deduces the right
+rule from the one arrival and the one craft record they have, concludes
+correctly that home is reachable, and finds that the only setting they can
+physically use is the one they cannot identify. They light it believing it is
+as likely to be home as not. **The player is never nudged into an avoidable
+error, and never told the answer the hero could not have had.**
+
+The alternative is staying in year −100 for the rest of their life, in a
+village that has already decided the wrongnesses arrived with them. The design
+should let the player feel the weight of taking the chance, not the sting of
+having been tricked.
 
 ---
 
@@ -455,7 +518,7 @@ weight lands in Chapter 3, when they read it back in a stranger's keeping.
 | | |
 | --- | --- |
 | **Purpose** | Establish responsibility by testimony and inference. **No measurement, no arithmetic, no diagnosis of mechanism.** |
-| **Prerequisites** | Crossing 2, and getting out of `future.deep_chamber` (a gap in the fallen roof; not a puzzle). |
+| **Prerequisites** | Crossing 2, and getting out of `future.deep_chamber` **through the fissure** (not a puzzle; the choked stair is described once so the player knows the portal is now behind them). |
 | **Visible first** | Thirty people in a square the hero crossed this morning. The well capped with stone. A roofless shell where the workshop stands. A dying sky. |
 
 #### The four pieces of evidence
@@ -463,7 +526,7 @@ weight lands in Chapter 3, when they read it back in a stranger's keeping.
 | Piece | What it is | What it establishes |
 | --- | --- | --- |
 | **The Account** | The settlement's version of the Wanderer-words, kept by Rue: no longer a prophecy but their history of how the world ended. Longer than the plank, with a century of gloss grown onto it — and the five original lines still in the middle of it, word for word. It says plainly that **the Wanderer came out of the hill.** | That the hero's recitation is this world's founding text, and that the text now describes *them* |
-| **The family story** | Rue's, inherited and worn smooth: on the night it began, a one-eyed stranger walked out of the hill and would not say who they were. Three versions exist and the details disagree. | A witness account, uncertain in the way real inheritance is |
+| **The family story** | Rue's, inherited and worn smooth: **on the night it began, a child of the village went up to the hill for the rite and did not come out.** Nobody went in after them. Three versions exist and they disagree about the name. | A witness account, uncertain in the way real inheritance is — **and the hero is the child** |
 | **The memorial** | A stone in the square naming the year the world started going wrong. | A date — **the year the hero went into the cave** |
 | **The hero's journal** | Their own entries from Chapters 1 and 2: names, the date of their birthday, what they said in the square a hundred years before that. | The match. The player makes it; nobody states it |
 
@@ -475,7 +538,7 @@ EXAMINE MEMORIAL                   the year
 EXAMINE ACCOUNT                    the five lines, in the middle of a century of gloss
 READ JOURNAL                       their own words, and their own birthday
 TALK TO RUE   → the account        where it came from: "a stranger said it"
-              → the stranger       the family story, and the one eye
+              → the child          the family story, and the name nobody agrees on
               → the year           what their grandmother's grandmother was told
 ```
 
@@ -484,34 +547,48 @@ TALK TO RUE   → the account        where it came from: "a stranger said it"
 | **Why the solution follows** | Four independent things agree on a person, a night and a year, and the hero is the only one who can see that the person is them. |
 | **Flags** | `read_account`, `heard_family_story`, `knows_responsibility` |
 | **Wrong but reasonable** | Asking Rue what caused it: she tells the hero what her family believes, which is that the Wanderer did it, and she is right without knowing anything. **Asking her how it works: she has no idea, and says so.** There is no omniscient survivor and no technical account anywhere in the chapter. |
-| **Hints** | 1. Rue keeps the account. Read it before you ask her about it. 2. The lines in the middle of it are not hers. 3. Compare the year on the memorial with the date in your own journal. |
+| **Hints** | 1. Rue keeps the account. Read it before you ask her about it. 2. The lines in the middle of it are not hers. 3. Compare the year on the memorial with the date in your own journal. 4. Ask her about the child. |
 | **Recovery** | The Account and the memorial are fixed scenery and cannot be taken, lost or destroyed. Rue and Sorrel are in the square for the whole chapter. |
 
 **What the hero concludes, precisely.** Not a mechanism. That the world ended
 starting in the year they walked into the hill; that the text everyone here
-lives by came out of their own mouth; and that the monster in it is a one-eyed
-figure who came out of the cave. **They do not learn why, and neither does the
-player.**
+lives by came out of their own mouth; and that the missing child in this
+settlement's oldest story is them. **They do not learn why, and neither does
+the player.**
+
+**Nothing here is a record of something that has not happened.** This history
+contains the hero's recitation in year −100 and their disappearance into the
+hill in year 0, because both of those have occurred. It contains **no witness
+to a one-eyed figure in the opening era**, because in this version of events
+the hero never goes back: the final intervention happens for the first time
+when the returning hero makes it (decision 1). The Account calls the Wanderer
+one-eyed **because the hero's own recitation said so** — the description is
+inherited text, not testimony, and the settlement has never matched it to
+anybody. The one person who will ever meet that figure is the hero's earlier
+self, in a chapter the future cannot know about.
 
 ---
 
-### P6 — Out through the seal · `future.entrance` · the eye
+### P6 — In through the seal · `future.entrance` · the eye
 
 | | |
 | --- | --- |
-| **Purpose** | The return route, and the injury. |
-| **Prerequisites** | `knows_settings` (P3) and the mallet. |
-| **Visible first** | The mouth closed with fitted stone and the village's mark cut into it. On the inside, where the aperture was, a fissure. |
-| **Clues** | The drawing's two usable settings, remembered. Rue: the seal was put there by her people and is not to be opened. Sorrel knows a loose course near the bottom. |
-| **Solution** | `WEDGE COURSE` → `BREAK SEAL WITH MALLET` (×2, authored, escalating) → **the stone** → `EXAMINE FISSURE` → the low dish is intact behind it → `PLACE LANTERN IN LOW DISH` → `LIGHT LANTERN` → `ENTER APERTURE`. |
-| **The injury — PROPOSED** | On the second blow. A stone comes down and takes the left eye, **and it is not a stone the hero loosened** — it falls from a rockfall that has not happened yet, and the hero hears the fall begin after it has already hit them. Two sentences. No spectacle, no interface gimmick, no half-blanked screen. The rupture wounds them directly, which is the only time it touches a person in the whole game. One journal line. |
+| **Purpose** | The return route, and the injury. **The hero has to break *into* the hill**: the fissure they climbed out of leads only to the dry basin, and the old stair up to the portal is choked. The dish is behind the village's seal. |
+| **Prerequisites** | P5, `knows_settings` (P3), and the mallet. |
+| **Visible first** | The mouth closed with fitted stone and the village's mark cut into it, downhill from the crack they came out of. |
+| **Clues** | The three heights, remembered, and the arithmetic now closed (below). Rue: the seal was put there by her people and is not to be opened. Sorrel knows a loose course near the bottom. |
+| **Which setting, and how the hero knows** | They arrived in −100 by the **low** height and came out here by the **high** one. So the heights are three fixed places: −100, here, and one more — **and the one more is the middle.** The deduction the hero gambled on in P3 is confirmed by the gamble itself having worked. **The middle dish only exists here**: the builders filled it when they finished the chamber, and the collapse has cracked the fill open. |
+| **Solution** | `WEDGE COURSE` → `BREAK SEAL WITH MALLET` (×2, authored, escalating) → **the stone** → `IN` → `EXAMINE FILL` → the middle dish behind it → `PLACE LANTERN IN MIDDLE DISH` → `LIGHT LANTERN` → `ENTER APERTURE`. |
+| **The injury — PROPOSED** | On the second blow, **outside, in the open, in front of witnesses**. A stone comes down and takes the left eye, **and it is not a stone the hero loosened** — it falls from a rockfall that has not happened yet, and the hero hears the fall begin after it has already hit them. Two sentences. No spectacle, no interface gimmick, no half-blanked screen. The rupture wounds them directly, which is the only time it touches a person in the whole game. One journal line. |
 | **Flags** | `seal_opened`, `lost_eye` |
 | **Wrong but reasonable** | Breaking the seal without wedging the course: it settles and has to be lifted again — a setback, not a death. Asking Rue's permission: refused, kindly, and she does not stop them. Digging by hand: hours of it, described, and the stone does not move. |
-| **Hints** | 1. The way you came in is shut and you are carrying a mason's mallet. 2. Sorrel said which course is loose. Wedge it before you swing. 3. Wedge the course, break the seal, and look for the dish behind the fissure. |
+| **Hints** | 1. The crack you climbed out of goes down to the water, not up to the aperture, and the stair is gone. 2. The mouth is sealed and you are carrying a mason's mallet. Sorrel said which course is loose; wedge it before you swing. 3. Inside, the dish you want is the middle one, and the fill over it is cracked. |
 | **Recovery** | **If the mallet was left in the past**, the shell of the workshop in `future.square` yields a maul. Slower, described as such, same outcome. No softlock. |
 
-**Identity confirmed by the world, not by narration.** Walking out one-eyed,
-the hero meets whoever is at the mouth, and they back away and say the word.
+**Identity confirmed by the world, not by narration.** The seal comes down in
+daylight with people watching, and a one-eyed stranger standing over it with a
+mallet is the thing their history warned them about. Somebody backs away and
+says the word.
 Narration never states that the hero is the Wanderer; a frightened stranger
 does, out of a text the hero wrote.
 
@@ -550,23 +627,34 @@ matches it. Those lines are load-bearing and must not be edited.
 
 ### Transmission — PROPOSED
 
-Four mundane steps, and no unseen author anywhere:
+**The words themselves never change.** The hero recites the five lines from
+memory; Saffra writes those five lines down; the plank in year 0 carries those
+five lines; the Account in year +100 carries those five lines. Any drift in the
+wording would be a second author, and decision 4 forbids one — the information
+paradox only closes if the text that arrives is the text that left.
 
-1. **Saffra writes it down** the evening it is said, on the back of a board,
-   because a stranger who came out of the hill said something frightening and
-   that is what you do with it.
-2. **It is read at midwinter**, because midwinter is when this village reads
-   things out.
-3. **It is shortened to fit a chant**, and the qualifier that made *without
-   mercy* an apology rather than a threat is the first thing lost. *A
-   wanderer* becomes *the Wanderer*.
-4. **A carver renders the chant** two generations later, and gives the figure
-   a single eye in the middle of its face, because that is what the words
-   sound like. Sage already blames the carvings for exactly this.
+So the hundred years do not edit the words. They **pile things on top of
+them**, and each layer is somebody's honest attempt to understand a text they
+did not write:
 
-By year 0 it is taught in school, said every midwinter, and worn smooth with
-saying — which is why the hero knows it well enough to recite it cold a
-hundred years earlier.
+| Step | What is added | What is not touched |
+| --- | --- | --- |
+| 1 | **Saffra writes it down** the evening it is said, on the back of a board, because a stranger who came out of the hill said something frightening and that is what you do with it | the five lines |
+| 2 | **It is read at midwinter**, because midwinter is when this village reads things out — and a reading becomes a ceremony, with a standing and a silence and an order of who speaks | the five lines |
+| 3 | **A carver renders it** two generations later and gives the figure a single eye in the middle of its face, because that is what *one-eyed* sounds like if you have never seen one. Sage already blames the carvings for exactly this | the five lines |
+| 4 | **Glosses accumulate**: *the hill* is this hill, *the water* is the spring, *one who braves the cave* is the rite every sixteen-year-old now walks. By year 0 these readings feel like part of the prophecy and are not in it | the five lines |
+| 5 | **Hyssop counts a date onto it** — PROPOSED, §7 — which is a commentary nobody can source and everybody repeats | the five lines |
+
+By year 0 the text is taught in school, said every midwinter, carved, argued
+over and worn smooth with handling — which is why the hero knows it well enough
+to recite it cold a hundred years earlier, **and why what they recite is
+exactly what Saffra writes down.** The loop is tight because nothing in it is
+creative.
+
+**For the player this is a payoff, not a lecture.** The interpretations the
+hero grew up with are the things that turn out to be wrong — the central eye,
+the monster, the rite — while the five lines turn out to be exactly, literally
+true.
 
 ### Clue table
 
@@ -575,10 +663,11 @@ hundred years earlier.
 | *one-eyed* on the plank | Ch1 square | a monster's anatomy | the hero, later | Ch3, after the injury | required |
 | "the water will answer" | Ch1 square | poetry | one symptom among several | Ch3 | required |
 | Basin with a depth it cannot have | Ch1 deep chamber | wonder | the fold | Ch2 | required |
-| The crack in the sealed chamber | Ch1, unremarked; Ch2; Ch4 | weathering | it is a different length each time it is measured | Ch4 | optional |
+| The crack at the foot of the pillar | Ch1, unremarked; Ch2, being cut; Ch4 | weathering | the chamber has one support and it is already tired | Ch4, when the hero swings at it | optional |
 | Nobody in year −100 has heard the prophecy | Ch2 | they are ignorant | there is nothing to have heard yet | Ch3 | **required** |
-| The builders' three settings | Ch2 worksite | a craft record | the power | Ch3 return | required |
-| The uncut middle dish | Ch2 worksite | unfinished work | why the hero goes forward | Ch2 | **required** |
+| Three heights, three fixed places | Ch2 worksite | a craft record | the power | Ch3 return | required |
+| *The low one does nothing* | Ch2 worksite | the same craft record | proves the heights are places, not distances | Ch2 | **required** |
+| The uncut middle dish | Ch2 worksite | unfinished work | why only one setting is usable | Ch2 | **required** |
 | Things out of sequence | Ch2 faintly; Ch3 everywhere | local strangeness | the rupture | never explained | required |
 | The Account's five middle lines | Ch3 square | scripture | the hero's own voice | Ch3 | **required** |
 | The memorial's year | Ch3 square | when it started | the hero's sixteenth birthday | Ch3, against the journal | **required** |
@@ -608,7 +697,7 @@ Four of the seven are shipped.
 | **Sage** ✅ | present | Keeps the plank and the midwinter words | Hands the hero the prophecy | The words kept accurately | Her shipped gloss is what keeps the cyclops claim honest |
 | **Saffra** ✅ | past | A mason on a plank | A stranger who decides to write it down | A third course that will dry | **Her handwriting is under the Account a century later** |
 | **Fenn** ✅ | past | Eleven or twelve | Believes a stranger on sight | To be useful | Shows them the old way behind the spoil heap |
-| **Lovage** | past | Foreman | The gate | To finish the stair | Will not cut the middle dish. His mallet kills two people |
+| **Lovage** | past | Foreman | The gate | To finish the stair | Will not cut the middle dish. Warns the hero off the new pillar — *"That is the roof"* — which is how they know where to swing in Ch4. His mallet kills two people |
 | **Rue** — PROPOSED | future | Keeps the Account and the seal on the hill | A descendant of the line that has always kept the hill | The seal to stay shut | Gives the hero the evidence and the family story. **Never learns who they are** |
 | **Sorrel** — PROPOSED | future | A child of the settlement | Takes the hero in; the warmth of the chapter | To hear about anywhere else | Knows which course of the seal is loose |
 | **The earlier self** | present | Chapter 4 | — | To be the one who mattered | Dies |
@@ -665,11 +754,31 @@ restraint: it is one line, it is the mallet because that is what is in the
 hero's hand, and the narration does not dwell. What it does spend words on is
 the four seconds afterwards.
 
-**Then:** `BREAK PILLAR WITH MALLET`. The chamber stands on one worked pillar
-that a century of rupture has been loosening. The hero knows this because they
-have seen what the hill looks like a hundred years from now. Three blows,
-authored, with the hill answering each one. The last one is a separate,
-deliberate action with its cost stated before it is taken.
+**Then:** `BREAK PILLAR WITH MALLET`. Three blows, authored, with the hill
+answering each one. The last is a separate, deliberate action with its cost
+stated before it is taken.
+
+**Why one pillar brings down a hill, and how the hero knows.** Nothing
+temporal, and nothing the hero could not have learned with their own eyes:
+
+- **It is the only support there is.** Lovage's crew cut the chamber out of the
+  rock and left one worked pillar standing in the middle of it to hold the
+  roof. That is ordinary quarrying and it is ordinary masonry practice to hate
+  it.
+- **The hero watched it being cut.** In Chapter 2 the pillar is new, pale, and
+  the thing Lovage is most careful about: *"That is the roof. Not the stone
+  over your head — that. Keep your mallet off it."* A throwaway line in the
+  chapter the player plays before the one where it matters.
+- **A hundred years of ordinary settlement have followed.** By year 0 there is
+  a crack at its base and a litter of grit at its foot, present in Chapter 1
+  and unremarked (§9). **Not a portent and not a rupture symptom** — the tear
+  does not exist until the hero crosses at the end of that chapter, so there is
+  nothing for it to be a symptom of. Just old stone, carrying a roof it was
+  never really thick enough for.
+
+So the hero is not acting on knowledge of a future that no longer happens. They
+are acting on a warning they were given to their face in year −100, about a
+pillar they have seen cracked in year 0, with a mason's mallet in their hand.
 
 **Why the hero is still there to do it.** Decision 1, and the game never
 explains it. The hero notices, in one line, that they have not stopped
@@ -685,9 +794,20 @@ village, perhaps a page:
 - Tyme is found sitting on the bench with a coil of rope in his hands. He had
   been told somebody was going in. He does not know who, and the village
   decides, over years, that he was mistaken.
-- Nobody is missing. Nobody has a child unaccounted for. **The village never
-  learns that it lost anyone**, which is the cost nobody in the story is in a
-  position to grieve.
+- **The village loses a child that night, and knows it.** A sixteen-year-old
+  was eleven days into the vigil and went up to the hill at dusk, and the hill
+  is now on top of the cave. There is a name, there are parents, and there is
+  no body to bring down.
+- **What the village never learns is that it lost that child twice**, and that
+  the second one came back first. Two people are under the hill. Nobody in
+  year 0 has ever met the other one, and nobody ever will. That is the cost
+  nobody in the story is in a position to grieve.
+- This is the one fact both versions of history agree on. In the future the
+  hero walked through in Chapter 3, the oldest story Rue's family keeps is of
+  a child who went up to the hill for the rite and did not come out — **the
+  same child, the same night, remembered by a world that was wrong about
+  everything else.** The design should not point at this. The player will
+  arrive at it on their own or not at all.
 - The vigil is called off. The rite ends, because there is no cave to walk
   into. Sage puts the Wanderer-words in the chest with the midwinter minutes
   and writes beside them that they came true, which is the only entirely
@@ -744,7 +864,7 @@ one Chapter 1 ships today. **All investigation stays in Milestone 4.**
 | Change | Why |
 | --- | --- |
 | Optional `TAKE STONE` in `present.outer_gallery` | Parsie asks for one and there is no way to oblige. Pays off in Ch3's record chest. Optional, gates nothing |
-| A crack in `present.sealed_chamber`'s description | The rupture has to be visible in the era the player starts in. Measured twice, it is a different length — unremarked in Ch1 |
+| **The pillar**, in `present.sealed_chamber`'s description | The chamber needs one visible support, cracked at the base, with grit at its foot. Unremarked in Ch1, cut in front of the hero in Ch2, struck in Ch4. **Plain geology, no portent**: the rupture does not exist yet in Chapter 1, so there is nothing for it to foreshadow except the pillar's own weakness |
 | One Tyme topic: *what he does while you are inside* | The epilogue and Rue's inherited role both lean on the bench being his |
 
 **Withdrawn from the earlier proposal list:** the numbered gauge and the
@@ -788,7 +908,12 @@ Checked at `31866e6`. **Nothing shipped contradicts the approved decisions.**
 
 ### Cut list, in order, core plot preserved
 
-1. `future.cave_path` — fold into `future.entrance`.
+1. ~~`future.cave_path` — fold into `future.entrance`.~~ **Withdrawn at
+   revision 4.** That room now carries the fissure the hero climbs out of, and
+   the seal is at `future.entrance`. Merging them merges the two halves of the
+   hill and puts the hero through a sealed mouth before they open it, which is
+   the bug this revision fixed. **If a room has to go, cut the fissure's own
+   description down to two lines instead.**
 2. `past.spring` — move the skins to `past.square`, losing a little texture.
 3. Sorrel — give her lines to Rue, losing the chapter's warmth.
 4. The epilogue becomes narration rather than a scene.
