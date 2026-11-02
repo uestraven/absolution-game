@@ -50,8 +50,17 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [feedNudge, setFeedNudge] = useState(false);
-  /** Bumped once per player action, so the transcript knows to go to the bottom. */
+  /** Bumped once per player action, so the transcript positions on its output. */
   const [actionCount, setActionCount] = useState(0);
+  /**
+   * Whether entering play is resuming or beginning.
+   *
+   * A new game opens at the top of its first page; a transcript that came out
+   * of storage opens at its end, where the reader left off. The transcript
+   * cannot tell these apart from the state — both arrive with a full history
+   * and no actions taken — so the shell, which knows which door was used, says.
+   */
+  const [resumed, setResumed] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const loaded = useRef(false);
   /** Mirrors `state` for synchronous reads inside `act`. */
@@ -191,6 +200,7 @@ export function App() {
     const result = resolve(blankSelectState(), { type: 'SELECT_CHARACTER', character });
     stateRef.current = result.state;
     setState(result.state);
+    setResumed(false);
     setScreen('play');
     setAnnouncement(result.events.map((e) => stripMarkup(e.text)).join('\n\n'));
     const checkpoint = writeCheckpoint(result.state);
@@ -232,6 +242,7 @@ export function App() {
     setState(checkpoint);
     // A restored transcript is new output as far as the reader is concerned.
     setActionCount((n) => n + 1);
+    setResumed(true);
     setScreen('play');
     setSettingsOpen(false);
     setNotice('Restarted from the chapter checkpoint.');
@@ -286,6 +297,7 @@ export function App() {
       stateRef.current = result.state;
       setState(result.state);
       setActionCount((n) => n + 1);
+      setResumed(true);
       setScreen('play');
       setSettingsOpen(false);
       setStorage(writeAutosave(result.state));
@@ -304,7 +316,10 @@ export function App() {
         <TitleScreen
           canContinue={canContinue && state !== null}
           notes={startNotes}
-          onContinue={() => setScreen('play')}
+          onContinue={() => {
+            setResumed(true);
+            setScreen('play');
+          }}
           onNewGame={startNewGame}
           onImport={doImport}
         />
@@ -407,6 +422,7 @@ export function App() {
           entries={state.transcript}
           showOptionLists={prefs.inputMode === 'type'}
           actionCount={actionCount}
+          resumed={resumed}
           onHeavyFeed={onHeavyFeed}
         />
       </main>

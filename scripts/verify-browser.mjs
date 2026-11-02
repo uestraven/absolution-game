@@ -61,6 +61,22 @@ async function newPage(viewport) {
   await page.getByRole('button', { name: 'New Game' }).click();
   await page.getByRole('button', { name: 'Play as Basilia' }).click();
 
+  // A new game opens at the first word of the opening, not at the end of it.
+  await page.waitForTimeout(400);
+  const opened = await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    return {
+      scrollTop: +t.scrollTop.toFixed(2),
+      overflows: t.scrollHeight > t.clientHeight + 1,
+      firstWords: t.textContent.replace(/\s+/g, ' ').trim().slice(0, 24),
+      firstVisible:
+        t.firstElementChild.getBoundingClientRect().top - t.getBoundingClientRect().top >= -2,
+    };
+  });
+  opened.scrollTop === 0 && opened.firstVisible && opened.overflows
+    ? ok('a new game opens at the top of the opening', `"${opened.firstWords}…"`)
+    : bad('a new game did not open at the top', JSON.stringify(opened));
+
   const overflow = await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth);
   overflow <= 0 ? ok('360px: no horizontal scrolling', `overflow ${overflow}px`)
@@ -605,6 +621,19 @@ async function newPage(viewport) {
   after === 'the sealed chamber' && endAfter > 0
     ? ok('reload: Continue restores place and transcript')
     : bad('reload: Continue restores place and transcript', `${after} / entries ${endAfter}`);
+
+  // Resuming is not reading a new response: it opens on the last thing that
+  // happened, not at the top of a history the reader has already been through.
+  const resumedAt = await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    return {
+      overflows: t.scrollHeight > t.clientHeight + 1,
+      fromBottom: +(t.scrollHeight - t.scrollTop - t.clientHeight).toFixed(2),
+    };
+  });
+  resumedAt.overflows && resumedAt.fromBottom < 2
+    ? ok('Continue opens a restored transcript at its end', `${resumedAt.fromBottom}px from the end`)
+    : bad('Continue did not open at the end of the transcript', JSON.stringify(resumedAt));
 
   /* ---------- 4. Mode switch preserves state and transcript ---------- */
   // Compare the stored transcript, not the rendered one: selectable mode hides

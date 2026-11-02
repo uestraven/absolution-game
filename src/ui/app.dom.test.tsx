@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { App } from './App';
 import { KEYS } from '../persistence/storage';
 
@@ -248,6 +248,85 @@ describe('accessibility affordances', () => {
     // Nor is folding the status bar.
     await user.click(screen.getByRole('button', { name: /show subtitle and objective/ }));
     expect(writes).toBe(2);
+  });
+
+  /**
+   * A stand-in layout, and a record of where the transcript gets put.
+   *
+   * jsdom reports every dimension as zero and ignores writes to `scrollTop`,
+   * so the two first-paint positions are indistinguishable without this. The
+   * patch has to be on the prototype rather than the element, because the
+   * position is set in the layout effect of the render that creates it —
+   * there is no moment in between to attach a spy to.
+   */
+  function withLayout(scrollHeight: number, clientHeight: number) {
+    const names = ['scrollTop', 'scrollHeight', 'clientHeight'] as const;
+    const originals = names.map((n) => [n, Object.getOwnPropertyDescriptor(Element.prototype, n)] as const);
+    const writes: number[] = [];
+    const tops = new WeakMap<Element, number>();
+    Object.defineProperty(Element.prototype, 'scrollTop', {
+      configurable: true,
+      get(this: Element) {
+        return tops.get(this) ?? 0;
+      },
+      set(this: Element, next: number) {
+        tops.set(this, next);
+        if (this.classList.contains('transcript')) writes.push(next);
+      },
+    });
+    Object.defineProperty(Element.prototype, 'scrollHeight', {
+      configurable: true,
+      get: () => scrollHeight,
+    });
+    Object.defineProperty(Element.prototype, 'clientHeight', {
+      configurable: true,
+      get: () => clientHeight,
+    });
+    return {
+      writes,
+      restore: () => {
+        for (const [name, descriptor] of originals) {
+          if (descriptor) Object.defineProperty(Element.prototype, name, descriptor);
+        }
+      },
+    };
+  }
+
+  it('opens a new game at the top of the opening', async () => {
+    const { writes, restore } = withLayout(5000, 400);
+    try {
+      const user = (await import('@testing-library/user-event')).default.setup();
+      render(<App />);
+      await user.click(screen.getByRole('button', { name: 'New Game' }));
+      await user.click(screen.getByRole('button', { name: 'Play as Basil' }));
+      // The opening is the first page of the story, and it is read from the top.
+      expect(writes.length).toBeGreaterThan(0);
+      expect(writes[0]).toBe(0);
+      expect(screen.getByRole('log', { name: 'Story so far' }).scrollTop).toBe(0);
+    } finally {
+      restore();
+    }
+  });
+
+  it('opens a resumed transcript at its end', async () => {
+    // A save mid-play, as Continue would find it.
+    const first = await startPlaying('select');
+    await first.click(
+      within(screen.getByRole('region', { name: 'Actions' })).getByRole('button', { name: 'look' })
+    );
+    cleanup();
+
+    const { writes, restore } = withLayout(5000, 400);
+    try {
+      const user = (await import('@testing-library/user-event')).default.setup();
+      render(<App />);
+      await user.click(screen.getByRole('button', { name: 'Continue' }));
+      // Not the top: the reader has read this already and wants the end of it.
+      // `snapToBottom` asks for the whole content height; a browser clamps it.
+      expect(writes[0]).toBe(5000);
+    } finally {
+      restore();
+    }
   });
 
   it('does not move focus when it moves the transcript', async () => {

@@ -92,6 +92,13 @@ There is **one position change per action**, taken after the whole response is
 in the DOM. Individual blocks within a response — narration, then a journal
 entry, then an objective — never scroll separately.
 
+Entering play follows the same idea. **A new game opens at the top of the
+opening** — it is the first response, and the reader has not read a word yet.
+**Continue, an import or a checkpoint opens at the end** of what was restored,
+because resuming is not reading something new. The transcript cannot tell these
+apart from the state, since both arrive with a full history and no actions
+taken, so the shell says which door was used.
+
 Re-renders that are *not* actions hold the reader's place: folding the status
 bar and opening settings move nothing, and switching input mode, which inserts
 or removes the written-out option lists throughout the history, puts the

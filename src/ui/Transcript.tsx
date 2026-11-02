@@ -48,6 +48,12 @@ export interface TranscriptProps {
    */
   actionCount: number;
   /**
+   * True when this transcript was restored — Continue, an import, a checkpoint
+   * — rather than begun. It decides where the first paint sits, and is fixed
+   * for the life of the mount.
+   */
+  resumed?: boolean;
+  /**
    * Called when a block large enough to be felt lands. The shell uses it to
    * nudge the anchored input, so the command line reads as being pushed down
    * by the text rather than as a separate widget.
@@ -59,6 +65,7 @@ export function Transcript({
   entries,
   showOptionLists,
   actionCount,
+  resumed = false,
   onHeavyFeed,
 }: TranscriptProps) {
   const shown = showOptionLists ? entries : entries.filter((e) => e.kind !== 'options');
@@ -93,10 +100,21 @@ export function Transcript({
     };
 
     if (firstPaint.current) {
-      // Arriving at a restored transcript should not play a glide, and should
-      // show its end: the reader is resuming, not reading a new response.
       firstPaint.current = false;
-      cascade.current.snapToBottom(el);
+      /*
+       * Neither case glides: there is nowhere to glide from on the first paint.
+       *
+       *  - **A new game starts at the top.** The opening is the first response
+       *    and the reader has not read a word yet, so it begins where it begins.
+       *    This is what the positioning rule returns on its own for a response
+       *    that starts the transcript — `responseTarget(0, …)` is 0 whether or
+       *    not the opening fits — so it is stated here as the plain number.
+       *  - **A restored transcript shows its end.** The reader is resuming, not
+       *    reading a new response: what they want is the last thing that
+       *    happened before they closed the tab.
+       */
+      if (resumed) cascade.current.snapToBottom(el);
+      else cascade.current.jumpTo(el, 0);
       remember();
       return;
     }
@@ -116,7 +134,7 @@ export function Transcript({
     const travelled = cascade.current.glideTo(el, targetOf);
     remember();
     if (travelled >= BOUNCE_THRESHOLD_PX) onHeavyFeed?.(travelled);
-  }, [actionCount, onHeavyFeed]);
+  }, [actionCount, resumed, onHeavyFeed]);
 
   /*
    * Switching input mode inserts or removes the written-out option lists
