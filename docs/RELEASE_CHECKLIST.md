@@ -18,8 +18,9 @@ and write a new section rather than editing these figures.
 
 | Command | Result |
 | --- | --- |
+| `npm ci` | clean install from `package-lock.json`, 0 vulnerabilities |
 | `npm run typecheck` (`tsc --noEmit`) | clean, no diagnostics |
-| `npm run test` (vitest) | **431 passed / 431**, 14 files, 5.8s |
+| `npm run test` (vitest) | **431 passed / 431**, 14 files, 6.6s |
 | `npm run build:only` (vite) | built; emits the 500kB chunk-size advisory, [discussed below](#5-bundle-and-packaging) |
 | `node scripts/verify-browser.mjs dist` | **119 passed / 119** |
 | `node scripts/verify-served.mjs dist` | **15 passed / 15** |
@@ -190,8 +191,9 @@ Measured on 2026-11-02:
 | `assets/index-*.js` | 561.9kB | 173.3kB | 141.4kB |
 | **total transfer** | **559.4kB** | **171.6kB** | **144.9kB** |
 
-Startup on a served loopback origin: `domContentLoaded` 57ms, `load` 58ms, first
-contentful paint 80ms.
+Startup on a served loopback origin: `domContentLoaded` 65ms, `load` 65ms, first
+contentful paint 92ms. All five commands above were re-run after `npm ci` on a
+clean `node_modules`, and the figures here are from that run.
 
 **Decision: no code splitting, and the warning is not suppressed.** 141kB brotli
 is what a browser downloads; Cloudflare compresses automatically. Splitting would

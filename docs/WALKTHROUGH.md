@@ -158,7 +158,7 @@ show lantern              · 66   ← settles who, and nothing else
 tell them about the prophecy · 67   ← and now they are moving
 hold them                 · 68   ← required: one failed attempt, any one
 kill them                 · 69
-break pillar              · 70
+break pillar              · 70   ← the squeeze narrows; the cost is stated here
 break pillar              · 71   ← the roof drops; the squeeze shuts
 break pillar              · 72   ← asks
 swing                     · 73   ← the end
@@ -174,6 +174,26 @@ equally be `take their lantern` or `stand in front of the wall` — any single
 one is enough, in either input mode — but reaching for the mallet with nothing
 tried is refused, because the reason Basil ends up doing it is that their hands
 were not enough.
+
+Two further conditions on that gate, both deliberate:
+
+- **The attempt has to be made while they are going for the wall.** Grabbing
+  them during the argument, before they have decided anything, failed at
+  nothing that matters; it gets its own refusal rather than being counted. The
+  gate also requires `their_reach >= 1`, so the attempt must have had a visible
+  consequence.
+- **An old save is not retrofitted.** A save written before this requirement
+  sits at `rush` with the flag absent. Nothing migrates and no attempt is
+  fabricated: every intervention is still available in that room, so it unlocks
+  exactly as it would in a new game. A save with the death already committed is
+  untouched.
+
+**After the first blow the way out is closing, and the game says so three
+ways** before the blow that shuts it: the blow's own narration ("the squeeze is
+narrower than it was… One more of these and you will not be walking out of
+here"), going `west` to put a hand in the squeeze, and `examine pillar`. The
+journal records it too. The third blow's confirmation is a final commitment, not
+the first warning.
 
 Run verbatim as a test in `src/engine/equivalence.test.ts`, so this list cannot
 drift away from the game.
@@ -737,7 +757,9 @@ Twenty locations; the finale adds no new ones, which is the point of it.
 
 ## Automated coverage
 
-397 tests across thirteen files.
+One vitest suite across the files below. Counts and dated results live in
+[`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) rather than here, so this table
+does not go stale every time a test is added.
 
 | File | Covers |
 | --- | --- |
@@ -757,8 +779,11 @@ Twenty locations; the finale adds no new ones, which is the point of it.
 
 ## Manual and browser verification
 
-`scripts/verify-browser.mjs` drives the built bundle in Chromium (see the README
-for how to run it). Last run: **104 of 104 checks passed.**
+Two harnesses drive the built bundle in Chromium (see the README for how to run
+them): `scripts/verify-browser.mjs` through request interception, and
+`scripts/verify-served.mjs` over real HTTP from a loopback-bound ephemeral port.
+Measured results for a dated run are in
+[`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md).
 
 **Layout and input.** 360px with no horizontal scrolling, before and during play
 · touch targets at least 40px tall · buttons alone move the story · the
@@ -846,13 +871,16 @@ document beyond the single-shot anchor nudge.
 - The browser pass needs `npx playwright install chromium`. Playwright is
   deliberately not a project dependency.
 - No deployment has been performed. The Cloudflare Pages settings in
-  `docs/DEPLOYMENT.md` were read from current Cloudflare documentation, not
-  confirmed by deploying.
-- **The story is complete; it has not been playtested.** 397 tests and 104
-  browser checks say the mechanisms behave. They say nothing at all about
+  `docs/DEPLOYMENT.md` were re-read from current Cloudflare documentation on
+  2026-11-02, not confirmed by deploying. The build *has* been verified on a
+  normally served static origin over loopback, which is a different and weaker
+  claim than "it works on Cloudflare".
+- **The story is complete; it has not been playtested.** The test suite and the
+  browser passes say the mechanisms behave. They say nothing at all about
   whether the pacing works, whether the confrontation lands, or whether a
   reader who is not the author can follow the three-crossing geometry. That is
-  a blind-playtest question and it has not been asked.
+  a blind-playtest question, and it has not been asked:
+  [`PLAYTEST_PLAN.md`](PLAYTEST_PLAN.md) is written and **PENDING**.
 - **The finale has been read aloud once, by its author.** Which is the weakest
   possible review of dialogue.
 - **No screenshots are kept in this repo.** The browser pass reports measured

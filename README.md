@@ -185,15 +185,21 @@ Colour stays on short spans, measuring about 2% of the transcript in practice.
 | [`docs/COMMANDS.md`](docs/COMMANDS.md) | Full command reference for type-only play. |
 | [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) | **Spoilers.** Shortest and fullest routes, every puzzle state, the save migration, verification checklist. |
 | [`docs/CANON.md`](docs/CANON.md) | **Spoilers.** What is approved canon, what is provisional, what is explicitly undecided. |
-| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Cloudflare Pages settings, verified against current docs. |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Cloudflare Pages settings, re-verified against current docs, and what is and is not proven about the build. |
+| [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | Dated verification evidence: what was run, what it measured, and what is still pending. |
+| [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) | Real remaining defects and limitations, with reproduction and workarounds. |
+| [`docs/PLAYTEST_PLAN.md`](docs/PLAYTEST_PLAN.md) | A spoiler-free tester sheet and feedback form, plus **spoiler-marked** observer guidance. |
 | [`docs/FULL_GAME_DESIGN.md`](docs/FULL_GAME_DESIGN.md) | **Spoilers. Proposed, not approved.** The complete adventure: ending, causal model, maps, puzzles. |
 | [`docs/FULL_GAME_WALKTHROUGH.md`](docs/FULL_GAME_WALKTHROUGH.md) | **Spoilers. Proposed.** Critical path for the whole game, plus a continuity audit. |
 | [`docs/M2_DECISIONS.md`](docs/M2_DECISIONS.md) | The five decisions the owner has settled, and what is still proposed. |
 | [`docs/M3_BRIEF.md`](docs/M3_BRIEF.md) | **Spoilers.** The Milestone 3 build brief this chapter was built from. |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module layout, state shape, the rules the engine enforces. |
 
-`docs/WALKTHROUGH.md` and `docs/CANON.md` describe later events in the story and
-are not meant for players.
+`docs/WALKTHROUGH.md`, `docs/CANON.md`, both `FULL_GAME_*` documents and the
+observer half of `docs/PLAYTEST_PLAN.md` describe later events in the story and
+are not meant for players. None of them is deployed, and the game links to
+none of them — but the bundle itself contains every string in the story, so do
+not promise anybody that the ending is hidden.
 
 ### On spoilers and static builds
 
