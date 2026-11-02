@@ -155,9 +155,9 @@ Unchanged except three small additions in §9.
 | --- | --- |
 | **Entry state** | `future` era, `future.deep_chamber`, lantern, wedge, mallet, journal. Uninjured on arrival. |
 | **Immediate objective** | Find out where they are, and get out of a chamber the hill has closed. |
-| **Motivation** | They aimed a century forward to get closer to home. They need to know how far wrong they are before they can correct it. |
+| **Motivation** | They lit the one position they could, knowing only that one of the three was home. It was not this one. They need to know where they have come out before they can do anything about it. |
 | **Main activity** | A surviving settlement in their own square; two people who help them; reading what is left. |
-| **Complication** | Getting out through the sealed mouth costs them an eye — struck by a stone from a rockfall that has not happened yet. The next person who sees them backs away from a one-eyed figure coming out of the hill and names them from a text the hero themselves wrote. |
+| **Complication** | Breaking back *in* through the sealed mouth costs them an eye — struck by a stone from a rockfall that has not happened yet. The next person who sees them backs away from a one-eyed figure coming out of the hill and names them from a text the hero themselves wrote. |
 | **Discovery** | *Inferred, immediately:* the world ended. *Confirmed, by testimony and dates:* it began the year they went into the cave; the settlement's oldest story is of a child who went up to the hill that night and never came out; and the account they live by is word for word the thing the hero recited a hundred years before that. |
 | **Exit action** | `PLACE LANTERN IN LOW DISH` → `LIGHT LANTERN` → `ENTER APERTURE`. Back, one century, to the moment the seam opens. |
 | **Consequences** | Eye lost. Responsibility established. Carries the mallet home. |
@@ -240,7 +240,7 @@ one-eyed — enough that the earlier self does not know them at once.
 | year −100 | Lovage's crew are three seasons into cutting the stair down to the water. They have found that a lamp at three heights makes the air answer, cut dishes at two, tried the low one, and recorded that it does nothing. The middle dish is uncut. **Nobody in this century has been anywhere.** | the past village |
 | year −100 | A stranger comes up out of the basin, earns the worksite, is shocked that nobody has heard the Wanderer-words, and **recites them word for word.** It is written down. | the past village |
 | year −100 | Small wrongnesses begin. The village blames the stranger. The stranger leaves forward, because forward is the only setting that works. **The tear is left open.** | nobody understands it |
-| −100 → 0 | The recitation is copied, read at midwinter, carved, glossed and dated by commentary, and taught to children. **The five lines are never altered** — the layers grow on top of them. | everyone, as tradition |
+| −100 → 0 | The recitation is copied, read at midwinter, carved, glossed and dated by commentary, and taught to children. **The canonical prophecy text is never altered** — the layers grow on top of it. | everyone, as tradition |
 | −100 → 0 | The builders finish the chamber: camouflaged, the middle and high dishes filled, the low one left behind a shutter, the relief cut to show that one height. | nobody by year 0 |
 | −100 → 0 | The chamber's one worked pillar settles. By year 0 it is cracked at the base. | unremarked |
 | year 0, morning | Basil/Basilia turns sixteen. Hyssop has counted a date out of the old lines; the village is eleven days into a vigil. | the village |
@@ -415,7 +415,7 @@ P1 shuttered relief ──► crossing 1 ──► P2 worksite access ──► 
                            P5 the settlement's account ◄─────────────────────────┘
                                       │
                                       ▼
-                           P6 out through the seal  ──► crossing 3 ──► P7 the confrontation
+                           P6 in through the seal   ──► crossing 3 ──► P7 the confrontation
                               (Ch3, eye lost)                            (Ch4)
 ```
 
@@ -501,7 +501,7 @@ having been tricked.
 | **Prerequisites** | Reaching `past.square`. |
 | **Visible first** | Saffra on her plank; Fenn; a village with no cord between the eaves, no bowl of salt, no plank by the well. |
 | **The shape** | The hero assumes everyone knows the Wanderer-words — it is the thing their whole childhood was arranged around. They mention it the way you mention a holiday. **Nobody has heard of it.** The hero's shock is the beat. The villagers get curious and ask what it says. And the hero, who has recited it in a schoolroom every midwinter since they were five, recites it. |
-| **Fixed content** | **The five lines in §6, verbatim, every time.** No variants, no selectable clauses, no flags recording wording. |
+| **Fixed content** | **The canonical prophecy text in §6, verbatim, every time.** No variants, no selectable clauses, no flags recording wording. |
 | **Where the agency is** | The questions the player asks before and after; how much the hero explains; whether they warn, confess or refuse to say how they know; whether they tell Fenn the truth; and whether they try to take it back once they realise. **None of it changes the recited text.** |
 | **Solution** | `TALK TO SAFFRA` → topic *the Wanderer* → (shock) → topic *what it says* → `RECITE PROPHECY`. Selectable: **Saffra** → *the Wanderer* → *what it says* → *Recite it*. |
 | **New verb** | `RECITE PROPHECY`. Justified: the act is the hinge of the game and the player should perform it, not watch it. Narrowly scoped; valid only here. |
@@ -538,7 +538,7 @@ weight lands in Chapter 3, when they read it back in a stranger's keeping.
 ```
 TALK TO SORREL                     who takes the hero in, and will answer anything
 EXAMINE MEMORIAL                   the year
-EXAMINE ACCOUNT                    the five lines, in the middle of a century of gloss
+EXAMINE ACCOUNT                    the canonical text, in the middle of a century of gloss
 READ JOURNAL                       their own words, and their own birthday
 TALK TO RUE   → the account        where it came from: "a stranger said it"
               → the child          the family story, and the name nobody agrees on
@@ -630,9 +630,9 @@ matches it. Those lines are load-bearing and must not be edited.
 
 ### Transmission — PROPOSED
 
-**The words themselves never change.** The hero recites the five lines from
-memory; Saffra writes those five lines down; the plank in year 0 carries those
-five lines; the Account in year +100 carries those five lines. Any drift in the
+**The words themselves never change.** The hero recites the canonical text
+from memory; Saffra writes that text down; the plank in year 0 carries it; the
+Account in year +100 carries it. Any drift in the
 wording would be a second author, and decision 4 forbids one — the information
 paradox only closes if the text that arrives is the text that left.
 
@@ -642,11 +642,11 @@ did not write:
 
 | Step | What is added | What is not touched |
 | --- | --- | --- |
-| 1 | **Saffra writes it down** the evening it is said, on the back of a board, because a stranger who came out of the hill said something frightening and that is what you do with it | the five lines |
-| 2 | **It is read at midwinter**, because midwinter is when this village reads things out — and a reading becomes a ceremony, with a standing and a silence and an order of who speaks | the five lines |
-| 3 | **A carver renders it** two generations later and gives the figure a single eye in the middle of its face, because that is what *one-eyed* sounds like if you have never seen one. Sage already blames the carvings for exactly this | the five lines |
-| 4 | **Glosses accumulate**: *the hill* is this hill, *the water* is the spring, *one who braves the cave* is the rite every sixteen-year-old now walks. By year 0 these readings feel like part of the prophecy and are not in it | the five lines |
-| 5 | **Hyssop counts a date onto it** — PROPOSED, §7 — which is a commentary nobody can source and everybody repeats | the five lines |
+| 1 | **Saffra writes it down** the evening it is said, on the back of a board, because a stranger who came out of the hill said something frightening and that is what you do with it | the canonical text |
+| 2 | **It is read at midwinter**, because midwinter is when this village reads things out — and a reading becomes a ceremony, with a standing and a silence and an order of who speaks | the canonical text |
+| 3 | **A carver renders it** two generations later and gives the figure a single eye in the middle of its face, because that is what *one-eyed* sounds like if you have never seen one. Sage already blames the carvings for exactly this | the canonical text |
+| 4 | **Glosses accumulate**: *the hill* is this hill, *the water* is the spring, *one who braves the cave* is the rite every sixteen-year-old now walks. By year 0 these readings feel like part of the prophecy and are not in it | the canonical text |
+| 5 | **Hyssop counts a date onto it** — PROPOSED, §7 — which is a commentary nobody can source and everybody repeats | the canonical text |
 
 By year 0 the text is taught in school, said every midwinter, carved, argued
 over and worn smooth with handling — which is why the hero knows it well enough
@@ -656,7 +656,7 @@ creative.
 
 **For the player this is a payoff, not a lecture.** The interpretations the
 hero grew up with are the things that turn out to be wrong — the central eye,
-the monster, the rite — while the five lines turn out to be exactly, literally
+the monster, the rite — while the canonical text turns out to be exactly, literally
 true.
 
 ### Clue table

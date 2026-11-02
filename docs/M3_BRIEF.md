@@ -1,6 +1,12 @@
 # Milestone 3 — the past chapter, ending on arrival in the future
 
-**Status: build brief. Playable code, not documentation.**
+**Status: delivered.** Built, tested and verified in the browser. See
+[`docs/WALKTHROUGH.md`](WALKTHROUGH.md) for the routes, puzzle states, save
+migration and verification results, and the final report in the commit that
+delivered it.
+
+What follows is the brief the work was done against, kept as written so the
+scope it set can be checked against what shipped.
 
 Milestone 3 implements Chapter 2 — the hero's three days in year −100 — and
 ends the moment they arrive in the future. It is the first milestone to add an

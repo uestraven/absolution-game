@@ -36,7 +36,7 @@ rely on:
 
 ```
 examine lantern · examine tag · take lantern · examine window · down
-examine plank                       ← the five lines. The hero has known them
+examine plank                       ← the canonical prophecy text. The hero has known it
                                       since school; this is a re-reading
 talk to sage → the prophecy / how old the prophecy is / leave
 talk to marjoram → the cave / advice for going in / leave
@@ -404,7 +404,7 @@ About three days. Sixteen throughout.
 | −100 | Lovage's crew cutting the stair and leaving one worked pillar to hold the chamber roof; the fold found; a lamp at three heights makes the air answer; the low height tried and recorded as doing nothing; the middle dish uncut. **Nobody in this century travels anywhere** |
 | −100 | A stranger recites the Wanderer-words. Saffra writes them on a board |
 | −100 | Wrongnesses begin. The village turns on the stranger, who leaves forward. **The tear stays open** |
-| −100 → 0 | Copied, read at midwinter, carved, glossed, dated by Hyssop, taught in school. **The five lines themselves are never altered** |
+| −100 → 0 | Copied, read at midwinter, carved, glossed, dated by Hyssop, taught in school. **The canonical prophecy text itself is never altered** |
 | −100 → 0 | The builders finish: the chamber is camouflaged, the middle and high dishes filled, the low one left behind a shutter, and the relief cut to show that one height |
 | −100 → 0 | The pillar settles. By year 0 it is cracked at the base |
 | 0, morning | The hero turns sixteen. Eleven days into the vigil |

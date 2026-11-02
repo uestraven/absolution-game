@@ -438,8 +438,17 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'stone, two coins and a bone pin lying in the silt. Nothing goes down past the hill.\n\n' +
       'And there is daylight. Not much, and not from here, but somewhere up the passage there ' +
       'is daylight, which there was not before.\n\n' +
+      'This is a place of work. There are tools stacked against the rim, and a heap of cut ' +
+      'spoil shoulder-high against the north wall, and a chalk line snapped across the floor ' +
+      'with a plumb-bob still hanging over it. Behind the spoil heap the wall has been opened ' +
+      'into somewhere else.\n\n' +
+      (f(state, FLAGS.worksiteAccess)
+        ? 'The gap behind the spoil is yours to use now, and the chalk line is just a chalk ' +
+          'line.\n\n'
+        : 'The chalk line is the kind of line that means something to whoever snapped it.\n\n') +
       lightNote(state, 'outer') +
-      '\n\nA worked stair goes up and out.',
+      '\n\nA worked stair goes up and out.' +
+      (f(state, FLAGS.worksiteAccess) ? ' The gap behind the spoil heap goes north.' : ''),
     firstVisit: () =>
       'You are dry. Whatever you went through, you did not come out of it wet.',
     exits: [
@@ -449,6 +458,19 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         to: 'past.entrance',
         direction: 'up',
         aliases: ['stair', 'stairs', 'out', 'passage', 'entrance', 'daylight', 'west'],
+      },
+      {
+        id: 'to_worksite',
+        label: 'the gap behind the spoil heap',
+        to: 'past.worksite',
+        direction: 'north',
+        aliases: ['gap', 'spoil', 'workings', 'worksite', 'opening', 'in', 'through'],
+        /*
+         * Engine-side gate. The room is not merely undescribed without access:
+         * the exit does not exist, so a player who guesses the id in either
+         * input mode is refused exactly as if they had named a wall.
+         */
+        requires: (state) => f(state, FLAGS.worksiteAccess),
       },
     ],
   },
@@ -466,7 +488,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'The mouth is narrower here, and shaped — squared off at the top by hand. No bench. No ' +
       'iron ring. No letters on the lintel, because there is no lintel, only clean rock.\n\n' +
       'Outside, the hill smells of rain on hot stone, and below it there is a village.\n\n' +
-      'The stair goes back down. The track down to the roofs goes east.',
+      'The stair goes back down. The track down the hill goes east.',
     firstVisit: () =>
       'You turn round twice looking for the slot of sky you memorised on the way in. It is not ' +
       'that it has moved. It is that nobody has broken it open yet.',
@@ -479,11 +501,13 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         aliases: ['stair', 'stairs', 'in', 'back', 'chamber', 'basin', 'west'],
       },
       {
-        id: 'to_square',
-        label: 'the track down to the village',
-        to: 'past.square',
+        id: 'to_path',
+        label: 'the track down the hill',
+        to: 'past.cave_path',
         direction: 'east',
-        aliases: ['village', 'track', 'square', 'roofs'],
+        // No "down" here: the stair into the hill owns that direction, and a
+        // player typing DOWN at the mouth means the stair.
+        aliases: ['track', 'path', 'village', 'roofs', 'hill'],
       },
     ],
   },
@@ -517,7 +541,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         'Saffra is up on a plank at the half-built wall with a trowel. A boy called Fenn is ' +
           'holding the mortar board for her and not watching it.'
       );
-      parts.push('The track back up to the cave mouth is west.');
+      parts.push('The track back up the hill is west.');
       return parts.join('\n\n');
     },
     firstVisit: () =>
@@ -525,13 +549,228 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'exactly one glance, and you have not even had that yet.',
     exits: [
       {
-        id: 'to_entrance',
-        label: 'the track up to the cave mouth',
-        to: 'past.entrance',
+        id: 'to_path',
+        label: 'the track up the hill',
+        to: 'past.cave_path',
         direction: 'west',
-        aliases: ['track', 'cave', 'up', 'entrance', 'mouth', 'hill'],
+        // Not "tree": the great tree is an object in this square, and a
+        // player typing EXAMINE TREE means the tree.
+        aliases: ['track', 'path', 'up', 'cave', 'hill'],
       },
     ],
+  },
+
+  'past.cave_path': {
+    id: 'past.cave_path',
+    era: 'past',
+    name: 'The Track',
+    subtitle: () => 'The same turn of the hill, under a tree that is standing',
+    description: (state) => {
+      const parts: string[] = [];
+      parts.push(
+        'The track runs where the path runs at home, through the same thistle and the same ' +
+          'loose shale, and it is wider and better kept than you have ever seen it. There are ' +
+          'cart ruts. Somebody has been bringing stone down this hill all season.'
+      );
+      parts.push(
+        'At the turn, where the stump sits, the tree stands. It is enormous. It throws shade ' +
+          'across the whole bend of the track and there is a rope swing on the low limb, and a ' +
+          'bare patch underneath it where the grass has been kicked off by feet.'
+      );
+      parts.push(
+        'There are no chalk marks on the rocks counting off the last stretch, because there is ' +
+          'nothing up here yet that anybody counts their way to.'
+      );
+      if (f(state, FLAGS.symptomWeather)) {
+        parts.push(
+          'The flat wet patch on the shale is still there, drying at the edges, and it has not ' +
+            'rained.'
+        );
+      }
+      parts.push(
+        'A path cuts off north through the thistle to where the water comes out of the rock. ' +
+          'The cave mouth is up and west. The square is down and east.'
+      );
+      return parts.join('\n\n');
+    },
+    firstVisit: () =>
+      'You come round the turn and stop, because the shade is wrong.\n\n' +
+      'You have sat on that stump your entire life. You have eaten bread on it and been sick ' +
+      'behind it and carved a letter into it that you have never admitted to. It is a flat ' +
+      'grey disc of dead wood about the width of your shoulders.\n\n' +
+      'It is a tree. Somebody has hung a swing on it.',
+    exits: [
+      {
+        id: 'to_entrance',
+        label: 'the cave mouth',
+        to: 'past.entrance',
+        direction: 'west',
+        aliases: ['cave', 'mouth', 'entrance', 'up', 'workings'],
+      },
+      {
+        id: 'to_spring',
+        label: 'the path to the spring',
+        to: 'past.spring',
+        direction: 'north',
+        aliases: ['spring', 'water', 'rock', 'path north'],
+      },
+      {
+        id: 'to_square',
+        label: 'the village square',
+        to: 'past.square',
+        direction: 'east',
+        aliases: ['square', 'village', 'down', 'roofs', 'back'],
+      },
+    ],
+  },
+
+  'past.spring': {
+    id: 'past.spring',
+    era: 'past',
+    name: 'The Spring',
+    subtitle: () => 'Water coming out of a hillside, as if that were ordinary',
+    description: (state) => {
+      const parts: string[] = [];
+      parts.push(
+        'The thistle gives out at a shelf of wet rock, and out of a cleft in it, at about the ' +
+          'height of your knee, water comes. Not a trickle. A thumb-thick rope of it, steady, ' +
+          'cold enough to ache, falling into a scooped basin somebody has lined with flat ' +
+          'stones and then into a runnel that goes off downhill through the grass.'
+      );
+      parts.push(
+        'The whole shelf is green with the kind of moss that only grows where water never ' +
+          'stops. There are cup-marks worn into the lip of the basin where generations of ' +
+          'hands and vessels have rested.'
+      );
+      parts.push(
+        'You stand there longer than you need to, because at home this is a dry cleft in a ' +
+          'rock that children dare each other to put an arm into, and nobody in the village ' +
+          'can tell you what it was for.'
+      );
+      if (f(state, FLAGS.symptomWeather)) {
+        parts.push(
+          'The runnel below the basin is running clear and full, and for a moment — not long ' +
+            'enough to be sure of — it is running the other way.'
+        );
+      }
+      parts.push('The track back is south.');
+      return parts.join('\n\n');
+    },
+    firstVisit: () =>
+      'You put your hand under it before you think about it, the way you would at a pump, and ' +
+      'the cold goes up your arm to the elbow and makes you laugh out loud on an empty ' +
+      'hillside.',
+    exits: [
+      {
+        id: 'to_path',
+        label: 'the track back',
+        to: 'past.cave_path',
+        direction: 'south',
+        aliases: ['track', 'path', 'back', 'out', 'hill'],
+      },
+    ],
+  },
+
+  'past.worksite': {
+    id: 'past.worksite',
+    era: 'past',
+    name: 'The Workings',
+    subtitle: () => 'A room three-quarters finished, with the plan still on the wall',
+    description: (state) => {
+      const parts: string[] = [];
+      parts.push(
+        'The gap lets you through into a chamber you could cross in four steps, and you know ' +
+          'the four steps. You know the corners. Three of the walls are being cut in a pattern ' +
+          'of overlapping scales — two of them finished, the third chalked out and barely ' +
+          'started, with the lines still crisp and a basket of cold chisels under it.'
+      );
+      parts.push(
+        'In the middle of the floor stands a pillar of pale worked stone, square-dressed, ' +
+          'left standing when the rest of the chamber was cut away from around it. It is new. ' +
+          'You can see the dressing marks.'
+      );
+      parts.push(
+        'The fourth wall has been thinned to a panel the thickness of a flagstone, and a ' +
+          'half-cut opening has been started through the middle of it, low and wide. Cut into ' +
+          'the face of the panel, up its full height, are three shallow dishes — except that ' +
+          'there are two dishes and one chalk outline on rough rock.'
+      );
+      parts.push(
+        'Pinned to the finished wall with four iron nails is a drawing on hide, and beside it, ' +
+          'on a slate, somebody has been keeping notes.'
+      );
+      if (f(state, FLAGS.symptomMark)) {
+        parts.push(
+          'The chalk line snapped across this floor has a second chalk line beside it, a ' +
+            'hand\'s width off and fainter, and both of them are in the same hand.'
+        );
+      }
+      if (f(state, FLAGS.lanternInHighDish)) {
+        parts.push(
+          f(state, FLAGS.lanternLit)
+            ? 'Your lantern stands in the high dish, burning, and the thinned panel has gone ' +
+                'quiet in a way that stone does not go quiet.'
+            : 'Your lantern stands in the high dish, dark. The panel is just a panel.'
+        );
+      }
+      parts.push(lightNote(state, 'inner'));
+      parts.push('The gap back to the basin chamber is south.');
+      return parts.join('\n\n');
+    },
+    firstVisit: () =>
+      'There is no sealed chamber at home. There is a small square room with three patterned ' +
+      'walls and nothing in it, and everybody has always said that whoever cut it must have ' +
+      'given up.\n\n' +
+      'They did not give up. You are standing in the last week of the job.',
+    exits: [
+      {
+        id: 'to_deep',
+        label: 'the gap back to the basin chamber',
+        to: 'past.deep_chamber',
+        direction: 'south',
+        aliases: ['gap', 'back', 'out', 'basin', 'chamber', 'spoil'],
+      },
+    ],
+  },
+
+  /* ================================================================ *
+   * The cave, later. One room, and the end of what is built.
+   * ================================================================ */
+
+  'future.deep_chamber': {
+    id: 'future.deep_chamber',
+    era: 'future',
+    name: 'The Broken Chamber',
+    subtitle: () => 'The same room, a third of it on the floor',
+    description: (state) => {
+      const parts: string[] = [];
+      parts.push(
+        'The chamber is the chamber and it has been broken. A slab of the roof has come down ' +
+          'and jammed against the far rim at an angle, and the rest of the ceiling is resting ' +
+          'on that, and has been resting on it long enough to have grown a crust of pale ' +
+          'mineral along the join.'
+      );
+      parts.push(
+        'The basin is dry. The rim is cracked through in two places and the silt in the bottom ' +
+          'has dried into plates and curled at the edges, and there is dust lying on top of ' +
+          'the plates, which means it has been dry a great deal longer than a season.'
+      );
+      parts.push(
+        'The worked stair goes up four treads and stops against a wall of fallen hill. High on ' +
+          'the opposite wall, where there has never been an opening, the rock has torn open ' +
+          'from floor to shoulder height, and through it comes daylight.'
+      );
+      parts.push(lightNote(state, 'inner'));
+      parts.push(
+        'There is nowhere to go from here but out through the tear, and that is not today.'
+      );
+      return parts.join('\n\n');
+    },
+    firstVisit: () =>
+      'The quiet is the thing. At home this room hums — you noticed it the first time, that ' +
+      'second sound-room behind the first one, with its own weather in it.\n\n' +
+      'This room has nothing behind it at all.',
+    exits: [],
   },
 };
 

@@ -218,6 +218,21 @@ const PERSON_LIST: PersonDef[] = [
           'I\'ve already decided I\'m going right to the back."',
       },
       {
+        id: 'the_stone',
+        label: 'the stone in his hand',
+        aliases: ['stone', 'pebble', 'map'],
+        available: (state) => f(state, FLAGS.gaveStone),
+        response: () =>
+          'He has it in both hands and he is not going to put it down.\n\n' +
+          '"Past the names. *Past* the names." He is already drawing the map in the air with ' +
+          'one elbow. "Right, so when I go, I have to get past where you got it, and you got it ' +
+          'past the names, so I have to go—"\n\n' +
+          'He stops. A thought arrives and visibly costs him something.\n\n' +
+          '"How far does it go?"\n\n' +
+          'You tell him you do not know, which is true, and which he accepts with the ' +
+          'seriousness of a boy being told a real thing by an adult for the first time.',
+      },
+      {
         id: 'bring_back',
         label: 'what he wants you to bring back',
         aliases: ['bring', 'souvenir', 'proof'],
@@ -458,6 +473,27 @@ const PERSON_LIST: PersonDef[] = [
       'Show me it lights."',
     topics: [
       {
+        id: 'bench',
+        label: 'what he does while you are inside',
+        aliases: ['bench', 'wait', 'waiting', 'outside'],
+        response: () =>
+          'He looks at the bench as though he has not thought about it, which cannot be true.\n\n' +
+          '"Sit there. Coil that." The rope. "Watch the slot."\n\n' +
+          'He is quiet for a bit. "You get a feel for how long is long. Dilly was long. I had ' +
+          'the rope off my shoulder and one boot in the dark before she came round the corner, ' +
+          'and she was fine, and I sat back down and coiled it again."\n\n' +
+          '"I will be on that bench when you come out. That is the whole of my job and I am ' +
+          'very good at it."',
+        effects: {
+          journal: [
+            {
+              id: 'j.tyme_bench',
+              text: 'Tyme sits on the bench by the mouth with his rope the whole time anyone is inside.',
+            },
+          ],
+        },
+      },
+      {
         id: 'entrance',
         label: 'the entrance and the way back',
         aliases: ['rope', 'way out', 'way back', 'mouth'],
@@ -659,6 +695,116 @@ const PERSON_LIST: PersonDef[] = [
           ],
         },
       },
+      {
+        id: 'why_you_asked',
+        label: 'why you asked',
+        aliases: ['explain', 'what it says', 'the words', 'coming'],
+        available: (state) => f(state, FLAGS.heardNoProphecy) && !f(state, FLAGS.recitedProphecy),
+        once: true,
+        response: () =>
+          'She has stopped working. That is the thing you notice: the trowel is resting on the ' +
+          'course and her hands are still, and you have been talking to her for a quarter of an ' +
+          'hour and they have not been still once.\n\n' +
+          '"You did not ask me that like somebody asking after a story," she says. "You asked ' +
+          'me like somebody checking a date."\n\n' +
+          'Fenn has come round the end of the plank and is standing where he can see your face.\n\n' +
+          '"So." Saffra wipes her thumb along the trowel. "Something is coming. That is what you ' +
+          'came down that hill to find out whether we knew." She says it flatly, without any ' +
+          'drama in it at all, which is worse. "What is it, then. What are the words."',
+        effects: {
+          flags: { [FLAGS.askedForWords]: true },
+        },
+      },
+      {
+        id: 'took_it_back',
+        label: 'taking it back',
+        aliases: ['retract', 'unsay', 'never mind it', 'forget it'],
+        available: (state) => f(state, FLAGS.recitedProphecy),
+        once: true,
+        response: () =>
+          'You tell her to forget it. You tell her it is a thing people say where you come from, ' +
+          'a rhyme, the sort of thing that gets chalked up at midwinter and taken down again, ' +
+          'and that she should not write it on a board and she certainly should not read it out ' +
+          'to anybody.\n\n' +
+          'Saffra listens to all of it with her arms folded.\n\n' +
+          '"Right," she says. "And do you believe it?"\n\n' +
+          'You do not answer that quickly enough.\n\n' +
+          '"Thought so." She puts the board inside the doorway of the half-built workshop, out ' +
+          'of the weather, where a thing goes that you are keeping. "Then it stays."',
+        effects: {
+          flags: { [FLAGS.triedToRetract]: true },
+          journal: [
+            {
+              id: 'j.retract',
+              text:
+                'I tried to tell Saffra to forget the words. She asked whether I believed them, ' +
+                'and then she put the board somewhere dry.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'lovage',
+        label: 'the foreman up at the cave',
+        aliases: ['lovage', 'foreman', 'crew', 'get in', 'workings'],
+        available: (state) => state.discovered.includes('topic.sabra.cave'),
+        response: () =>
+          '"Lovage? He is up there now. He will be up there when it is dark and he will be up ' +
+          'there before I am tomorrow." She says it with the particular tiredness of somebody ' +
+          'describing a man she likes. "You will not get past him into the workings. Not to ' +
+          'look, not to be nosy, and not because you asked nicely."\n\n' +
+          'You ask whether anything would.\n\n' +
+          '"Water." She laughs at your face. "I am not being clever. His barrel split four days ' +
+          'ago and he will not send a man down for water because that is a man off the stone, ' +
+          'so they are working a hole in a hill on what they can carry up in the morning, and ' +
+          'they are all in a filthy mood about it."\n\n' +
+          'She nods at the wall behind you, and the yoke of empty skins propped against it. ' +
+          '"Those are nobody\'s. The spring is up past the tree."',
+        effects: {
+          flags: { [FLAGS.knowsWaterNeeded]: true },
+          journal: [
+            {
+              id: 'j.lovage_water',
+              text:
+                'Lovage the foreman will not let a stranger into the workings. His water barrel ' +
+                'split four days ago and he will not spare a man to fetch more. There are empty ' +
+                'skins by the wall and a spring up past the tree.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'walk_me_up',
+        label: 'asking her to walk up with you',
+        aliases: ['escort', 'come with me', 'vouch', 'take me up'],
+        available: (state) => f(state, FLAGS.recitedProphecy) && !f(state, FLAGS.worksiteAccess),
+        response: () =>
+          'She looks at the course she is halfway through, and at the light, and at you.\n\n' +
+          '"You are asking me to leave a wet course and walk up a hill," she says. "On the day ' +
+          'you told me the world has a thing coming for it."\n\n' +
+          'Then she wipes the trowel, lays it on the plank, and climbs down.\n\n' +
+          'The walk up takes no time at all and she does not ask you a single question, which ' +
+          'you understand is deliberate. At the mouth she goes in ahead of you, and there is a ' +
+          'short exchange out of your hearing in which Lovage says something short and she says ' +
+          'something shorter.\n\n' +
+          'She comes back out. "Go on. Touch nothing with an edge on it and come out when he ' +
+          'tells you to." And, over her shoulder, going back down: "He is not wrong about you. ' +
+          'He is just wrong about what you are."',
+        effects: {
+          flags: {
+            [FLAGS.saffraEscort]: true,
+            [FLAGS.worksiteAccess]: true,
+          },
+          journal: [
+            {
+              id: 'j.saffra_escort',
+              text:
+                'Saffra came off her wall and walked me up to the mouth and said something to ' +
+                'Lovage that I was not allowed to hear. I can get into the workings.',
+            },
+          ],
+        },
+      },
     ],
   },
   {
@@ -703,6 +849,235 @@ const PERSON_LIST: PersonDef[] = [
           '"It\'s all stair now, Lovage has cut it right down, and there\'s a basin at the ' +
           'bottom with water in and Cress put a coin in it and Lovage shouted." He brightens. ' +
           '"You can walk the whole thing before a candle burns down. It\'s not even far."',
+      },
+      {
+        id: 'spoil_gap',
+        label: 'how a boy gets past the foreman',
+        aliases: ['gap', 'spoil', 'sneak', 'way in', 'behind the heap'],
+        /*
+         * Available on required-path state, so neither recovery route can be
+         * lost by not having exhausted an optional topic earlier. Talking to
+         * Fenn at all is enough, and the chapter forces a conversation with
+         * him nowhere: it offers two independent routes and both open here.
+         */
+        available: (state) =>
+          !f(state, FLAGS.worksiteAccess) &&
+          (f(state, FLAGS.recitedProphecy) || f(state, FLAGS.knowsWaterNeeded)),
+        response: () =>
+          'Fenn puts the mortar board down, which he has not done once, and looks at you with ' +
+          'the expression of a boy being asked for the one thing he actually knows.\n\n' +
+          '"You don\'t *get past* him," he says. "That\'s the whole thing about him."\n\n' +
+          'Then, lower: "There\'s a gap behind the spoil. Where they\'ve heaped the waste up ' +
+          'against the north wall, at the bottom, by the basin. It\'s not hidden, it\'s just ' +
+          'behind. Cress got through it and Lovage never knew and Cress is fatter than you."\n\n' +
+          'He picks the board back up. "You go down the stair like you\'re going to look at the ' +
+          'water, because everybody goes to look at the water. Then you go round the heap."\n\n' +
+          'A beat. "If he catches you he will put you out on the track and he will not shout. ' +
+          'That\'s worse."',
+        effects: {
+          flags: {
+            [FLAGS.fennRoute]: true,
+            [FLAGS.worksiteAccess]: true,
+          },
+          journal: [
+            {
+              id: 'j.fenn_gap',
+              text:
+                'Fenn says there is a gap behind the spoil heap at the bottom of the stair, ' +
+                'by the basin, that the boys use. Go down as if to look at the water, then ' +
+                'round the heap.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'truth',
+        label: 'where you are really from',
+        aliases: ['truth', 'tell him', 'home', 'really'],
+        available: (state) => f(state, FLAGS.recitedProphecy),
+        once: true,
+        response: () =>
+          'You tell him. Not well — there is no good order to put it in — but you tell him that ' +
+          'you were born in that house, the one that is not built, and that you have sat on the ' +
+          'stump that is his tree, and that this morning you were somewhere else entirely and ' +
+          'it was the same square.\n\n' +
+          'Fenn does not laugh and he does not run and tell anybody. He thinks about it with ' +
+          'his whole face.\n\n' +
+          '"Is the swing still there?"\n\n' +
+          'You tell him no.\n\n' +
+          '"Oh," says Fenn, and that is the part that lands on him, out of all of it. Then: ' +
+          '"Don\'t tell Saffra the house bit. She\'ll want to know who built it wrong."',
+        effects: {
+          flags: { [FLAGS.toldFennTruth]: true },
+          journal: [
+            {
+              id: 'j.fenn_truth',
+              text:
+                'I told Fenn where I am from. He believed me, and the part that upset him was ' +
+                'that the swing is gone.',
+            },
+          ],
+        },
+      },
+    ],
+  },
+
+  /* ================================================================ *
+   * The workings
+   * ================================================================ */
+  {
+    id: 'lovage',
+    name: 'Lovage',
+    nouns: ['lovage', 'foreman', 'mason', 'man in the mouth'],
+    locationId: 'past.entrance',
+    listAs: c('Lovage, sitting in the mouth with his arms folded'),
+    appearance: () =>
+      'A short, wide man of about fifty with lime burns on both forearms and stone dust in ' +
+      'every crease of him. He is sitting on an upturned basket in the mouth of his own ' +
+      'workings doing absolutely nothing, which is clearly costing him more than the work ' +
+      'would.',
+    greeting: (state) =>
+      f(state, FLAGS.lovageDistrust)
+        ? 'He sees you coming up the track and gets off the basket, which is not a welcome.\n\n' +
+          '"No," says Lovage, before you have said anything at all.'
+        : 'He watches you come up the last of the track without moving his head.\n\n' +
+          '"You are the one from the ford," he says. "You have had a look. Good. That is the ' +
+          'mouth, that is the stair, there is water at the bottom. Now you have seen it."',
+    topics: [
+      {
+        id: 'why_stopped',
+        label: 'why nobody is working',
+        aliases: ['stopped', 'sitting', 'barrel', 'water', 'thirsty'],
+        response: () =>
+          'He tips his head back at the dark behind him without looking at it.\n\n' +
+          '"Barrel split." He holds up four fingers. "Four days. I have five men and a boy down ' +
+          'there on what they can carry up at first light, and by the middle of the day they are ' +
+          'making the kind of mistakes you cannot take back out of stone."\n\n' +
+          '"So we stop at the middle of the day. Which means the job runs into next season, ' +
+          'which means I have to go and explain that to people who do not cut stone." He ' +
+          'resettles himself on the basket. "And no, I will not send a man down to the spring. ' +
+          'A man on a path is a man off the face."',
+        effects: {
+          flags: { [FLAGS.knowsWaterNeeded]: true },
+          journal: [
+            {
+              id: 'j.lovage_barrel',
+              text:
+                'Lovage\'s water barrel split four days ago. Five men and a boy are working on ' +
+                'what they carry up at dawn, and he will not spare anybody to fetch more.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'let_me_in',
+        label: 'asking to go in',
+        aliases: ['in', 'let me in', 'look', 'see the workings', 'please'],
+        available: (state) => !f(state, FLAGS.worksiteAccess),
+        response: (state) =>
+          f(state, FLAGS.lovageDistrust)
+            ? '"I said no, and you have made me say it twice."\n\n' +
+              'He is not angry. That is the difficulty. He is standing in his own doorway being ' +
+              'reasonable at you.\n\n' +
+              '"Four days we have been dry and nothing else has been wrong. You come up the ' +
+              'track, you stand in my square telling people what is going to happen to them, ' +
+              'and now my line has moved and Caraway heard a door shut before the wind came."\n\n' +
+              '"I do not say you did it. I say I do not want you in my hole." He sits back down. ' +
+              '"Go and be somebody else\'s weather."'
+            : '"No." He says it without heat, the way you would say *east*.\n\n' +
+              '"It is not a cave down there yet, it is a job. There are chalk lines that mean ' +
+              'something and a panel I have got down to a finger thick and a pillar I would ' +
+              'rather you did not even look at hard." He folds his arms. "You are not a mason ' +
+              'and you are not from here, and I have no idea which of those worries me more."\n\n' +
+              '"Come back when you are useful to me."',
+      },
+      {
+        id: 'pillar',
+        label: 'the pillar he mentioned',
+        aliases: ['pillar', 'column', 'support', 'roof'],
+        response: () =>
+          'The question gets you the first thing resembling approval you have had off him.\n\n' +
+          '"That," he says, "is the roof."\n\n' +
+          'He points up at the hill over both your heads with one blunt finger. "Not the stone ' +
+          'over your head. *That.* We took the room out from round it and we left it standing ' +
+          'and everything above us is on it. One pillar, because that is what the rock gave ' +
+          'us."\n\n' +
+          '"Keep your mallet off it. Keep your elbows off it. If I see a chisel within a hand ' +
+          'of it I will take the chisel and the hand." He is entirely serious and then, ' +
+          'abruptly, less so. "I do not like it. I have told people I do not like it. I have ' +
+          'been told that the hill has had an opinion about this for longer than I have."',
+        effects: {
+          flags: { [FLAGS.pillarWarning]: true },
+          journal: [
+            {
+              id: 'j.lovage_pillar',
+              text:
+                'Lovage: the single worked pillar in the workings is the roof. They cut the ' +
+                'room out from round it and left it standing, and everything above is on it. ' +
+                'He does not like it.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'cut_the_dish',
+        label: 'asking him to cut the middle dish',
+        aliases: ['cut', 'dish', 'middle', 'outline', 'second'],
+        available: (state) => f(state, FLAGS.knowsSettings),
+        response: () =>
+          'You ask him for the middle one. The chalk ellipse with the cross in it, at the ' +
+          'height of your chest. You ask whether it could be cut.\n\n' +
+          'He looks at you for a long moment, and what is in his face is not suspicion. It is a ' +
+          'man doing a sum.\n\n' +
+          '"That is a week," he says. "Two men, a week, on a dressed seat in a panel I have ' +
+          'already got down to a finger thick, which is the most dangerous bit of stone in the ' +
+          'hill. And it is the last thing on the job, and it is the last thing on the job ' +
+          'because when it is cut we are finished and the scaffold comes down."\n\n' +
+          '"So. A week with two men." He lets that sit. "And I would not give you an hour."\n\n' +
+          'Then, because he is not a cruel man and he has watched you look at that wall: "What ' +
+          'is it you think is in there?"\n\n' +
+          'You find you have no answer that would survive being said out loud.',
+        effects: {
+          journal: [
+            {
+              id: 'j.lovage_refuses',
+              text:
+                'Lovage will not cut the middle dish. A week with two men on the thinnest ' +
+                'stone in the hill, and it is the last job because finishing it ends the work.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'wrongnesses',
+        label: 'the things that have been going wrong',
+        aliases: ['wrong', 'line', 'strange', 'moved', 'door'],
+        available: (state) =>
+          f(state, FLAGS.symptomSound) || f(state, FLAGS.symptomMark) || f(state, FLAGS.symptomWeather),
+        response: () =>
+          'He does not pretend not to know what you mean, which you had been counting on.\n\n' +
+          '"My line has moved," says Lovage. "A line I snapped myself, and I checked it, and ' +
+          'then I checked it with a different string because I thought I had gone soft. It has ' +
+          'moved a hand."\n\n' +
+          '"Caraway heard a door shut and then felt the wind that shut it. He is not a fanciful ' +
+          'man. He is barely a talkative one."\n\n' +
+          'He spits, neatly, off to the side. "Now. I have been in holes in the ground for ' +
+          'thirty-one years and holes in the ground do strange things and most of them are ' +
+          'water. I have had a working breathe at me. I have had one knock."\n\n' +
+          '"I have not had one be in the wrong order." He looks out and down the track, at the ' +
+          'roofs. "I do not know what that is. I am not going to pretend I do, and I would not ' +
+          'believe a man who said he did."',
+        effects: {
+          journal: [
+            {
+              id: 'j.lovage_wrong',
+              text:
+                'Lovage: his chalk line has moved a hand\'s width, and Caraway heard a door shut ' +
+                'before the wind that shut it. Thirty-one years underground and he has never ' +
+                'had one be in the wrong order. He says he has no idea what it is.',
+            },
+          ],
+        },
       },
     ],
   },

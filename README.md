@@ -1,18 +1,28 @@
-# Absolution — opening chapter prototype
+# Absolution
 
-A short, text-led adventure. This build contains one complete, playable opening
-chapter: character selection, a village to explore, contrasting accounts of the
-cave, one real puzzle, the discovery of a passage nobody else found, and a
-single crossing — then it stops, on purpose, with a clear end-of-prototype
-message.
+A short, text-led adventure. This build contains two complete, playable
+chapters.
 
-First playthrough is roughly 20–30 minutes.
+**Chapter 1** — character selection, a village to explore, contrasting accounts
+of the cave, one real puzzle, the discovery of a passage nobody else found, and
+a crossing.
+
+**Chapter 2** — the same village a hundred years earlier: landmarks you know laid
+out wrong, a building site with a foreman on the door, a question you are asked
+and have to answer, and the builders' three lamp positions — one of which you
+can light.
+
+Then it stops, on purpose, with a clear end-of-current-content message. **That
+is not the ending.** The chapters after it are designed and not built.
+
+First playthrough is roughly 45–60 minutes.
 
 - **Working title.** Nothing here is a final name.
 - **No backend.** No accounts, database, API keys, paid services or runtime AI.
   The build is static files and client-side JavaScript only.
 - **Two input modes.** Type-only and Selectable Actions, interchangeable at any
-  time, both driving the same engine.
+  time, both driving the same engine. Both are verified to complete both
+  chapters on their own.
 
 ## Running it
 
@@ -121,13 +131,13 @@ Colour stays on short spans, measuring about 2% of the transcript in practice.
 | Document | Contents |
 | --- | --- |
 | [`docs/COMMANDS.md`](docs/COMMANDS.md) | Full command reference for type-only play. |
-| [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) | **Spoilers.** Shortest and fullest routes, every puzzle state, verification checklist. |
+| [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) | **Spoilers.** Shortest and fullest routes, every puzzle state, the save migration, verification checklist. |
 | [`docs/CANON.md`](docs/CANON.md) | **Spoilers.** What is approved canon, what is provisional, what is explicitly undecided. |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Cloudflare Pages settings, verified against current docs. |
 | [`docs/FULL_GAME_DESIGN.md`](docs/FULL_GAME_DESIGN.md) | **Spoilers. Proposed, not approved.** The complete adventure: ending, causal model, maps, puzzles. |
 | [`docs/FULL_GAME_WALKTHROUGH.md`](docs/FULL_GAME_WALKTHROUGH.md) | **Spoilers. Proposed.** Critical path for the whole game, plus a continuity audit. |
 | [`docs/M2_DECISIONS.md`](docs/M2_DECISIONS.md) | The five decisions the owner has settled, and what is still proposed. |
-| [`docs/M3_BRIEF.md`](docs/M3_BRIEF.md) | **Spoilers.** The Milestone 3 build brief: scope, fixed constraints, and the engine work the new era needs. |
+| [`docs/M3_BRIEF.md`](docs/M3_BRIEF.md) | **Spoilers.** The Milestone 3 build brief this chapter was built from. |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module layout, state shape, the rules the engine enforces. |
 
 `docs/WALKTHROUGH.md` and `docs/CANON.md` describe later events in the story and
@@ -154,7 +164,12 @@ src/
 
   engine/
     mechanics.ts    shared state helpers used by the reducer and by puzzles
-    puzzles/        one module per puzzle; the opening's is shutteredRelief
+    puzzles/        one module per puzzle or set piece
+      shutteredRelief.ts   chapter 1's puzzle
+      water.ts             worksite access, the ordinary route
+      recitation.ts        the fixed scene in the square
+      worksite.ts          the three lamp positions and the second crossing
+      rupture.ts           the authored wrongnesses
   content/      authored data: locations, objects, dialogue, items, flags,
                 hints, markup helpers, prose
   persistence/  localStorage slots, export/import, save validation
@@ -182,9 +197,31 @@ plain JSON file named `adventure-save.json`.
 Reading and writing are independent: a browser that has run out of room can
 still load an existing save, so Continue and Export Save keep working when new
 saves do not. Storage keys are unchanged from the first prototype
-(`cave-of-absolution:*`), and saves written by it still load — internal
-person and topic ids were deliberately left alone when the cast was renamed, so
-no migration is needed.
+(`cave-of-absolution:*`).
+
+### Save compatibility
+
+| Format | Written by | Status |
+| --- | --- | --- |
+| 1 | the opening-chapter builds | **Loads.** Migrated on read, by every route in: autosave, backup, checkpoint and Import Save |
+| 2 | this build | Current |
+
+Format 2 widens what `era`, `chapter` and `locationId` may hold — it adds the
+later era — and adds the items and flags Chapter 2 introduces. No field was
+removed or retyped, so the 1 → 2 migration is a value fix-up with exactly one
+thing to fix: **a save that stopped where the prototype used to stop.** Such a
+save was marked complete in the past square. That position is playable now, so
+it comes back as a game in progress, with its objective updated and one line
+appended to the transcript saying the story continues — the historical
+end-of-prototype entry is left where it is rather than silently contradicted.
+
+Nothing else is touched. No other completion flag is cleared, no progress is
+reset, no items are added to an old inventory, and the migration is idempotent.
+A save marked complete anywhere the current content cannot end is refused as an
+edited file rather than quietly repaired.
+
+Internal person and topic ids were deliberately left alone when the cast was
+renamed, so a save from before that still loads too.
 
 If storage is unavailable or full, the game says so in a banner that stays up —
 it never claims a save succeeded when the write failed — and play continues with

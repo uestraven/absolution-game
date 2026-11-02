@@ -41,6 +41,22 @@ const itemVerb = (item: string, verb: string) => (a: Affordances) =>
   a.items.find((i) => i.id === item)?.actions.find((x) => x.key === `item-${item}-${verb}`);
 const person = (id: string) => (a: Affordances) => a.people.find((p) => p.key === `talk-${id}`);
 const topic = (id: string) => (a: Affordances) => a.topics?.find((t) => t.key === `topic-${id}`);
+/** Handing something over is a target in the item's "use on…" list. */
+const giveTo = (item: string, personId: string) => (a: Affordances) =>
+  a.items.find((i) => i.id === item)?.useTargets.find((t) => t.key === `give-${item}-${personId}`);
+/** The recitation sits at the head of the topic list, or among the meta actions. */
+const recite = () => (a: Affordances) =>
+  a.topics?.find((t) => t.key === 'recite-prophecy') ??
+  a.meta.find((m) => m.key === 'recite-prophecy');
+/**
+ * The panel renders "Leave the conversation" unconditionally whenever a
+ * conversation is open, rather than taking it from the affordance list, so the
+ * click helper has to do the same.
+ */
+const leave = () => (a: Affordances) =>
+  a.topics === null
+    ? undefined
+    : { key: 'leave', label: 'Leave the conversation', action: { type: 'END_CONVERSATION' } as GameAction };
 
 describe('the two input modes are the same game', () => {
   it('reaches identical progress from identical intent, step for step', () => {
@@ -69,10 +85,30 @@ describe('the two input modes are the same game', () => {
       { typed: 'examine threshold', chosen: objectVerb('deep.threshold', 'examine') },
       { typed: 'enter threshold', chosen: objectVerb('deep.threshold', 'cross') },
       { typed: 'go up', chosen: exit('to_entrance') },
+      { typed: 'go east', chosen: exit('to_path') },
       { typed: 'go east', chosen: exit('to_square') },
       { typed: 'talk to saffra', chosen: person('sabra') },
       { typed: 'cave', chosen: topic('cave') },
       { typed: 'wanderer', chosen: topic('wanderer') },
+      // P4: they ask, and the hero answers. The words are fixed; only the
+      // decision to say them is the player's.
+      { typed: 'why you asked', chosen: topic('why_you_asked') },
+      { typed: 'recite prophecy', chosen: recite() },
+      // P2, the recovery route: Lovage will not take anything off them now.
+      { typed: 'talk to fenn', chosen: person('pell') },
+      { typed: 'how a boy gets past the foreman', chosen: topic('spoil_gap') },
+      { typed: 'leave', chosen: leave() },
+      { typed: 'go west', chosen: exit('to_path') },
+      { typed: 'go west', chosen: exit('to_entrance') },
+      { typed: 'go down', chosen: exit('to_deep') },
+      { typed: 'go north', chosen: exit('to_worksite') },
+      // P3: all three pieces, then the one setting that can be lit.
+      { typed: 'examine drawing', chosen: objectVerb('worksite.drawing', 'examine') },
+      { typed: 'examine slate', chosen: objectVerb('worksite.notes', 'examine') },
+      { typed: 'examine dishes', chosen: objectVerb('worksite.dishes', 'examine') },
+      { typed: 'examine pillar', chosen: objectVerb('worksite.pillar', 'examine') },
+      { typed: 'place lantern in high dish', chosen: placeIn('lantern', 'worksite.highdish') },
+      { typed: 'enter aperture', chosen: objectVerb('worksite.aperture', 'cross') },
     ];
 
     let typed = begin('basilia');
@@ -84,6 +120,7 @@ describe('the two input modes are the same game', () => {
       expect(progressOf(selected), `after "${step.typed}"`).toEqual(progressOf(typed));
     }
 
+    expect(typed.locationId).toBe('future.deep_chamber');
     expect(typed.ended).toBe(true);
     expect(selected.ended).toBe(true);
   });
@@ -102,7 +139,11 @@ describe('end to end', () => {
     'present.deep_chamber',
     'past.deep_chamber',
     'past.entrance',
+    'past.cave_path',
+    'past.spring',
     'past.square',
+    'past.worksite',
+    'future.deep_chamber',
   ];
 
   it('completes the chapter by typing, visiting every location', () => {
@@ -169,6 +210,13 @@ describe('end to end', () => {
       'examine tool work',
       'up',
       'examine mouth',
+      'talk to lovage',
+      'why nobody is working',
+      'the pillar he mentioned',
+      'leave',
+      'east',
+      'examine tree',
+      'examine ruts',
       'east',
       'examine tree',
       'examine well',
@@ -177,14 +225,60 @@ describe('end to end', () => {
       'the cave on the hill',
       'whether the cave has a name',
       'whether anything is coming',
+      // P2, the ordinary way: carry the crew their water. Available because
+      // the words have not been said yet.
+      'the foreman up at the cave',
+      'leave',
+      'take skins',
+      'west',
+      'north',
+      'examine spring',
+      'fill skins',
+      'south',
+      'west',
+      'give skins to lovage',
+      'down',
+      'examine spoil',
+      'north',
+      // P3
+      'examine drawing',
+      'examine slate',
+      'examine dishes',
+      'examine low dish',
+      'examine high dish',
+      'examine outline',
+      'examine pillar',
+      'examine aperture',
+      'take mallet',
+      // The low position, tried on purpose. It costs nothing and it is the
+      // cleanest confirmation the hero can get that the heights are places.
+      'place lantern in low dish',
+      // P4: still owed, and the aperture will not take them until it is paid.
+      'south',
+      'up',
+      'east',
+      'east',
+      'talk to saffra',
+      'why you asked',
+      'recite prophecy',
+      'west',
+      'west',
+      'down',
+      'north',
+      'place lantern in high dish',
+      'enter aperture',
+      'examine basin',
+      'examine stair',
+      'examine tear',
     ]);
 
     expect(state.ended).toBe(true);
-    expect(state.era).toBe('past');
-    expect(state.locationId).toBe('past.square');
-    expect(state.objective).toBe(OBJECTIVES.ended);
+    expect(state.era).toBe('future');
+    expect(state.chapter).toBe('future');
+    expect(state.locationId).toBe('future.deep_chamber');
+    expect(state.objective).toBe(OBJECTIVES.future);
     expect([...state.visited].sort()).toEqual([...EXPECTED_ORDER].sort());
-    expect(state.journal.length).toBeGreaterThan(12);
+    expect(state.journal.length).toBeGreaterThan(24);
     // Nothing in this run should have been rejected as nonsense.
     expect(state.transcript.filter((e) => e.kind === 'failure')).toEqual([]);
   });
@@ -227,15 +321,48 @@ describe('end to end', () => {
       objectVerb('deep.threshold', 'examine'),
       objectVerb('deep.threshold', 'cross'),
       exit('to_entrance'),
+      person('lovage'),
+      topic('why_stopped'),
+      leave(),
+      exit('to_path'),
       exit('to_square'),
       person('sabra'),
       topic('cave'),
       topic('wanderer'),
+      topic('lovage'),
+      leave(),
+      objectVerb('pastsquare.skins', 'take'),
+      exit('to_path'),
+      exit('to_spring'),
+      objectVerb('pastspring.spring', 'fill'),
+      exit('to_path'),
+      exit('to_entrance'),
+      giveTo('water_skins', 'lovage'),
+      exit('to_deep'),
+      exit('to_worksite'),
+      objectVerb('worksite.drawing', 'examine'),
+      objectVerb('worksite.notes', 'examine'),
+      objectVerb('worksite.dishes', 'examine'),
+      objectVerb('worksite.mallet', 'take'),
+      exit('to_deep'),
+      exit('to_entrance'),
+      exit('to_path'),
+      exit('to_square'),
+      person('sabra'),
+      topic('why_you_asked'),
+      recite(),
+      exit('to_path'),
+      exit('to_entrance'),
+      exit('to_deep'),
+      exit('to_worksite'),
+      placeIn('lantern', 'worksite.highdish'),
+      objectVerb('worksite.aperture', 'cross'),
     ];
     for (const step of path) state = click(state, step);
 
     expect(state.ended).toBe(true);
-    expect(state.locationId).toBe('past.square');
+    expect(state.chapter).toBe('future');
+    expect(state.locationId).toBe('future.deep_chamber');
     expect([...state.visited].sort()).toEqual([...EXPECTED_ORDER].sort());
   });
 });
@@ -259,14 +386,33 @@ describe('the documented shortest route', () => {
     'place lantern in alcove',
     'light lantern',
     'open seam',
+    'take lantern',
     'down',
     'enter threshold',
     'up',
     'east',
+    'east',
     'talk to saffra',
     'cave',
     'whether anything is coming',
+    'why you asked',
+    'recite prophecy',
+    'talk to fenn',
+    'how a boy gets past the foreman',
+    'leave',
+    'west',
+    'west',
+    'down',
+    'north',
+    'examine drawing',
+    'examine slate',
+    'examine dishes',
+    'place lantern in high dish',
+    'enter aperture',
   ];
+
+  /** Where the opening chapter's own shortest route used to stop. */
+  const OPENING_LENGTH = 13;
 
   it('finishes the chapter with nothing refused along the way', () => {
     let state = begin('basil');
@@ -275,10 +421,19 @@ describe('the documented shortest route', () => {
       expect(result.accepted, `"${line}" was refused at ${state.locationId}`).toBe(true);
       state = result.state;
     }
-    expect(SHORTEST).toHaveLength(20);
+    expect(SHORTEST).toHaveLength(36);
     expect(state.ended).toBe(true);
-    expect(state.locationId).toBe('past.square');
-    expect(state.objective).toBe(OBJECTIVES.ended);
+    expect(state.locationId).toBe('future.deep_chamber');
+    expect(state.objective).toBe(OBJECTIVES.future);
+  });
+
+  it('takes the recitation-first order, so both recovery routes are load-bearing', () => {
+    const state = typeAll(begin(), SHORTEST);
+    expect(state.flags[FLAGS.recitedProphecy]).toBe(true);
+    // Lovage had already turned against them, so this route never used water.
+    expect(state.flags[FLAGS.lovageDistrust]).toBe(true);
+    expect(state.flags[FLAGS.carriedWater]).toBeUndefined();
+    expect(state.flags[FLAGS.fennRoute]).toBe(true);
   });
 
   it('does not require the lantern to be lit to get through the cave', () => {
@@ -288,20 +443,49 @@ describe('the documented shortest route', () => {
   });
 
   it('still completes if the player crosses having left both items behind', () => {
-    // Leaving the lantern in the alcove and the wedge under the shutter puts
-    // both of them permanently out of reach once the crossing is made. Nothing
-    // after the crossing may need either of them.
-    let state = typeAll(begin(), SHORTEST.slice(0, 13));
+    /*
+     * Leaving the lantern in the alcove and the wedge under the shutter puts
+     * both of them permanently out of reach once the crossing is made. The
+     * second crossing needs a lamp, so the recovery is the crew's — taken in
+     * the workings, a century earlier, because the men cutting that hole have
+     * lamps. Nothing teleports and nothing is pretended about the hero's own.
+     */
+    let state = typeAll(begin(), SHORTEST.slice(0, OPENING_LENGTH));
     expect(state.flags[FLAGS.passageOpen]).toBe(true);
     expect(state.inventory).toEqual([]);
     state = typeAll(state, ['down', 'enter threshold']);
     expect(state.inventory).toEqual([]);
-    state = typeAll(state, ['up', 'east', 'talk to saffra', 'cave', 'whether anything is coming']);
+
+    state = typeAll(state, [
+      'up',
+      'east',
+      'east',
+      'talk to saffra',
+      'cave',
+      'whether anything is coming',
+      'why you asked',
+      'recite prophecy',
+      'talk to fenn',
+      'how a boy gets past the foreman',
+      'leave',
+      'west',
+      'west',
+      'down',
+      'north',
+      'examine drawing',
+      'examine slate',
+      'examine dishes',
+      'take lamp',
+      'place lantern in high dish',
+      'light lantern',
+      'enter aperture',
+    ]);
+    expect(state.locationId).toBe('future.deep_chamber');
     expect(state.ended).toBe(true);
   });
 
   it('does not require the echo chamber or any conversation before the cave', () => {
-    const solved = typeAll(begin(), SHORTEST.slice(0, 13));
+    const solved = typeAll(begin(), SHORTEST.slice(0, OPENING_LENGTH));
     expect(solved.flags[FLAGS.passageOpen]).toBe(true);
     expect(solved.visited).not.toContain('present.echo_chamber');
     expect(solved.discovered.filter((id) => id.startsWith('topic.'))).toEqual([]);
@@ -348,14 +532,31 @@ describe('selectable mode can reach everything typing can', () => {
       'place lantern in alcove',
       'light lantern',
       'open seam',
+      'take lantern',
       'down',
       'enter threshold',
       'up',
       'east',
+      'east',
       'talk to saffra',
       'cave',
       'whether anything is coming',
+      'why you asked',
+      'recite prophecy',
+      'talk to fenn',
+      'how a boy gets past the foreman',
+      'leave',
+      'west',
+      'west',
+      'down',
+      'north',
+      'examine drawing',
+      'examine slate',
+      'examine dishes',
+      'place lantern in high dish',
+      'enter aperture',
     ]);
+    expect(finished.locationId).toBe('future.deep_chamber');
     expect(finished.ended).toBe(true);
   });
 });

@@ -113,6 +113,10 @@ supersede earlier drafting. The reasoning and the detail live in
 | Landmarks echo with differences | Living tree where the stump is; unworn well cap; roofless frame on the workshop's footprint; no lintel inscription; no cord of lanterns |
 | The twist is not pre-announced | Asserted by test: no player-facing string names time travel, the Wanderer's identity, the eye, a future self or a paradox |
 | No future-self encounter | There is none, and no mechanism implying one |
+| **A word-for-word recitation** | Built. One canonical text in `content/prophecy.ts`, used by both the plank and the recitation, because the plank's words come from the recitation. No wording variants, no selectable clauses, no flag recording what was said. The hero mentions it assuming common ground, is shocked that nobody knows it, is asked, and answers by a deliberate action the player takes |
+| **Nobody in the past knows the prophecy** | Built. Saffra turns the word over as one she has not been given before; Fenn asks whether it is a dog |
+| **The mechanism is never explained** | Built, and asserted by test. Three authored observations and no account of any of them: Lovage says outright he has no idea and would not believe a man who said he did. No inscription, narrator, builder or journal entry diagnoses anything |
+| **Singularity is never shown or stated** | Nothing in the built chapters touches it. It constrains Milestone 5, and the opening contains no future-self meeting for it to contradict |
 
 ### Deliberately avoided, because not approved
 
@@ -251,11 +255,14 @@ things." Chosen to imply someone cares without asserting any family facts.
 - The cause and timing of the eye injury.
 - The hero's subjective journey length and changing appearance.
 - The practical rules for crossings, destinations, object transport and the
-  last return. *(The full design proposes three **fixed** destinations — year
-  −100, year 0, year +100 — reached by a lamp at three heights, the same three
-  from any era. Proposed, not canon.)*
+  last return. *(Three **fixed** destinations — year −100, year 0, year +100 —
+  reached by a lamp at three heights, the same three from any era. **Now
+  implemented**, and still proposed rather than canon: the game never states
+  the rule, and nobody in it explains why the heights behave that way.)*
 - The specific symptoms of the rupture, and what evidence future inhabitants
-  hold.
+  hold. *(Three symptoms are **now implemented** for the past chapter and
+  remain proposals. The rule they obey is canon: never explained, no scientist
+  and no stand-in for one.)*
 - The earlier self's exact plan, and why the confrontation ends lethally.
 - How the sacrifice destroys the cave and permanently prevents the apocalypse.
 - The final aftermath's viewpoint.
@@ -287,11 +294,30 @@ path and audit, and [`docs/M2_DECISIONS.md`](M2_DECISIONS.md) for the owner
 decisions and what is still proposed.
 
 **The boundary:** the five decisions recorded above are canon. Everything else
-in those documents — rupture symptoms, journey length, the eye injury's
-timing, crossing and transport rules, the confrontation's exact sequence, the
-destruction mechanism and the aftermath's viewpoint — is **PROPOSED and not
-approved.** Nothing from the proposed side may be promoted into this file
-without the owner saying so, and nothing in any of it is implemented.
+in those documents — journey length, the eye injury's timing, crossing and
+transport rules, the confrontation's exact sequence, the destruction mechanism
+and the aftermath's viewpoint — is **PROPOSED and not approved.** Nothing from
+the proposed side may be promoted into this file without the owner saying so.
+
+### Proposed detail that is now implemented
+
+Milestone 3 built the past chapter, so some of the proposed mechanics are in
+playable code. **Being implemented does not promote them.** They remain the
+design's proposals, open to the owner's revision, and none of them is an
+owner-approved fact about how this world works:
+
+| Implemented | Still proposed, not canon |
+| --- | --- |
+| Three fixed lamp destinations — year −100, year 0, year +100, the same three from any era | The rule itself. It is never stated to the player; the hero reasons out as much of it as one arrival and one craft record support, and no character has a theory about why heights behave this way |
+| Worksite access by water, by Fenn's gap, or by Saffra's escort | Lovage, his crew, the split barrel and all three routes |
+| The three wrongnesses — a sound before its cause, a chalk line that has moved, weather that un-happens | Which symptoms, and when. The constraint they satisfy *is* canon: never explained |
+| The worked pillar in `present.sealed_chamber` and `past.worksite`, and Lovage's warning about it | The finale it foreshadows |
+| The arrival in a broken chamber with a dry basin, a fall-closed stair and a tear in the wall | Everything about the era beyond that one room |
+
+What the built chapters deliberately still do **not** contain: the eye injury,
+the future settlement, Rue and Sorrel, breaking the seal, the return crossing,
+the confrontation, the killing, the sacrifice and the epilogue. Reaching the
+broken chamber is the end of the built content and is not an ending.
 
 ## Milestone 1 housekeeping
 

@@ -3,12 +3,34 @@ import { FLAGS } from './flags';
 
 const f = (state: GameState, key: string): boolean => Boolean(state.flags[key]);
 
-export type HintContext = 'prep' | 'puzzle' | 'threshold' | 'past' | 'done';
+export type HintContext =
+  | 'prep'
+  | 'puzzle'
+  | 'threshold'
+  | 'past'
+  | 'access'
+  | 'recite'
+  | 'worksite'
+  | 'done';
 
-/** Which hint ladder applies right now. */
+/**
+ * Which hint ladder applies right now.
+ *
+ * Ordered most-specific first, so a player standing in the workings gets the
+ * workings and not the village. Every ladder ends at the full solution: hints
+ * never run out, never cost anything and never consume a timer, because there
+ * is no timer.
+ */
 export function hintContext(state: GameState): HintContext {
-  if (state.ended) return 'done';
-  if (f(state, FLAGS.crossed)) return 'past';
+  if (state.era === 'future' || f(state, FLAGS.crossedForward)) return 'done';
+  // Standing in the workings beats everything: that is what the player is
+  // looking at. Otherwise an open question in the square comes first, because
+  // it is the thing the aperture is waiting on.
+  if (state.locationId === 'past.worksite') return 'worksite';
+  if (f(state, FLAGS.askedForWords) && !f(state, FLAGS.recitedProphecy)) return 'recite';
+  if (f(state, FLAGS.worksiteAccess)) return 'worksite';
+  if (state.era === 'past' && f(state, FLAGS.heardNoProphecy)) return 'access';
+  if (state.era === 'past') return 'past';
   if (f(state, FLAGS.passageOpen)) return 'threshold';
   if (state.locationId.startsWith('present.') && isInCave(state)) return 'puzzle';
   return 'prep';
@@ -52,7 +74,7 @@ const PUZZLE_LADDER: Array<(state: GameState) => string> = [
   (state) => {
     const steps: string[] = [];
     if (!state.inventory.includes('wedge') && !f(state, FLAGS.shutterHeld)) {
-      steps.push('Take a wedge from the basket in the joiner\'s workshop — Oreg gives them away.');
+      steps.push("Take a wedge from the basket in the joiner's workshop — Oreg gives them away.");
     }
     if (!f(state, FLAGS.shutterHeld)) {
       steps.push('In the sealed chamber: USE WEDGE ON SHUTTER, which lifts it and holds it up.');
@@ -80,7 +102,7 @@ const PREP_LADDER: Array<(state: GameState) => string> = [
   () =>
     'Nobody is timing you and you can come back down the hill whenever you like. Two people ' +
     'in the village have something specifically useful to hand over: Oreg in the workshop, and ' +
-    'Bay on the path.',
+    'Tyme on the path.',
   () =>
     'Minimum to get started: take the lantern at home, take a wedge from the basket in the ' +
     'workshop, then go west from the square to the path, west again to the cave mouth, and in.',
@@ -97,13 +119,101 @@ const THRESHOLD_LADDER: Array<(state: GameState) => string> = [
 ];
 
 const PAST_LADDER: Array<(state: GameState) => string> = [
-  () => 'There is daylight up the stair. Go up, and then go down to the roofs.',
+  () => 'There is daylight up the stair. Go up, down the track, and on down to the roofs.',
   () =>
     'The square is full of things you know, laid out wrong. Look at the well, the half-built ' +
-    'wall, and the tree.',
+    'wall, and the tree on the way past.',
   () =>
-    'Talk to Saffra on the plank. Ask her about the cave first, and then ask her whether ' +
-    'anything is coming.',
+    'Talk to Saffra on the plank. Ask her about the cave first, then whether the cave has a ' +
+    'name, and then whether anything is coming.',
+];
+
+/** Two independent routes in, and a third before the words are said. */
+const ACCESS_LADDER: Array<(state: GameState) => string> = [
+  () =>
+    'Whatever is going to get you home is up the hill, and the hill is a building site with a ' +
+    'foreman on the door. Go up and talk to Lovage, and ask Saffra about him first.',
+  (state) =>
+    f(state, FLAGS.recitedProphecy)
+      ? 'Lovage will not take anything off you now. There are two other ways in and neither of ' +
+        'them needs him: ask Fenn how a boy gets past a foreman, or ask Saffra to walk up with ' +
+        'you. Either one is enough on its own.'
+      : 'His water barrel split four days ago and he will not spare a man to fetch more. There ' +
+        'is a yoke of empty skins against the half-built wall in the square, and a spring up ' +
+        'the track, north of the tree.',
+  (state) => {
+    if (f(state, FLAGS.recitedProphecy)) {
+      return (
+        'Pick either:\n\n' +
+        '1. TALK TO FENN in the square, and ask how a boy gets past the foreman. He will tell ' +
+        'you about the gap behind the spoil heap.\n' +
+        '2. TALK TO SAFFRA, and ask her to walk up with you.\n\n' +
+        'Then go up to the mouth, down the stair to the basin chamber, and NORTH past the heap.'
+      );
+    }
+    const steps: string[] = [];
+    if (!state.inventory.includes('water_skins')) {
+      steps.push('TAKE SKINS in the square — the yoke against the half-built wall.');
+    }
+    if (!f(state, FLAGS.skinsFilled)) {
+      steps.push('Go west to the track, NORTH to the spring, and FILL SKINS.');
+    }
+    steps.push('Back south, west to the mouth, and GIVE SKINS TO LOVAGE.');
+    steps.push('Then down the stair to the basin chamber, and NORTH past the spoil heap.');
+    return 'The full solution:\n\n' + steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  },
+];
+
+const RECITE_LADDER: Array<(state: GameState) => string> = [
+  () =>
+    'They have stopped working and asked you a straight question. There is no clever way round ' +
+    'this one and nothing else in the chapter moves until you answer it.',
+  () =>
+    'You know the words. You have known them since you were small enough to be lifted up to ' +
+    'see the plank, and you are the only person on this hillside who has ever heard them.',
+  () =>
+    'RECITE PROPHECY, in the square. In selectable mode it is the first entry in the list of ' +
+    'things you can say.\n\n' +
+    'You can walk away instead and come back to it. Nothing is lost by waiting and nothing ' +
+    'else will say it for you.',
+];
+
+const WORKSITE_LADDER: Array<(state: GameState) => string> = [
+  (state) =>
+    f(state, FLAGS.knowsSettings)
+      ? 'You have worked out what the three heights are. The only one of them you can actually ' +
+        'use is the high one.'
+      : 'There are three things on that panel wall worth your time and you need all three: the ' +
+        'drawing on hide, the slate beside it, and the dishes themselves.',
+  (state) =>
+    f(state, FLAGS.knowsSettings)
+      ? 'The trestle under the high dish is there because that is how the dish was cut. Stand ' +
+        'the lamp in it, light it, and then go through the aperture deliberately — the light ' +
+        'alone will not take you anywhere.'
+      : 'EXAMINE DRAWING, EXAMINE SLATE, EXAMINE DISHES. The drawing gives you the heights, the ' +
+        'slate gives you what the crew found out, and the dishes tell you which of the three ' +
+        'you have already used in your life.',
+  (state) => {
+    const steps: string[] = [];
+    if (!f(state, FLAGS.readDrawing)) steps.push('EXAMINE DRAWING.');
+    if (!f(state, FLAGS.readCrewNotes)) steps.push('EXAMINE SLATE.');
+    if (!f(state, FLAGS.examinedDishes)) steps.push('EXAMINE DISHES.');
+    if (!f(state, FLAGS.recitedProphecy)) {
+      steps.push('Go back down to the square and RECITE PROPHECY. You owe them that first.');
+    }
+    if (!state.inventory.includes('lantern') && !f(state, FLAGS.lanternInHighDish)) {
+      steps.push('Get your lantern back — INVENTORY will tell you where you left it.');
+    }
+    if (!f(state, FLAGS.lanternInHighDish)) steps.push('PLACE LANTERN IN HIGH DISH.');
+    if (!f(state, FLAGS.lanternLit)) steps.push('LIGHT LANTERN.');
+    steps.push('ENTER APERTURE.');
+    return (
+      'The full solution:\n\n' +
+      steps.map((s, i) => `${i + 1}. ${s}`).join('\n') +
+      '\n\nThe low dish is worth trying first if you want to see for yourself what it does. It ' +
+      'costs nothing and it does not take you anywhere.'
+    );
+  },
 ];
 
 const LADDERS: Record<HintContext, Array<(state: GameState) => string>> = {
@@ -111,7 +221,14 @@ const LADDERS: Record<HintContext, Array<(state: GameState) => string>> = {
   puzzle: PUZZLE_LADDER,
   threshold: THRESHOLD_LADDER,
   past: PAST_LADDER,
-  done: [() => 'This is as far as the prototype goes. There is nothing further to solve.'],
+  access: ACCESS_LADDER,
+  recite: RECITE_LADDER,
+  worksite: WORKSITE_LADDER,
+  done: [
+    () =>
+      'This is as far as the story is built. There is nothing here left to solve, and this is ' +
+      'not the ending — the chapters that follow it are simply not written yet.',
+  ],
 };
 
 export interface HintResult {

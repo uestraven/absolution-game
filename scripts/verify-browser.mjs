@@ -241,36 +241,57 @@ async function newPage(viewport) {
   focused === 'command-input' ? ok('type mode: command field is focused on arrival')
                               : bad('type mode: command field is focused on arrival', String(focused));
 
+  // The whole of both chapters, typed, in the documented shortest order.
   const script = [
     'take lantern','down','east','take wedge','west','west','west','in',
     'examine relief','east','open shutter','use wedge on shutter',
     'place lantern in alcove','light lantern','examine wall','open seam',
     'take lantern','take wedge','down','examine threshold','enter threshold',
-    'up','east','talk to saffra','the cave on the hill','whether anything is coming',
+    'up','east','east','talk to saffra','the cave on the hill','whether anything is coming',
+    'why you asked','recite prophecy',
+    'talk to fenn','how a boy gets past the foreman','leave',
+    'west','west','down','north',
+    'examine drawing','examine slate','examine dishes',
+    'place lantern in high dish','enter aperture',
   ];
   for (const line of script) {
     await field.fill(line);
     await page.keyboard.press('Enter');
   }
 
-  const ended = await page.locator('.entry-system', { hasText: 'End of the opening chapter' }).count();
-  ended > 0 ? ok('keyboard only: chapter completed to the end-of-prototype message')
-            : bad('keyboard only: chapter completed to the end-of-prototype message');
+  const whole = await page.locator('.transcript').innerText();
+  const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  place === 'the broken chamber'
+    ? ok('keyboard only: both chapters completed to the future arrival')
+    : bad('keyboard only: both chapters completed to the future arrival', place);
+
+  // The canonical prophecy, spoken in the square a century before the plank.
+  whole.includes('One who braves the Cave of Absolution will have the power to turn it aside')
+    ? ok('keyboard only: the recitation says the canonical text')
+    : bad('keyboard only: the recitation says the canonical text');
+
+  const ended = await page.locator('.entry-system', { hasText: 'End of the current content' }).count();
+  ended > 0 ? ok('keyboard only: end-of-current-content marker shown')
+            : bad('keyboard only: end-of-current-content marker shown');
+
+  whole.includes('This is not the ending')
+    ? ok('end state: the marker does not claim to be the ending')
+    : bad('end state: the marker does not claim to be the ending');
 
   // The objective folds away by default now; open the disclosure to read it.
   if ((await page.locator('.status').count()) === 0) {
     await page.locator('.topbar-toggle').click();
   }
   const objective = await page.getByLabel('Current objective').innerText();
-  objective.includes('End of the opening chapter') ? ok('end state: objective updated')
-                                                   : bad('end state: objective updated', objective);
+  objective.includes('what happened here') ? ok('end state: objective updated')
+                                           : bad('end state: objective updated', objective);
 
   // The player can keep looking around after the end.
-  await field.fill('examine tree');
+  await field.fill('examine tear');
   await page.keyboard.press('Enter');
   const stillPlayable = await page.locator('.transcript').innerText();
-  stillPlayable.includes('rope swing') ? ok('end state: inspection still possible')
-                                       : bad('end state: inspection still possible');
+  stillPlayable.includes('daylight in it') ? ok('end state: inspection still possible')
+                                           : bad('end state: inspection still possible');
 
   if ((await page.locator('.status').count()) === 0) {
     await page.locator('.topbar-toggle').click();
@@ -377,8 +398,8 @@ async function newPage(viewport) {
   await page.reload();
   await page.getByRole('button', { name: 'Continue' }).click();
   const after = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  const endAfter = await page.locator('.entry-system', { hasText: 'End of the opening chapter' }).count();
-  after === 'the village square' && endAfter > 0
+  const endAfter = await page.locator('.entry-system', { hasText: 'End of the current content' }).count();
+  after === 'the broken chamber' && endAfter > 0
     ? ok('reload: Continue restores place and transcript')
     : bad('reload: Continue restores place and transcript', `${after} / entries ${endAfter}`);
 
@@ -395,7 +416,7 @@ async function newPage(viewport) {
   const place2 = (await page.locator('.topbar-place').innerText()).toLowerCase();
   const hasButtons = await page.getByRole('region', { name: 'Actions' }).getByRole('button').count();
   const endingStillShown = await page.locator('.entry-narration', { hasText: 'You are a long way from home' }).count();
-  storedAfter === storedBefore && place2 === 'the village square' && hasButtons > 0 && endingStillShown > 0
+  storedAfter === storedBefore && place2 === 'the broken chamber' && hasButtons > 0 && endingStillShown > 0
     ? ok('mode switch: state and transcript preserved, buttons appear', `${storedAfter} entries kept`)
     : bad('mode switch', `${storedBefore}->${storedAfter} at ${place2}, ${hasButtons} buttons, ending ${endingStillShown}`);
 
@@ -408,17 +429,19 @@ async function newPage(viewport) {
     ? ok('export: downloads adventure-save.json')
     : bad('export: downloads adventure-save.json', file.suggestedFilename());
   const exported = JSON.parse(await readFile(await file.path(), 'utf8'));
-  exported.ended === true && exported.locationId === 'past.square'
-    ? ok('export: file contains the finished state')
-    : bad('export: file contents', JSON.stringify(exported).slice(0, 120));
+  exported.ended === true &&
+  exported.locationId === 'future.deep_chamber' &&
+  exported.schemaVersion === 2
+    ? ok('export: file contains the current state, in the current format')
+    : bad('export: file contents', JSON.stringify(exported).slice(0, 140));
 
   /* ---------- 6. Checkpoint restart ---------- */
   page.once('dialog', (d) => d.accept());
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Restart from checkpoint' }).click();
   const place3 = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  // The chapter advanced at the crossing, so the checkpoint is the arrival in
-  // the past rather than the bedroom.
-  place3 === 'the basin chamber'
+  // The chapter advanced at each crossing, so the checkpoint is the arrival in
+  // the broken chamber rather than the bedroom or the basin.
+  place3 === 'the broken chamber'
     ? ok('checkpoint restart: back at the start of the current chapter', place3)
     : bad('checkpoint restart: back at the start of the current chapter', place3);
 
@@ -467,8 +490,8 @@ async function newPage(viewport) {
   await (await chooser).setFiles(await file.path());
   await page.waitForTimeout(150);
   const placeImported = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  const endedImported = await page.locator('.entry-system', { hasText: 'End of the opening chapter' }).count();
-  placeImported === 'the village square' && endedImported > 0
+  const endedImported = await page.locator('.entry-system', { hasText: 'End of the current content' }).count();
+  placeImported === 'the broken chamber' && endedImported > 0
     ? ok('import: the exported save is restored')
     : bad('import: the exported save is restored', `${placeImported} / entries ${endedImported}`);
 
@@ -482,7 +505,7 @@ async function newPage(viewport) {
   await page.waitForTimeout(150);
   const toast = await page.locator('.toast').innerText().catch(() => '');
   const placeAfterBad = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  /Import refused/.test(toast) && placeAfterBad === 'the village square'
+  /Import refused/.test(toast) && placeAfterBad === 'the broken chamber'
     ? ok('import: a malformed file is refused and the game is untouched', toast.split('\n')[0].slice(0, 60))
     : bad('import: a malformed file is refused', `${toast} / ${placeAfterBad}`);
   await (await import('node:fs/promises')).rm(badFile, { force: true });
@@ -494,7 +517,7 @@ async function newPage(viewport) {
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'New Game' }).click();
   await page.waitForTimeout(100);
   const placeAfterCancel = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  /overwrite your saved progress/.test(asked) && placeAfterCancel === 'the village square'
+  /overwrite your saved progress/.test(asked) && placeAfterCancel === 'the broken chamber'
     ? ok('new game: confirms before overwriting, and cancelling keeps progress')
     : bad('new game: confirms before overwriting', `${asked} / ${placeAfterCancel}`);
   await context.close();
@@ -613,6 +636,294 @@ async function newPage(viewport) {
   layout.fontSize === '18px'
     ? ok('wide screen: 18px body text')
     : bad('wide screen: body text size', layout.fontSize);
+  await context.close();
+}
+
+/* ---------- 8. Selectable mode plays both chapters, no typing ---------- */
+{
+  const { context, page, errors } = await newPage({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('button', { name: 'Play as Basilia' }).click();
+
+  const panel = page.getByRole('region', { name: 'Actions' });
+  /** Opens a category, then clicks a chip or action inside the panel. */
+  const tap = async (name, exact = false) => {
+    await panel.getByRole('button', exact ? { name, exact: true } : { name }).first().click();
+  };
+  const category = async (which) => {
+    const chip = panel.getByRole('button', { name: new RegExp(`^${which}`) }).first();
+    if ((await chip.getAttribute('aria-expanded')) !== 'true') await chip.click();
+  };
+  const go = async (label) => { await category('Go'); await tap(label); };
+  const thing = async (name, verb) => {
+    await category('Things');
+    await tap(name);
+    await tap(verb, true);
+  };
+  const talkTo = async (who) => { await category('People'); await tap(`Talk to ${who}`); };
+
+  await thing('hooded lantern', 'Take');
+  await go(/lane down to the square/);
+  await go(/joiner/);
+  await thing('wooden wedge', 'Take');
+  await go(/the square/);
+  await go(/cave path/);
+  await go(/cave mouth/);
+  await go(/outer gallery/);
+  await go(/smaller chamber/);
+
+  // The puzzle, with the item flows.
+  await category('Things');
+  await panel.getByRole('button', { name: /wooden wedge/ }).first().click();
+  await panel.getByRole('button', { name: 'Use on...' }).click();
+  await panel.getByRole('button', { name: /stone shutter/ }).click();
+  await panel.getByRole('button', { name: /hooded lantern/ }).first().click();
+  await panel.getByRole('button', { name: 'Put in...' }).click();
+  await panel.getByRole('button', { name: /alcove/ }).click();
+  await thing('alcove', /Light the/);
+  await thing(/patterned wall|scale/, 'Examine');
+  await thing('seam', 'Open');
+  await thing('alcove', /Take back the/);
+  await thing('stone shutter', /Take back the/);
+  await go(/opened passage/);
+  await thing(/threshold/, 'Step into it');
+
+  const crossed = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  crossed === 'the basin chamber'
+    ? ok('selectable mode: the first crossing works by clicking')
+    : bad('selectable mode: the first crossing works by clicking', crossed);
+
+  await go(/stair up and out/);
+  await go(/track down the hill/);
+  await go(/village square/);
+  await talkTo('Saffra');
+  await panel.getByRole('button', { name: /the cave on the hill/ }).click();
+  await panel.getByRole('button', { name: /whether anything is coming/ }).click();
+  await panel.getByRole('button', { name: /why you asked/ }).click();
+
+  const reciteButton = panel.getByRole('button', { name: /Recite the prophecy/ });
+  (await reciteButton.count()) > 0
+    ? ok('selectable mode: the recitation is offered as an action')
+    : bad('selectable mode: the recitation is offered as an action');
+  await reciteButton.click();
+
+  await talkTo('Fenn');
+  await panel.getByRole('button', { name: /how a boy gets past the foreman/ }).click();
+  await panel.getByRole('button', { name: 'Leave the conversation' }).click();
+  await go(/track up the hill/);
+  await go(/cave mouth/);
+  await go(/stair back down|back down/);
+  await go(/spoil heap/);
+
+  const inside = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  inside === 'the workings'
+    ? ok("selectable mode: Fenn's route opens the workings")
+    : bad("selectable mode: Fenn's route opens the workings", inside);
+
+  await thing(/drawing/, 'Examine');
+  await thing(/slate/, 'Examine');
+  await thing(/cut dishes/, 'Examine');
+
+  await category('Things');
+  await panel.getByRole('button', { name: /hooded lantern/ }).first().click();
+  await panel.getByRole('button', { name: 'Put in...' }).click();
+  await panel.getByRole('button', { name: 'high dish', exact: true }).click();
+  await thing(/aperture/, 'Step into it');
+
+  const arrived = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  arrived === 'the broken chamber'
+    ? ok('selectable mode: both chapters completed with no typing at all')
+    : bad('selectable mode: both chapters completed with no typing at all', arrived);
+
+  const noExits = await panel.getByRole('button', { name: /^Go/ }).count();
+  noExits === 0
+    ? ok('arrival room offers no way on, because there is not one yet')
+    : bad('arrival room offers no way on, because there is not one yet', String(noExits));
+
+  errors.length === 0 ? ok('selectable mode: no console errors across both chapters')
+                      : bad('selectable mode: console errors', errors.join(' | ').slice(0, 200));
+  await context.close();
+}
+
+/* ---------- 9. Switching mode mid-conversation and mid-puzzle ---------- */
+{
+  const { context, page } = await newPage({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('radio', { name: /Type-only/ }).click();
+  await page.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  const field = page.getByLabel('What do you do?');
+  const run = async (lines) => {
+    for (const line of lines) {
+      await field.fill(line);
+      await page.keyboard.press('Enter');
+    }
+  };
+
+  // Mid-puzzle: the wedge is in, the lamp is not.
+  await run([
+    'take lantern','down','east','take wedge','west','west','west','in','east',
+    'use wedge on shutter',
+  ]);
+  await openSettings(page);
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('radio', { name: /Selectable/ }).click();
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: /Close|Done/ }).first().click();
+  const panel = page.getByRole('region', { name: 'Actions' });
+  await panel.getByRole('button', { name: /^Things/ }).click();
+  const puzzleIntact = await panel.getByRole('button', { name: /hooded lantern/ }).count();
+  puzzleIntact > 0
+    ? ok('switching to buttons mid-puzzle keeps the puzzle state')
+    : bad('switching to buttons mid-puzzle keeps the puzzle state');
+
+  // Finish the puzzle by clicking, then cross and open a conversation.
+  await panel.getByRole('button', { name: /hooded lantern/ }).first().click();
+  await panel.getByRole('button', { name: 'Put in...' }).click();
+  await panel.getByRole('button', { name: /alcove/ }).click();
+  await panel.getByRole('button', { name: /alcove/ }).first().click();
+  await panel.getByRole('button', { name: /Light the/ }).click();
+  await panel.getByRole('button', { name: /seam/ }).first().click();
+  await panel.getByRole('button', { name: 'Open', exact: true }).click();
+  await panel.getByRole('button', { name: /alcove/ }).first().click();
+  await panel.getByRole('button', { name: /Take back the/ }).click();
+  await panel.getByRole('button', { name: /^Go/ }).click();
+  await panel.getByRole('button', { name: /opened passage/ }).click();
+  await panel.getByRole('button', { name: /^Things/ }).click();
+  await panel.getByRole('button', { name: /threshold/ }).first().click();
+  await panel.getByRole('button', { name: 'Step into it' }).click();
+  await panel.getByRole('button', { name: /^Go/ }).click();
+  await panel.getByRole('button', { name: /stair up and out/ }).click();
+  await panel.getByRole('button', { name: /track down the hill/ }).click();
+  await panel.getByRole('button', { name: /village square/ }).click();
+  await panel.getByRole('button', { name: /^People/ }).click();
+  await panel.getByRole('button', { name: 'Talk to Saffra' }).click();
+
+  // Mid-conversation: switch back to typing. The topics must still be there.
+  await openSettings(page);
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('radio', { name: /Type-only/ }).click();
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: /Close|Done/ }).first().click();
+  const listed = await page.locator('.transcript').innerText();
+  listed.includes('You could ask about')
+    ? ok('switching to typing mid-conversation keeps the topic list readable')
+    : bad('switching to typing mid-conversation keeps the topic list readable');
+
+  await run(['the cave on the hill', 'whether anything is coming', 'why you asked', 'recite prophecy']);
+  const said = await page.locator('.transcript').innerText();
+  said.includes('What stands will not stand')
+    ? ok('a conversation started by clicking can be finished by typing')
+    : bad('a conversation started by clicking can be finished by typing');
+  await context.close();
+}
+
+/* ---------- 10. A save from the old prototype keeps playing ---------- */
+{
+  const { context, page } = await newPage({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('radio', { name: /Type-only/ }).click();
+  await page.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  const field = page.getByLabel('What do you do?');
+  for (const line of [
+    'take lantern','down','east','take wedge','west','west','west','in','east',
+    'use wedge on shutter','place lantern in alcove','light lantern','open seam',
+    'take lantern','down','enter threshold','up','east','east',
+    'talk to saffra','the cave on the hill','whether anything is coming',
+  ]) {
+    await field.fill(line);
+    await page.keyboard.press('Enter');
+  }
+
+  /*
+   * Rewrite the stored save as the format-1 file the old build would have
+   * left: schemaVersion 1, ended, the old objective, and the old marker still
+   * at the bottom of the transcript the player is looking at.
+   */
+  const KEY = 'cave-of-absolution:save';
+  await page.evaluate((key) => {
+    const save = JSON.parse(localStorage.getItem(key));
+    save.schemaVersion = 1;
+    save.ended = true;
+    save.objective = 'End of the opening chapter.';
+    save.transcript.push({
+      id: 'tLEGACY',
+      kind: 'system',
+      text: '— End of the opening chapter —\n\nThis is as far as the prototype goes.',
+    });
+    localStorage.setItem(key, JSON.stringify(save));
+    localStorage.removeItem('cave-of-absolution:backup');
+    localStorage.removeItem('cave-of-absolution:checkpoint');
+  }, KEY);
+
+  await page.reload();
+  const continueButton = page.getByRole('button', { name: /^Continue/ });
+  (await continueButton.count()) > 0
+    ? ok('legacy save: Continue is offered')
+    : bad('legacy save: Continue is offered');
+  await continueButton.click();
+
+  const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  place === 'the village square'
+    ? ok('legacy save: resumes in place without replaying the opening')
+    : bad('legacy save: resumes in place without replaying the opening', place);
+
+  const shown = await page.locator('.transcript').innerText();
+  shown.includes('This is as far as the prototype goes')
+    ? ok('legacy save: the transcript the player read is still there')
+    : bad('legacy save: the transcript the player read is still there');
+  shown.includes('The story continues past this point now')
+    ? ok('legacy save: and it is corrected rather than contradicted')
+    : bad('legacy save: and it is corrected rather than contradicted');
+
+  if ((await page.locator('.status').count()) === 0) await page.locator('.topbar-toggle').click();
+  const objective = await page.getByLabel('Current objective').innerText();
+  /back to your own village/.test(objective)
+    ? ok('legacy save: the objective points at the rest of the chapter')
+    : bad('legacy save: the objective points at the rest of the chapter', objective);
+
+  // And it plays on from there, into content that did not exist when it was written.
+  const field2 = page.getByLabel('What do you do?');
+  for (const line of ['talk to saffra', 'why you asked', 'recite prophecy']) {
+    await field2.fill(line);
+    await page.keyboard.press('Enter');
+  }
+  const carried = await page.locator('.transcript').innerText();
+  carried.includes('That is not a poem')
+    ? ok('legacy save: plays on into the new chapter')
+    : bad('legacy save: plays on into the new chapter');
+
+  const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).schemaVersion, KEY);
+  stored === 2 ? ok('legacy save: written back out in the current format')
+               : bad('legacy save: written back out in the current format', String(stored));
+  await context.close();
+}
+
+/* ---------- 11. Checkpoint after the second crossing ---------- */
+{
+  const { context, page } = await newPage({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('radio', { name: /Type-only/ }).click();
+  await page.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  const field = page.getByLabel('What do you do?');
+  for (const line of [
+    'take lantern','down','east','take wedge','west','west','west','in','east',
+    'use wedge on shutter','place lantern in alcove','light lantern','open seam',
+    'take lantern','down','enter threshold','up','east','east',
+    'talk to saffra','the cave on the hill','whether anything is coming',
+    'why you asked','recite prophecy',
+    'talk to fenn','how a boy gets past the foreman','leave',
+    'west','west','down','north',
+    'examine drawing','examine slate','examine dishes',
+    'place lantern in high dish','enter aperture',
+    'examine basin','examine tear',
+  ]) {
+    await field.fill(line);
+    await page.keyboard.press('Enter');
+  }
+  await openSettings(page);
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Restart from checkpoint' }).click();
+  await page.waitForTimeout(150);
+  const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  place === 'the broken chamber'
+    ? ok('checkpoint restart after the second crossing: back at the arrival')
+    : bad('checkpoint restart after the second crossing', place);
   await context.close();
 }
 

@@ -30,6 +30,42 @@ export const ITEMS: Record<ItemId, ItemDef> = {
       );
     },
   },
+  stone: {
+    id: 'stone',
+    name: 'pebble',
+    nouns: ['stone', 'pebble', 'rock', 'cave stone'],
+    inventoryLine: () => 'a pebble off the gallery floor',
+    description: () =>
+      'A water-rounded pebble the size of a thumb joint, dull grey with a pale band through ' +
+      'it. There are thousands like it on the gallery floor and nothing whatever remarkable ' +
+      'about this one, which is not the point of it.',
+  },
+  water_skins: {
+    id: 'water_skins',
+    name: 'water skins',
+    nouns: ['skins', 'water skins', 'waterskins', 'skin', 'water', 'yoke'],
+    inventoryLine: (state) =>
+      state.flags[FLAGS.skinsFilled]
+        ? 'a yoke of water skins, full and heavy'
+        : 'a yoke of water skins, empty',
+    description: (state) =>
+      'Four goatskins on a shoulder yoke, stitched and pitched, with wooden bungs on thongs. ' +
+      (state.flags[FLAGS.skinsFilled]
+        ? 'They are full, and they weigh what four skins of water weigh, which is more than ' +
+          'you expected and all of it on your collarbone.'
+        : 'They are empty, and they smell faintly of goat and strongly of pitch.'),
+  },
+  mallet: {
+    id: 'mallet',
+    name: "mason's mallet",
+    nouns: ['mallet', 'hammer', 'mason mallet', "mason's mallet", 'maul'],
+    inventoryLine: () => "a mason's mallet, not yours",
+    description: () =>
+      'A short-hafted mallet with a head of some close-grained wood, bound at both ends. The ' +
+      'haft is worn to a shape that is not your hand. Somebody has cut three notches into the ' +
+      'end of it, for a reason they never wrote down.\n\n' +
+      'It is Lovage\'s, and you are holding it.',
+  },
   wedge: {
     id: 'wedge',
     name: 'wooden wedge',
@@ -42,8 +78,10 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   },
 };
 
-export const ALL_ITEM_IDS: ItemId[] = ['lantern', 'wedge'];
+export const ALL_ITEM_IDS: ItemId[] = ['lantern', 'wedge', 'stone', 'water_skins', 'mallet'];
+
+const ITEM_ID_SET: ReadonlySet<string> = new Set<ItemId>(ALL_ITEM_IDS);
 
 export function isItemId(value: unknown): value is ItemId {
-  return value === 'lantern' || value === 'wedge';
+  return typeof value === 'string' && ITEM_ID_SET.has(value);
 }

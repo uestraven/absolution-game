@@ -72,13 +72,26 @@ describe('hidden things stay hidden', () => {
     expect(visibleExits(state).some((e) => e.id === 'to_deep')).toBe(false);
   });
 
-  it('hides exactly the two things the puzzle reveals, and nothing else', () => {
+  it('hides exactly the things an examination reveals, and nothing else', () => {
     const hiddenIds = Object.values(OBJECTS_BY_LOCATION)
       .flat()
       .filter((o) => !o.initiallyVisible)
       .map((o) => o.id)
       .sort();
-    expect(hiddenIds).toEqual(['home.tag', 'sealed.alcove', 'sealed.passage', 'sealed.seam']);
+    expect(hiddenIds).toEqual(
+      [
+        'home.tag',
+        'sealed.alcove',
+        'sealed.passage',
+        'sealed.seam',
+        // The three lamp positions are addressable only once the hero has
+        // actually looked at the panel, so guessing "high dish" before then
+        // behaves exactly like guessing a nonsense word.
+        'worksite.highdish',
+        'worksite.lowdish',
+        'worksite.outline',
+      ].sort()
+    );
   });
 });
 
@@ -357,11 +370,11 @@ describe('the crossing', () => {
     expect(lastText(result)).toContain('nothing here to step into');
   });
 
-  it('shows the changed landmarks and ends the prototype after the square', () => {
+  it('shows the changed landmarks and turns the realisation into a problem', () => {
     let state = type(typeAll(begin(), TO_THRESHOLD), 'enter threshold').state;
     expect(lastText(type(state, 'examine tool work'))).toContain('chalk');
 
-    state = typeAll(state, ['up', 'east']);
+    state = typeAll(state, ['up', 'east', 'east']);
     expect(state.locationId).toBe('past.square');
     expect(state.ended).toBe(false);
 
@@ -370,18 +383,21 @@ describe('the crossing', () => {
     expect(lastText(type(state, 'examine building'))).toContain('No roof');
 
     state = typeAll(state, ['talk to saffra', 'cave']);
-    expect(state.ended).toBe(false);
-    const ending = type(state, 'wanderer');
-    expect(ending.accepted).toBe(true);
-    expect(ending.state.ended).toBe(true);
-    expect(ending.state.flags[FLAGS.heardNoProphecy]).toBe(true);
-    expect(lastText(ending)).toContain('End of the opening chapter');
-    expect(ending.state.objective).toBe(OBJECTIVES.ended);
+    const realisation = type(state, 'wanderer');
+    expect(realisation.accepted).toBe(true);
+    expect(realisation.state.flags[FLAGS.heardNoProphecy]).toBe(true);
+    // The beat still lands. It is no longer a full stop: the chapter continues
+    // from it, and the objective says what the problem now is.
+    expect(realisation.state.ended).toBe(false);
+    expect(lastText(realisation)).toContain('You are a long way from home');
+    expect(realisation.state.objective).toBe(OBJECTIVES.home);
+    // And the conversation is still open, so walking away is the player's choice.
+    expect(realisation.state.pending?.kind).toBe('conversation');
   });
 
   it('keeps the village aware of its own cave while lacking the prophecy', () => {
     let state = type(typeAll(begin(), TO_THRESHOLD), 'enter threshold').state;
-    state = typeAll(state, ['up', 'east', 'talk to saffra']);
+    state = typeAll(state, ['up', 'east', 'east', 'talk to saffra']);
     const aboutCave = type(state, 'cave');
     const text = lastText(aboutCave);
     // They know it, they work in it, and young people go in: the tradition is intact.

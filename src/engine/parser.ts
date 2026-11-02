@@ -61,6 +61,27 @@ const THRESHOLD_NOUNS = new Set([
   'the threshold',
   'deep.threshold',
   'pastdeep.basin',
+  // The second crossing goes through the half-cut aperture rather than into a
+  // basin, and the same verbs have to reach it.
+  'aperture',
+  'opening',
+  'panel',
+  'half-cut aperture',
+  'thinned panel',
+  'worksite.aperture',
+]);
+
+/** Nouns that mean "the prophecy" when the hero is being asked for it. */
+const PROPHECY_NOUNS = new Set([
+  'prophecy',
+  'it',
+  'the prophecy',
+  'words',
+  'the words',
+  'warning',
+  'the warning',
+  'wanderer words',
+  'prophecy word for word',
 ]);
 
 /** Everything the help text lists, used to spot a verb typed with no object. */
@@ -115,6 +136,14 @@ const KNOWN_VERBS = new Set([
   'exits',
   'retrieve',
   'remove',
+  'fill',
+  'give',
+  'hand',
+  'offer',
+  'recite',
+  'say',
+  'tell',
+  'wait',
 ]);
 
 export function normalizeInput(raw: string): string {
@@ -422,6 +451,48 @@ export function parse(raw: string, context: ParseContext = {}): GameAction {
       return { type: 'UNPARSED', raw, reason: 'no-topic' };
     }
 
+    case 'fill': {
+      const body = words.slice(1);
+      const split = splitOn(body, ['from', 'at', 'in', 'with']);
+      // "fill the skins at the spring" and "fill the skins" both work; the
+      // reducer decides from where the hero is standing.
+      const target = split && split.right.length > 0 ? split.right : stripArticles(body).join(' ');
+      if (target.length === 0) {
+        return { type: 'FILL', target: 'spring' };
+      }
+      return { type: 'FILL', target };
+    }
+
+    case 'give':
+    case 'hand':
+    case 'offer': {
+      const body = words.slice(1);
+      const split = splitOn(body, ['to']);
+      if (split && split.left.length > 0 && split.right.length > 0) {
+        return { type: 'GIVE', item: split.left, target: split.right };
+      }
+      if (body.length === 0) return { type: 'UNPARSED', raw, reason: 'no-object' };
+      return { type: 'UNPARSED', raw, reason: 'give-needs-person' };
+    }
+
+    case 'recite': {
+      if (rest.length === 0 || PROPHECY_NOUNS.has(rest)) return { type: 'RECITE' };
+      return { type: 'UNPARSED', raw, reason: 'recite-what' };
+    }
+
+    case 'say':
+    case 'tell': {
+      // Only "say the prophecy" is a command. Everything else is conversation,
+      // which goes through topics.
+      const body = rest.replace(/^(them|her|him|it|us|saffra|fenn) /, '');
+      if (PROPHECY_NOUNS.has(body) || PROPHECY_NOUNS.has(rest)) return { type: 'RECITE' };
+      return { type: 'UNPARSED', raw, reason: 'recite-what' };
+    }
+
+    case 'wait':
+    case 'z':
+      return { type: 'WAIT' };
+
     case 'journal':
     case 'log':
     case 'notes':
@@ -465,6 +536,10 @@ export function unparsedMessage(reason: string, raw: string): string {
       return 'There is no option with that number. Type the number of a listed topic, or LEAVE.';
     case 'place-needs-target':
       return 'Say where it goes, as in PLACE LANTERN IN ALCOVE.';
+    case 'give-needs-person':
+      return 'Say who you are giving it to, as in GIVE SKINS TO LOVAGE.';
+    case 'recite-what':
+      return 'RECITE PROPHECY is the only thing you can recite.';
     case 'unknown-verb':
     default:
       return `You cannot do that here. HELP lists everything this story understands.`;

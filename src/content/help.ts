@@ -19,13 +19,17 @@ Handling things
   LIGHT <thing> (KINDLE, IGNITE)
   USE <thing> ON <thing> (USE ... WITH / UNDER)
   PLACE <thing> IN <thing> (PUT, SET, STAND)
+  FILL <thing>                where there is something to fill from
+  GIVE <thing> TO <person> (HAND, OFFER)
 
 People
   TALK TO <person> (SPEAK TO, ASK)
   then type a topic, or its number
   LEAVE                       end the conversation
+  RECITE PROPHECY             only where you have been asked for it
 
 Other
+  WAIT (Z)                    let a moment pass. Nothing is on a clock
   JOURNAL                     what you have established so far
   HINT                        nudge, then more, then the answer
   HELP                        this list

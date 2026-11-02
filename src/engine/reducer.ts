@@ -29,6 +29,15 @@ import {
   openPassage,
   wedgeShutter,
 } from './puzzles/shutteredRelief';
+import { canRecite, declineRecital, doRecite } from './puzzles/recitation';
+import { maybeSymptom } from './puzzles/rupture';
+import { fillSkins, giveWater } from './puzzles/water';
+import {
+  enterAperture,
+  noteSettings,
+  placeLanternInDish,
+  type DishId,
+} from './puzzles/worksite';
 import { CONTENT_VERSION, SCHEMA_VERSION } from './types';
 import { LOCATIONS } from '../content/locations';
 import { OBJECTS, OBJECTS_BY_LOCATION, objectVerbs } from '../content/objects';
@@ -39,17 +48,11 @@ import { c, g } from '../content/markup';
 import { renderText } from '../content/characters';
 import { HELP_TEXT } from '../content/help';
 import { nextHint } from '../content/hints';
-import {
-  CROSSING,
-  ENDING,
-  END_OF_PROTOTYPE,
-  OBJECTIVES,
-  OPENING,
-  THRESHOLD_SPENT,
-} from '../content/text';
+import { CROSSING, ENDING, OBJECTIVES, OPENING, THRESHOLD_SPENT } from '../content/text';
 import { unparsedMessage } from './parser';
 import {
   activeTopics,
+  allExits,
   currentLocation,
   peopleHere,
   resolve as resolveNoun,
@@ -85,9 +88,22 @@ export function createInitialState(): GameState {
   };
 }
 
-/** Era implied by a location id. The two must always agree. */
+/**
+ * Era implied by a location id. The two must always agree, and save validation
+ * cross-checks them, which is why the era is a function of the id rather than
+ * an independent field anybody has to remember to set.
+ */
 export function eraOf(locationId: LocationId): GameState['era'] {
-  return locationId.startsWith('past.') ? 'past' : 'present';
+  if (locationId.startsWith('past.')) return 'past';
+  if (locationId.startsWith('future.')) return 'future';
+  return 'present';
+}
+
+/** The chapter that belongs with an era. Enforced by the validator. */
+export function chapterForEra(era: GameState['era']): GameState['chapter'] {
+  if (era === 'past') return 'crossing';
+  if (era === 'future') return 'future';
+  return 'rite';
 }
 
 /* ------------------------------------------------------------------ *
@@ -99,6 +115,35 @@ export function eraOf(locationId: LocationId): GameState['era'] {
 
 
 
+
+/** Which position each addressable dish object is. */
+const DISH_OF: Record<string, DishId | undefined> = {
+  'worksite.lowdish': 'low',
+  'worksite.outline': 'middle',
+  'worksite.highdish': 'high',
+};
+
+/**
+ * "Put the lantern in the dish" names three things. Ask, rather than guessing
+ * which one the player meant — guessing wrong here is the difference between a
+ * century.
+ */
+function askWhichDish(draft: Draft, events: NarrativeEvent[]): ResolveResult {
+  const options = Object.keys(DISH_OF)
+    .filter((id) => draft.discovered.includes(id))
+    .map((id) => ({
+      label: OBJECTS[id]!.name,
+      action: { type: 'PLACE', item: 'lantern', target: id } as GameAction,
+    }));
+  if (options.length === 0) {
+    events.push({
+      kind: 'failure',
+      text: 'Look at the dishes properly first. There are three positions and they are not the same.',
+    });
+    return commit(draft, events, false);
+  }
+  return askWhich(draft, events, 'Which position?', options);
+}
 
 function listSentence(items: string[]): string {
   if (items.length === 0) return '';
@@ -144,6 +189,11 @@ function enterLocation(draft: Draft, locationId: LocationId, events: NarrativeEv
   const firstVisit = !draft.visited.includes(locationId);
   if (firstVisit) draft.visited.push(locationId);
   describeLocation(draft, events, firstVisit);
+
+  // Beats that belong to arriving somewhere, in a fixed order and each one
+  // latched so a reload cannot replay it.
+  maybePastRealisation(draft, events);
+  maybeSymptom(draft, events);
 }
 
 
@@ -194,6 +244,9 @@ const CONVERSATION_SAFE: ReadonlySet<GameAction['type']> = new Set<GameAction['t
   'CHOOSE',
   'CANCEL',
   'UNPARSED',
+  // Said to the people in front of you: it belongs inside the conversation
+  // rather than turning away from it.
+  'RECITE',
 ]);
 
 const NON_TURN: ReadonlySet<GameAction['type']> = new Set<GameAction['type']>([
@@ -330,6 +383,18 @@ function dispatch(draft: Draft, action: GameAction, events: NarrativeEvent[]): R
     case 'CROSS_THRESHOLD':
       return doCross(draft, events);
 
+    case 'FILL':
+      return doFill(draft, action.target, events);
+
+    case 'GIVE':
+      return doGive(draft, action.item, action.target, events);
+
+    case 'RECITE':
+      return doRecite(draft, events);
+
+    case 'WAIT':
+      return doWait(draft, events);
+
     case 'JOURNAL':
       return doJournal(draft, events);
 
@@ -416,8 +481,40 @@ function doGo(draft: Draft, target: string, events: NarrativeEvent[]): ResolveRe
           .filter((e): e is NonNullable<typeof e> => Boolean(e));
 
   if (matches.length === 0) {
-    // Deliberately identical whether the direction is simply wrong or an exit
-    // exists there but has not been discovered: probing must not reveal it.
+    /*
+     * The spoil heap and the opening behind it are openly described, so
+     * refusing with "you cannot go that way" would be a lie about a wall the
+     * player can see. Answered on its own terms instead.
+     *
+     * Everything else keeps the blank refusal, which is deliberate: for a
+     * genuinely hidden way on, the message must be identical whether the
+     * direction is wrong or the exit exists and has not been found, or probing
+     * would reveal it.
+     */
+    const blocked = allExits(draft).find(
+      (exit) =>
+        exit.requires !== undefined &&
+        !exit.requires(draft) &&
+        (exit.direction === wanted ||
+          exit.id === wanted ||
+          exit.label.toLowerCase().includes(wanted) ||
+          (exit.aliases ?? []).some((alias) => alias.toLowerCase() === wanted))
+    );
+    if (blocked?.id === 'to_worksite' && draft.locationId === 'past.deep_chamber') {
+      events.push({
+        kind: 'failure',
+        text:
+          'You go round the end of the spoil heap, and you get a shoulder into the gap, and the ' +
+          'stair behind you is a long straight tube of daylight with a man sitting at the top ' +
+          'of it.\n\n' +
+          'He has not moved. He does not have to. You would be in there with no way out past ' +
+          'him and nothing to say for yourself, and you have watched him be reasonable at ' +
+          'people and you do not want it.\n\n' +
+          'You come back out. There has to be a reason to be in there, or a reason he is not ' +
+          'at the top of that stair.',
+      });
+      return commit(draft, events, false);
+    }
     events.push({ kind: 'failure', text: 'You cannot go that way.' });
     return commit(draft, events, false);
   }
@@ -477,6 +574,9 @@ function doExamine(draft: Draft, target: string, events: NarrativeEvent[]): Reso
       events.push({ kind: 'narration', text: renderText(def.description(draft), draft) });
       journalEvents(applyEffects(draft, def.onExamine), events);
       noteReliefMatch(draft, ref.id, events);
+      // Fires the first time the drawing, the slate and the dishes have all
+      // been read, whichever order the player read them in.
+      noteSettings(draft, events);
       return commit(draft, events, true);
     }
   }
@@ -524,18 +624,45 @@ function doTake(draft: Draft, target: string, events: NarrativeEvent[]): Resolve
   }
 
   giveItem(draft, def.item);
-  if (def.item === 'lantern') draft.flags[FLAGS.hasLantern] = true;
+  if (def.item === 'lantern') {
+    draft.flags[FLAGS.hasLantern] = true;
+    // The lamp is in a hand now, so it is not in a dish or an alcove. Only
+    // written when it was actually set, so an ordinary take does not litter
+    // every save with flags that were never true.
+    if (f(draft, FLAGS.lanternInAlcove)) draft.flags[FLAGS.lanternInAlcove] = false;
+    if (f(draft, FLAGS.lanternInHighDish)) draft.flags[FLAGS.lanternInHighDish] = false;
+  }
+  if (def.item === 'stone') draft.flags[FLAGS.tookStone] = true;
   events.push({
     kind: 'success',
-    text:
-      def.item === 'lantern'
-        ? 'You lift the lantern off the sill. It is heavier than it looks, the way full things ' +
-          'are, and the striker chinks against the base.'
-        : 'You take a wedge out of the basket and put it in your pocket, where it immediately ' +
-          'becomes the most sensible thing you own.',
+    text: def.takeText ? def.takeText(draft) : TAKE_TEXT[def.item],
   });
   return commit(draft, events, true);
 }
+
+/** What it is like to pick each thing up. */
+const TAKE_TEXT: Record<ItemId, string> = {
+  lantern:
+    'You lift the lantern off the sill. It is heavier than it looks, the way full things are, ' +
+    'and the striker chinks against the base.',
+  wedge:
+    'You take a wedge out of the basket and put it in your pocket, where it immediately becomes ' +
+    'the most sensible thing you own.',
+  stone:
+    'You pick one out of the drift — grey, a pale band through it, indistinguishable from every ' +
+    'other pebble in the hill — and put it in your pocket.\n\n' +
+    'You note where you are standing, because you have been told you will be asked.',
+  water_skins:
+    'You get the yoke up onto one shoulder. Empty, it is nothing: four stiff bags and a bar of ' +
+    'wood.\n\n' +
+    'Nobody stops you, and the absence of anybody stopping you is its own small indignity.',
+  mallet:
+    'You pick up a man\'s mallet off a basket of his chisels, in his workings, while he is ' +
+    'sitting outside in the mouth of them.\n\n' +
+    'It is heavier at the head than you expected and the haft turns a quarter-turn in your ' +
+    'hand before you grip it properly. You put it through your belt, where it hangs like ' +
+    'something that does not belong to you, because it does not.',
+};
 
 /** Recovering an item from a fixture or from the floor. Always possible. */
 function retrieveItem(draft: Draft, item: ItemId, events: NarrativeEvent[]): ResolveResult {
@@ -570,6 +697,20 @@ function retrieveItem(draft: Draft, item: ItemId, events: NarrativeEvent[]): Res
           : f(draft, FLAGS.seamRevealed)
             ? ' You know exactly where the seam is now, even with it invisible again.'
             : ''),
+    });
+    return commit(draft, events, true);
+  }
+
+  if (item === 'lantern' && itemIsIn(draft, 'lantern', 'worksite.highdish')) {
+    giveItem(draft, item);
+    draft.flags[FLAGS.lanternInHighDish] = false;
+    events.push({
+      kind: 'success',
+      text:
+        'You get back up on the trestle and lift the lantern out of the high dish, and the ' +
+        'pressure in your jaw goes out like a held breath let go.\n\n' +
+        'The aperture is a hole in a wall again, with a thumb of hill behind it. You can put ' +
+        'the lamp back whenever you decide to.',
     });
     return commit(draft, events, true);
   }
@@ -681,6 +822,29 @@ function requireHeldItem(
     events.push({ kind: 'failure', text: 'You have no lantern with you.' });
     return commit(draft, events, false);
   }
+  if (known === 'water_skins') {
+    events.push({
+      kind: 'failure',
+      text:
+        'You have no skins with you. There is a yoke of empty ones propped against the ' +
+        'half-built wall down in the square.',
+    });
+    return commit(draft, events, false);
+  }
+  if (known === 'mallet') {
+    events.push({
+      kind: 'failure',
+      text: 'You are not carrying a mallet. Lovage keeps his on the chisel basket in the workings.',
+    });
+    return commit(draft, events, false);
+  }
+  if (known === 'stone') {
+    events.push({
+      kind: 'failure',
+      text: 'You have no stone in your pocket.',
+    });
+    return commit(draft, events, false);
+  }
 
   events.push({ kind: 'failure', text: `You have no ${raw.trim()} to use.` });
   return commit(draft, events, false);
@@ -744,11 +908,74 @@ function doUse(
   if (item === 'wedge' && target.kind === 'object' && target.id === 'sealed.shutter') {
     return wedgeShutter(draft, events);
   }
+  // Standing the lamp in a position is the same act however it is phrased.
+  if (
+    item === 'lantern' &&
+    target.kind === 'object' &&
+    DISH_OF[target.id] !== undefined
+  ) {
+    return doPlace(draft, 'lantern', target.id, events);
+  }
+  if (item === 'lantern' && target.kind === 'object' && target.id === 'worksite.dishes') {
+    return askWhichDish(draft, events);
+  }
+  if (item === 'water_skins' && target.kind === 'object' && target.id === 'pastspring.spring') {
+    return fillSkins(draft, events);
+  }
+  if (item === 'water_skins' && target.kind === 'person' && target.id === 'lovage') {
+    return giveWater(draft, events);
+  }
+  if (item === 'mallet' && target.kind === 'object' && target.id === 'worksite.pillar') {
+    events.push({
+      kind: 'failure',
+      text:
+        'You get as far as lifting it.\n\n' +
+        'Then you put it down, because you are standing under a hill with five men and a boy ' +
+        'somewhere above you in it, and the man whose mallet this is has told you to your face ' +
+        'what this pillar is holding up, and he was not being dramatic. He was being a mason.\n\n' +
+        'Whatever you are here for, it is not that.',
+    });
+    return commit(draft, events, false);
+  }
 
   if (target.kind === 'person') {
+    if (item === 'stone' || item === 'water_skins' || item === 'mallet') {
+      return doGive(draft, item, target.id, events);
+    }
     events.push({
       kind: 'failure',
       text: `${target.label} looks at the ${ITEMS[item].name}, then at you, and declines to comment.`,
+    });
+    return commit(draft, events, false);
+  }
+
+  if (item === 'mallet') {
+    events.push({
+      kind: 'failure',
+      text:
+        `You weigh the mallet in your hand in front of the ${target.label} and then do not use ` +
+        'it on anything.\n\n' +
+        'It is a tool for persuading dressed stone a finger at a time in the hands of somebody ' +
+        'who has done it for thirty years. In yours it is a heavy stick, and this is somebody ' +
+        'else\'s work.',
+    });
+    return commit(draft, events, false);
+  }
+
+  if (item === 'water_skins') {
+    events.push({
+      kind: 'failure',
+      text: `There is nothing the ${target.label} wants with four skins of water.`,
+    });
+    return commit(draft, events, false);
+  }
+
+  if (item === 'stone') {
+    events.push({
+      kind: 'failure',
+      text:
+        `You hold the pebble against the ${target.label}, which achieves what holding a pebble ` +
+        'against a thing achieves. It is a pebble. Its entire value is where it came from.',
     });
     return commit(draft, events, false);
   }
@@ -801,6 +1028,24 @@ function doPlace(
     );
   }
   const target = targetRefs[0]!;
+
+  const dish = target.kind === 'object' ? DISH_OF[target.id] : undefined;
+  if (dish !== undefined) {
+    if (item !== 'lantern') {
+      events.push({
+        kind: 'failure',
+        text:
+          `The dishes are cut for a lamp — dressed, undercut, and the exact size of the base ` +
+          `of one. The ${ITEMS[item].name} is not that, and putting it there would do nothing ` +
+          'at all.',
+      });
+      return commit(draft, events, false);
+    }
+    return placeLanternInDish(draft, dish, events);
+  }
+  if (target.kind === 'object' && target.id === 'worksite.dishes' && item === 'lantern') {
+    return askWhichDish(draft, events);
+  }
 
   if (target.kind === 'object' && target.id === 'sealed.alcove') {
     if (!f(draft, FLAGS.shutterHeld)) {
@@ -969,6 +1214,18 @@ function doLight(draft: Draft, target: string, events: NarrativeEvent[]): Resolv
         'throws it forward in a wedge.',
   });
   checkIllumination(draft, events);
+  if (f(draft, FLAGS.lanternInHighDish)) {
+    events.push({
+      kind: 'narration',
+      text:
+        'The flame takes up there above your head, and the panel answers it.\n\n' +
+        'Pressure, in the back of your teeth and the hinges of your jaw: a held note in a stone ' +
+        'room that you cannot actually hear. The same thing the alcove did, from a different ' +
+        'height, in a different century.\n\n' +
+        'The half-cut aperture is a thumb of rock and then nothing, and the nothing is doing ' +
+        'something.',
+    });
+  }
   return commit(draft, events, true);
 }
 
@@ -1035,8 +1292,11 @@ function doTopic(draft: Draft, topicId: string, events: NarrativeEvent[]): Resol
   discover(draft, [`topic.${person.id}.${topic.id}`]);
   journalEvents(applyEffects(draft, topic.effects), events);
 
-  const ended = maybeEndPrototype(draft, events);
-  if (!ended) topicListEvent(draft, events);
+  // A beat that fires on a topic stays inside the conversation: the list comes
+  // back afterwards so the player is never left without a way to carry on.
+  maybePastRealisation(draft, events);
+  maybeSymptom(draft, events);
+  topicListEvent(draft, events);
   return commit(draft, events, true);
 }
 
@@ -1046,17 +1306,36 @@ function doEndConversation(draft: Draft, events: NarrativeEvent[]): ResolveResul
     return commit(draft, events, false);
   }
   const person = PEOPLE[draft.pending.personId];
+  const owed = canRecite(draft);
   draft.pending = null;
   events.push({
     kind: 'dialogue',
     text: person ? `You take your leave of ${person.name}.` : 'You turn away.',
   });
+  // Walking away with the question still open costs nothing and closes
+  // nothing: the opportunity stays exactly where it was.
+  if (owed) declineRecital(draft, events);
   return commit(draft, events, true);
 }
 
 function doCross(draft: Draft, events: NarrativeEvent[]): ResolveResult {
+  // The second crossing: through the half-cut aperture, explicitly, as its own
+  // action. Lighting the lamp never moves anybody.
+  if (draft.locationId === 'past.worksite') {
+    return enterAperture(draft, events);
+  }
   if (draft.locationId === 'past.deep_chamber') {
     events.push({ kind: 'narration', text: THRESHOLD_SPENT });
+    return commit(draft, events, true);
+  }
+  if (draft.locationId === 'future.deep_chamber') {
+    events.push({
+      kind: 'narration',
+      text:
+        'You get down at the rim out of habit and there is nothing in it but dry plates of ' +
+        'silt and dust, and under the dust cut stone, and under the cut stone the hill.\n\n' +
+        'Whatever this basin was, it is a hole in a floor now.',
+    });
     return commit(draft, events, true);
   }
   if (draft.locationId !== 'present.deep_chamber') {
@@ -1085,14 +1364,22 @@ function doCross(draft: Draft, events: NarrativeEvent[]): ResolveResult {
   return commit(draft, events, true);
 }
 
-/** Returns true when this call ended the prototype. */
-function maybeEndPrototype(draft: Draft, events: NarrativeEvent[]): boolean {
-  if (draft.ended) return false;
+/**
+ * The realisation in the square.
+ *
+ * This used to be where the prototype stopped. It is now the hinge into the
+ * rest of the chapter: it fires once, on the same trigger as before, and sets
+ * the objective that the rest of the chapter answers. The conversation is left
+ * open, because walking away from Saffra mid-sentence was never the point.
+ *
+ * Latched on its own journal entry rather than on `ended`, so a legacy save
+ * that has already seen it does not see it again.
+ */
+function maybePastRealisation(draft: Draft, events: NarrativeEvent[]): boolean {
   if (!f(draft, FLAGS.heardNoProphecy)) return false;
   if (draft.locationId !== 'past.square') return false;
+  if (draft.journal.some((e) => e.id === 'j.another_time')) return false;
 
-  draft.ended = true;
-  draft.pending = null;
   events.push({ kind: 'narration', text: ENDING });
   journalEvents(
     addJournal(draft, [
@@ -1105,9 +1392,160 @@ function maybeEndPrototype(draft: Draft, events: NarrativeEvent[]): boolean {
     ]),
     events
   );
-  setObjective(draft, OBJECTIVES.ended, events);
-  events.push({ kind: 'system', text: END_OF_PROTOTYPE });
+  setObjective(draft, OBJECTIVES.home, events);
   return true;
+}
+
+/* ------------------------------------------------------------------ *
+ * Chapter 2 verbs
+ * ------------------------------------------------------------------ */
+
+function doFill(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {
+  const refs = resolveNoun(draft, target);
+  if (refs.length === 0) {
+    events.push({ kind: 'failure', text: `You cannot see any ${target.trim()} here to fill from.` });
+    return commit(draft, events, false);
+  }
+  const ref = refs[0]!;
+  if (ref.kind === 'object' && ref.id === 'pastspring.spring') {
+    return fillSkins(draft, events);
+  }
+  if (ref.kind === 'item' && ref.id === 'water_skins') {
+    // "fill the skins" names the thing being filled, not the source.
+    if (draft.locationId === 'past.spring') return fillSkins(draft, events);
+    events.push({
+      kind: 'failure',
+      text: 'There is nothing here to fill them from. The spring is up the track, north of the tree.',
+    });
+    return commit(draft, events, false);
+  }
+  events.push({
+    kind: 'failure',
+    text: `There is no water in the ${ref.label}, and nothing you could fill from it.`,
+  });
+  return commit(draft, events, false);
+}
+
+function doGive(
+  draft: Draft,
+  rawItem: string,
+  rawTarget: string,
+  events: NarrativeEvent[]
+): ResolveResult {
+  const held = requireHeldItem(draft, rawItem, events);
+  if (typeof held !== 'string') return held;
+  const item = held;
+
+  const targetRefs = resolveNoun(draft, rawTarget, ['person']);
+  if (targetRefs.length === 0) {
+    events.push({ kind: 'failure', text: `There is nobody here called ${rawTarget.trim()}.` });
+    return commit(draft, events, false);
+  }
+  if (targetRefs.length > 1) {
+    return askWhich(
+      draft,
+      events,
+      `Give the ${ITEMS[item].name} to whom?`,
+      targetRefs.map((r) => ({
+        label: refLabel(r),
+        action: { type: 'GIVE', item, target: r.id } as GameAction,
+      }))
+    );
+  }
+  const person = targetRefs[0]!;
+
+  if (item === 'water_skins' && person.id === 'lovage') return giveWater(draft, events);
+
+  if (item === 'stone' && person.id === 'hesk') {
+    if (f(draft, FLAGS.gaveStone)) {
+      events.push({
+        kind: 'narration',
+        text: 'He has it. He is not going to need a second one.',
+      });
+      return commit(draft, events, false);
+    }
+    removeFromInventory(draft, 'stone');
+    /*
+     * It is his now. Dropped from placements rather than parked on a fixture:
+     * a placement means "somewhere in the world the hero can get it back
+     * from", and this is a thing that has been given away. Save validation
+     * only ever checks placements that exist, so an absent one is simply an
+     * item that is no longer anywhere.
+     */
+    delete draft.placements['stone'];
+    draft.flags[FLAGS.gaveStone] = true;
+    events.push({
+      kind: 'success',
+      text:
+        'You put the pebble in his hand and tell him where it came from: the drift against the ' +
+        'gallery wall, past the scratched names, further in than the ash goes.\n\n' +
+        'Parsie holds it in both hands and looks at it with an attention that nothing about it ' +
+        'deserves, and then he closes his fist round it and says "*Past the names*" in the ' +
+        'voice of a boy filing something permanently.',
+    });
+    journalEvents(
+      addJournal(draft, [
+        {
+          id: 'j.stone_given',
+          text:
+            'Gave Parsie a pebble from past the scratched names in the gallery, and told him ' +
+            'where it came from. He is going to go further.',
+        },
+      ]),
+      events
+    );
+    return commit(draft, events, true);
+  }
+
+  events.push({
+    kind: 'failure',
+    text: `${person.label} looks at the ${ITEMS[item].name} and does not take it.`,
+  });
+  return commit(draft, events, false);
+}
+
+/**
+ * Waiting.
+ *
+ * Authored, and deliberately not a clock. Nothing is consumed, no path closes,
+ * and the pressure the hero feels is described rather than counted down. The
+ * chapter's tension is in what people have decided about them, which is a flag
+ * that has already been set or has not.
+ */
+function doWait(draft: Draft, events: NarrativeEvent[]): ResolveResult {
+  if (draft.locationId === 'past.worksite') {
+    events.push({
+      kind: 'narration',
+      text:
+        'You sit down on the trestle and wait, and the hill is extremely patient about it.\n\n' +
+        'Nothing changes. The chalk outline does not become a dish. Nobody comes down with a ' +
+        'chisel and a free week. Somewhere above you the crew are working stone they will still ' +
+        'be working at the end of the season, because that is how long a season is.\n\n' +
+        'What you can hear yourself doing is waiting for somebody else to solve it, and the ' +
+        'list of people who could is one name long, and he has told you what he thinks.',
+    });
+    return commit(draft, events, true);
+  }
+  if (draft.era === 'past') {
+    events.push({
+      kind: 'narration',
+      text:
+        'You wait. The light moves the way light moves.\n\n' +
+        'Nobody is counting your hours and nothing is going to come and find you. But you are a ' +
+        'stranger with no bed and no name in a village of perhaps sixty people, and you have ' +
+        'begun to notice how fast a thing travels here: Saffra told one person about the ford ' +
+        'and by the afternoon a child you had never met asked you about it.\n\n' +
+        'Whatever you are going to do, it is not going to get easier by being done later.',
+    });
+    return commit(draft, events, true);
+  }
+  events.push({
+    kind: 'narration',
+    text:
+      'You wait, and nothing uses the time. Whatever is going to happen today is going to ' +
+      'happen because you went and did it.',
+  });
+  return commit(draft, events, true);
 }
 
 function doJournal(draft: Draft, events: NarrativeEvent[]): ResolveResult {

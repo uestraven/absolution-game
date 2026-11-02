@@ -123,9 +123,34 @@ reduced to `{ id, kind, text, heading?, subheading? }` strings, and the UI
 renders text as React nodes — never `innerHTML` — so an edited save cannot
 inject markup.
 
-Migrations: `SCHEMA_VERSION` is 1 and no other version has shipped, so the
-`migrate` switch handles the current version and rejects everything else. It
-invents no steps for versions that never existed.
+### Migrations
+
+`SCHEMA_VERSION` is **2**. Format 1 was the opening-chapter builds; format 2
+adds the later era. `migrate` runs the steps oldest-first and feeds each into
+the next, and invents no step for a version that never shipped — a newer format
+is refused by name, and an unknown one is refused as unreadable.
+
+Format 2 only *widens* `era`, `chapter` and `locationId`, and adds items and
+flags. No field was removed or retyped, so 1 → 2 is a value fix-up with one
+thing to fix: a save marked `ended` in `past.square`, which is where the
+prototype used to stop. That position is playable now, so the migration clears
+`ended`, sets the objective the rest of the chapter answers, and appends one
+transcript line saying so — keyed on a fixed id, so it cannot be appended
+twice.
+
+Two properties it holds to deliberately, both tested in
+`persistence/migration.test.ts`:
+
+- **Only eligible saves.** The fix-up is conditioned on the location *and* the
+  flag the old ending required. No other completion flag is cleared; nothing is
+  reset wholesale; a save marked complete anywhere else is refused as an edited
+  file rather than repaired.
+- **Idempotent.** After the fix-up the save is no longer `ended`, so running the
+  migration again is a no-op — including the worst case of a migrated save being
+  re-presented as format 1.
+
+Because `validateSave` is the only way in, the migration runs on every route: the
+autosave, the backup, the checkpoint and Import Save.
 
 ## UI
 
@@ -146,8 +171,20 @@ The puzzle-specific code has been lifted out of the reducer:
 | File | Holds |
 | --- | --- |
 | `engine/mechanics.ts` | Shared state helpers — `clone`, `discover`, `addJournal`, `commit`, `setObjective`, item movement. Knows about no particular puzzle, room or item |
-| `engine/puzzles/shutteredRelief.ts` | Everything that knows about the opening's puzzle, including its prose |
+| `engine/puzzles/shutteredRelief.ts` | Chapter 1's puzzle, including its prose |
+| `engine/puzzles/water.ts` | Worksite access by carrying the crew their water, and the authored refusal once that route closes |
+| `engine/puzzles/recitation.ts` | The fixed scene in the square: when it can happen, what declining costs, and the one commit that lands it |
+| `engine/puzzles/worksite.ts` | The three lamp positions — including the destination table, which is the only place the mapping lives — and the second crossing |
+| `engine/puzzles/rupture.ts` | The three authored wrongnesses, their triggers, and nothing that explains any of them |
 | `engine/reducer.ts` | The action pipeline, noun resolution and the generic verbs |
+
+The destination table deserves a note, because it is the thing most likely to be
+re-derived wrongly. The three lamp heights address **three fixed destinations**,
+not three offsets from wherever the lamp is standing: low is year −100, middle is
+year 0, high is year +100, and they are the same three places from any era. The
+first crossing runs year 0 → −100 on the low setting and the second runs
+−100 → +100 on the high one, so neither of them is "a century forward". There is
+no arithmetic on a current year anywhere in the code, and there should not be.
 
 Adding to the game:
 
@@ -156,11 +193,25 @@ Adding to the game:
   discovers whatever is `initiallyVisible`.
 - **An era.** A new `LocationId` prefix, the matching `Era` value, and a case in
   `eraOf`. Validation already cross-checks `era` against the location prefix,
-  so a new era is covered by the existing coherence checks.
+  so a new era is covered by the existing coherence checks — and `chapterForEra`
+  is the single place the chapter/era pairing is declared, so adding a case
+  there covers both directions of that check too. A save that could not have
+  been written by the previous build needs `SCHEMA_VERSION` bumped and a
+  migration step written and tested in the same pass, not deferred.
 - **A puzzle.** A new module beside `shutteredRelief.ts`, exporting handlers of
   the same `(draft, events) => ResolveResult` shape, wired in from the relevant
   `case` in the reducer's `doOpen` / `doUse` / `doPlace`. Its flags go in
   `content/flags.ts` with their types in `FLAG_TYPES`.
+- **A verb.** A member of the `GameAction` union, a `case` in `dispatch`, a
+  `case` in the parser, and an entry in `ACTION_SHAPES` so a save holding it in
+  a pending clarification validates. If selectable play needs it, it also needs
+  an affordance — either a `SelectableVerb` on the object or an entry built in
+  `getAffordances`, which is how `RECITE` is reachable without typing.
+- **An item.** An entry in `ITEMS` and in `ALL_ITEM_IDS`, plus a `WorldObjectDef`
+  with `item:` set somewhere it can be picked up. Give it `takeText` if the
+  item's default line would be wrong for that particular object — two objects
+  can stand for the same item, as the hero's lantern and the crew's lamp do.
+  Check it against the loose-item regression block, which iterates every item.
 - **A chapter transition.** Follow `doCross`: set the flag, set `chapter`, call
   `enterLocation`, add the journal line and `setObjective`, all in one
   `resolve`. `App.persist` writes a fresh checkpoint whenever `chapter` changes.

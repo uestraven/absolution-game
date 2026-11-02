@@ -3,6 +3,7 @@ import { ITEMS } from '../content/items';
 import { OBJECTS, objectVerbs } from '../content/objects';
 import { FLAGS } from '../content/flags';
 import { activeTopics, peopleHere, roomItems, visibleExits, visibleObjects } from './selectors';
+import { canRecite } from './puzzles/recitation';
 
 /**
  * The selectable-mode action list, computed by the engine rather than the UI.
@@ -59,6 +60,7 @@ const VERB_LABELS: Record<string, string> = {
   open: 'Open',
   light: 'Light',
   cross: 'Step into it',
+  fill: 'Fill from it',
 };
 
 function verbAction(objectId: string, verb: string): GameAction | null {
@@ -74,6 +76,8 @@ function verbAction(objectId: string, verb: string): GameAction | null {
       return { type: 'LIGHT', target: objectId };
     case 'cross':
       return { type: 'CROSS_THRESHOLD' };
+    case 'fill':
+      return { type: 'FILL', target: objectId };
     default:
       return null;
   }
@@ -92,13 +96,32 @@ export function getAffordances(state: GameState): Affordances {
         }
       : null;
 
+  /**
+   * The recitation, offered wherever the scene has reached the point where the
+   * hero can speak.
+   *
+   * It appears at the head of the topic list during the conversation and among
+   * the meta actions outside it, so a player who only clicks can always reach
+   * it — and a player who declines can always come back to it, because the
+   * affordance is computed from state rather than from a one-shot prompt.
+   */
+  const reciteAffordance: Affordance = {
+    key: 'recite-prophecy',
+    label: 'Recite the prophecy, word for word',
+    action: { type: 'RECITE' },
+  };
+  const canSpeak = canRecite(state);
+
   const topics =
     state.pending?.kind === 'conversation'
-      ? activeTopics(state).map((topic, i) => ({
-          key: `topic-${topic.id}`,
-          label: `${i + 1}. ${topic.label}`,
-          action: { type: 'TOPIC', topic: topic.id } as GameAction,
-        }))
+      ? [
+          ...(canSpeak ? [reciteAffordance] : []),
+          ...activeTopics(state).map((topic, i) => ({
+            key: `topic-${topic.id}`,
+            label: `${i + 1}. ${topic.label}`,
+            action: { type: 'TOPIC', topic: topic.id } as GameAction,
+          })),
+        ]
       : null;
 
   const exits = visibleExits(state).map((exit) => ({
@@ -184,11 +207,24 @@ export function getAffordances(state: GameState): Affordances {
       id: itemId,
       name: def.name,
       actions,
-      useTargets: itemTargets.map((target) => ({
-        key: `use-${itemId}-${target.id}`,
-        label: target.name,
-        action: { type: 'USE', item: itemId, target: target.id } as GameAction,
-      })),
+      /*
+       * "Use on…" covers people as well as fixtures here, because handing
+       * somebody a thing is the same gesture from the player's side and the
+       * engine routes it to GIVE. Without this a selectable player could fill
+       * the skins and have no way to hand them over.
+       */
+      useTargets: [
+        ...itemTargets.map((target) => ({
+          key: `use-${itemId}-${target.id}`,
+          label: target.name,
+          action: { type: 'USE', item: itemId, target: target.id } as GameAction,
+        })),
+        ...peopleHere(state).map((person) => ({
+          key: `give-${itemId}-${person.id}`,
+          label: person.name,
+          action: { type: 'GIVE', item: itemId, target: person.id } as GameAction,
+        })),
+      ],
       placeTargets: itemTargets.map((target) => ({
         key: `place-${itemId}-${target.id}`,
         label: target.name,
@@ -199,12 +235,15 @@ export function getAffordances(state: GameState): Affordances {
 
   const meta: Affordance[] = [
     { key: 'meta-look', label: 'look', action: { type: 'LOOK' } },
+    { key: 'meta-wait', label: 'wait', action: { type: 'WAIT' } },
     { key: 'meta-exits', label: 'exits', action: { type: 'EXITS' } },
     { key: 'meta-inventory', label: 'inventory', action: { type: 'INVENTORY' } },
     { key: 'meta-journal', label: 'journal', action: { type: 'JOURNAL' } },
     { key: 'meta-hint', label: 'hint', action: { type: 'HINT' } },
     { key: 'meta-help', label: 'help', action: { type: 'HELP' } },
   ];
+
+  if (canSpeak && state.pending?.kind !== 'conversation') meta.push(reciteAffordance);
 
   // Items resting in a fixture can always be recovered.
   for (const [id, placement] of Object.entries(state.placements)) {

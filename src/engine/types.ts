@@ -6,8 +6,16 @@
  * No functions, no class instances, no Maps, no Dates.
  */
 
-export const SCHEMA_VERSION = 1;
-export const CONTENT_VERSION = '0.1.0';
+/**
+ * Save format.
+ *
+ * 2 adds the future era: `era: 'future'`, `chapter: 'future'`, the
+ * `future.*` location ids, and the items and flags Chapter 2 introduces. No
+ * field was removed or retyped, so the 1 → 2 migration is a value fix-up
+ * rather than a reshape — see persistence/validate.ts.
+ */
+export const SCHEMA_VERSION = 2;
+export const CONTENT_VERSION = '0.2.0';
 
 /* ------------------------------------------------------------------ *
  * Identity
@@ -51,7 +59,7 @@ export interface CharacterDef {
  * `era` and `locationId` can be cross-validated. They are never rendered to
  * the player: all player-facing era flavour comes from authored subtitles.
  */
-export type Era = 'present' | 'past';
+export type Era = 'present' | 'past' | 'future';
 
 export type LocationId =
   | 'present.home'
@@ -64,10 +72,14 @@ export type LocationId =
   | 'present.sealed_chamber'
   | 'present.deep_chamber'
   | 'past.deep_chamber'
+  | 'past.worksite'
   | 'past.entrance'
-  | 'past.square';
+  | 'past.cave_path'
+  | 'past.spring'
+  | 'past.square'
+  | 'future.deep_chamber';
 
-export type ItemId = 'lantern' | 'wedge';
+export type ItemId = 'lantern' | 'wedge' | 'stone' | 'water_skins' | 'mallet';
 
 /** Where a portable item currently is. */
 export type ItemPlacement =
@@ -154,7 +166,12 @@ export type PendingState = PendingConversation | PendingClarification;
  * Game state
  * ------------------------------------------------------------------ */
 
-export type Chapter = 'select' | 'rite' | 'crossing';
+/**
+ * Which chapter the save is in. One chapter per era, and the two always move
+ * together: `rite` ⟺ present, `crossing` ⟺ past, `future` ⟺ future. Save
+ * validation enforces that pairing.
+ */
+export type Chapter = 'select' | 'rite' | 'crossing' | 'future';
 
 export const MAX_TRANSCRIPT = 240;
 export const MAX_JOURNAL = 80;
@@ -189,7 +206,12 @@ export interface GameState {
   pending: PendingState | null;
 
   turn: number;
-  /** True once the prototype's end-of-content marker has been shown. */
+  /**
+   * True once the end-of-current-content marker has been shown.
+   *
+   * This is the boundary of what is built, not the end of the story. It is not
+   * the final ending and must not be presented as one.
+   */
   ended: boolean;
   /** Monotonic counter used to mint unique transcript/journal ids. */
   seq: number;
@@ -217,6 +239,15 @@ export type GameAction =
   | { type: 'CLOSE'; target: string }
   | { type: 'LIGHT'; target: string }
   | { type: 'PLACE'; item: string; target: string }
+  | { type: 'FILL'; target: string; item?: string }
+  | { type: 'GIVE'; item: string; target: string }
+  /**
+   * Speak the prophecy, word for word. A story action rather than a puzzle
+   * verb: the engine checks the scene has reached the point where the
+   * villagers have asked, and the text it produces is the one canonical text.
+   */
+  | { type: 'RECITE' }
+  | { type: 'WAIT' }
   | { type: 'TALK'; target: string }
   | { type: 'TOPIC'; topic: string }
   | { type: 'END_CONVERSATION' }
@@ -299,9 +330,24 @@ export interface WorldObjectDef {
   acceptsItems?: boolean;
   /** Portable item this object represents, if any. */
   item?: ItemId;
+  /**
+   * What picking it up is like, when the item's default line would be wrong.
+   * Two objects can stand for the same item — the hero's own lantern on the
+   * windowsill and a borrowed crew lamp a century earlier — and taking them is
+   * not the same experience.
+   */
+  takeText?: (state: GameState) => string;
 }
 
-export type SelectableVerb = 'examine' | 'take' | 'open' | 'light' | 'use' | 'retrieve' | 'cross';
+export type SelectableVerb =
+  | 'examine'
+  | 'take'
+  | 'open'
+  | 'light'
+  | 'use'
+  | 'retrieve'
+  | 'cross'
+  | 'fill';
 
 export interface PersonDef {
   id: string;

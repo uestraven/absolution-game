@@ -21,7 +21,12 @@ const EXPECTED_CONNECTIONS: Array<[LocationId, LocationId]> = [
   ['present.outer_gallery', 'present.sealed_chamber'],
   ['present.sealed_chamber', 'present.deep_chamber'],
   ['past.deep_chamber', 'past.entrance'],
-  ['past.entrance', 'past.square'],
+  ['past.deep_chamber', 'past.worksite'],
+  ['past.entrance', 'past.cave_path'],
+  ['past.cave_path', 'past.spring'],
+  ['past.cave_path', 'past.square'],
+  // future.deep_chamber is deliberately connected to nothing: it is the
+  // arrival room and the end of the content that exists.
 ];
 
 function exitsFrom(id: LocationId) {
@@ -32,9 +37,13 @@ describe('the map', () => {
   it('has every location the brief lists, and no duplicates', () => {
     expect(ALL_LOCATION_IDS.sort()).toEqual(
       [
+        'future.deep_chamber',
+        'past.cave_path',
         'past.deep_chamber',
         'past.entrance',
+        'past.spring',
         'past.square',
+        'past.worksite',
         'present.cave_path',
         'present.deep_chamber',
         'present.echo_chamber',
@@ -91,7 +100,12 @@ describe('the map', () => {
         if (exit.requires) gated.push(`${id}:${exit.id}`);
       }
     }
-    expect(gated).toEqual(['present.sealed_chamber:to_deep']);
+    expect(gated.sort()).toEqual(
+      [
+        'past.deep_chamber:to_worksite',
+        'present.sealed_chamber:to_deep',
+      ].sort()
+    );
 
     const exit = exitsFrom('present.sealed_chamber').find((e) => e.id === 'to_deep')!;
     expect(exit.requires!(state)).toBe(false);
@@ -258,10 +272,11 @@ describe('the naming convention', () => {
     'Tyme',
     'Saffra',
     'Fenn',
+    'Lovage',
   ]);
 
   /** Named in dialogue but never met. Same convention. */
-  const OFFSTAGE = ['Hyssop', 'Nettle', 'Lovage', 'Cress', 'Chervil', 'Borage', 'Mint'];
+  const OFFSTAGE = ['Hyssop', 'Nettle', 'Cress', 'Chervil', 'Borage', 'Mint', 'Caraway'];
 
   it('names every character on stage from the herb convention', () => {
     for (const person of Object.values(PEOPLE)) {
@@ -282,6 +297,9 @@ describe('the naming convention', () => {
     hesk: 'Parsie',
     sabra: 'Saffra',
     pell: 'Fenn',
+    // New in this chapter, so its id is simply its name: there is no earlier
+    // provisional name for a save to be holding.
+    lovage: 'Lovage',
   };
 
   it('keeps internal ids stable while display names change', () => {

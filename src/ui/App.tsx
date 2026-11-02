@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CharacterId, GameAction, GameState } from '../engine/types';
+import { SCHEMA_VERSION } from '../engine/types';
 import { echoCommand, resolve } from '../engine/reducer';
 import { getAffordances, type Affordances } from '../engine/affordances';
 import { parse } from '../engine/parser';
@@ -450,7 +451,7 @@ function blankSelectState(): GameState {
   // SELECT_CHARACTER builds a fresh state itself; this is only the shell it
   // needs to be dispatched against.
   return {
-    schemaVersion: 1,
+    schemaVersion: SCHEMA_VERSION,
     contentVersion: '0.0.0',
     character: null,
     chapter: 'select',

@@ -1,5 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, begin, progressOf, type, typeAll } from '../testing/harness';
+import {
+  CROSS_FIRST,
+  FENN_ROUTE,
+  GO_FORWARD,
+  PAST_TO_SQUARE,
+  READ_PANEL,
+  RECITE,
+  SAFFRA_REALISATION,
+  SOLVE_RELIEF,
+  SQUARE_TO_WORKSITE,
+  TO_SEALED,
+  WATER_ROUTE,
+  WORKSITE_TO_SQUARE,
+  act,
+  begin,
+  progressOf,
+  type,
+  typeAll,
+} from '../testing/harness';
 import { getAffordances } from './affordances';
 import { resolve } from './reducer';
 import { ALL_LOCATION_IDS, LOCATIONS } from '../content/locations';
@@ -31,18 +49,6 @@ beforeEach(() => {
   vi.restoreAllMocks();
 });
 
-const TO_SEALED = [
-  'take lantern',
-  'down',
-  'east',
-  'take wedge',
-  'west',
-  'west',
-  'west',
-  'in',
-  'east',
-];
-
 /* ================================================================ *
  * 1. Loose items are recoverable in both modes
  * ================================================================ */
@@ -53,10 +59,50 @@ describe('a put-down item can always be picked back up', () => {
     return entry?.actions.find((a) => a.label === 'Take');
   }
 
+  /**
+   * Where each item can first be held, and a round trip out of that room and
+   * back. Every portable thing in the story is covered, including the three
+   * this chapter adds, because the defect this block exists for — a dropped
+   * item with no way to pick it up in selectable mode — is per-item.
+   */
+  const SOLVED = [...TO_SEALED, ...SOLVE_RELIEF];
+  const IN_THE_PAST = [...SOLVED, ...CROSS_FIRST, ...PAST_TO_SQUARE];
+  const OBTAIN: Record<ItemId, { setup: string[]; away: string[] }> = {
+    lantern: {
+      setup: ['take lantern', 'down', 'east', 'take wedge', 'west'],
+      away: ['north', 'down'],
+    },
+    wedge: {
+      setup: ['take lantern', 'down', 'east', 'take wedge', 'west'],
+      away: ['north', 'down'],
+    },
+    stone: {
+      setup: ['take lantern', 'down', 'east', 'take wedge', 'west', 'west', 'west', 'in', 'take stone'],
+      away: ['out', 'in'],
+    },
+    water_skins: {
+      setup: [...IN_THE_PAST, 'take skins'],
+      away: ['west', 'east'],
+    },
+    mallet: {
+      setup: [
+        ...IN_THE_PAST,
+        ...SAFFRA_REALISATION,
+        ...WATER_ROUTE,
+        'down',
+        'north',
+        'take mallet',
+      ],
+      away: ['south', 'north'],
+    },
+  };
+
   for (const item of ALL_ITEM_IDS) {
+    const { setup, away } = OBTAIN[item];
+
     it(`offers Examine and Take for a dropped ${item} in selectable mode`, () => {
-      // Get both items in hand first, so either can be dropped anywhere.
-      let state = typeAll(begin(), ['take lantern', 'down', 'east', 'take wedge', 'west']);
+      let state = typeAll(begin(), setup);
+      expect(state.inventory, `${item} should be in hand after the setup`).toContain(item);
       state = type(state, `drop ${item}`).state;
       expect(state.inventory).not.toContain(item);
 
@@ -73,18 +119,18 @@ describe('a put-down item can always be picked back up', () => {
     });
 
     it(`keeps a dropped ${item} recoverable after leaving and coming back`, () => {
-      let state = typeAll(begin(), ['take lantern', 'down', 'east', 'take wedge', 'west']);
+      let state = typeAll(begin(), setup);
+      const where = state.locationId;
       state = type(state, `drop ${item}`).state;
-      // Walk away, two rooms, then return.
-      state = typeAll(state, ['north', 'down', 'up', 'south']);
-      expect(state.locationId).toBe('present.square');
+      state = typeAll(state, away);
+      expect(state.locationId, 'the round trip should come back').toBe(where);
       expect(takeButtonFor(state, item), 'still takeable on return').toBeDefined();
       state = resolve(state, takeButtonFor(state, item)!.action).state;
       expect(state.inventory).toContain(item);
     });
 
     it(`keeps a dropped ${item} recoverable across a reload`, () => {
-      let state = typeAll(begin(), ['take lantern', 'down', 'east', 'take wedge', 'west']);
+      let state = typeAll(begin(), setup);
       state = type(state, `drop ${item}`).state;
       expect(writeAutosave(state).working).toBe(true);
 
@@ -96,9 +142,9 @@ describe('a put-down item can always be picked back up', () => {
     });
 
     it(`lists a dropped ${item} only where it was left`, () => {
-      let state = typeAll(begin(), ['take lantern', 'down', 'east', 'take wedge', 'west']);
+      let state = typeAll(begin(), setup);
       state = type(state, `drop ${item}`).state;
-      state = typeAll(state, ['north']);
+      state = typeAll(state, [away[0]!]);
       expect(getAffordances(state).objects.some((o) => o.id === item)).toBe(false);
     });
   }
@@ -133,13 +179,37 @@ describe('a put-down item can always be picked back up', () => {
  * ================================================================ */
 
 describe('the crossing cannot strand anything the player still needs', () => {
+  /**
+   * The whole of Chapter 2, from the moment of the first crossing to the
+   * arrival at the end of the content.
+   *
+   * It takes the recitation-first order on purpose, so the two recovery routes
+   * into the workings are the ones under test: by the time the hero goes up
+   * the hill, Lovage will not take their water.
+   */
   const FINISH = [
-    'up',
-    'east',
-    'talk to saffra',
-    'the cave on the hill',
-    'whether anything is coming',
+    ...PAST_TO_SQUARE,
+    ...SAFFRA_REALISATION,
+    'leave',
+    ...RECITE,
+    ...FENN_ROUTE,
+    ...READ_PANEL,
+    /*
+     * Borrow a crew lamp. Harmless when the hero still has their own — the
+     * object is hidden and the word resolves to the lantern already in hand,
+     * which is refused without changing anything — and the only way through
+     * for the arrangements that crossed the first threshold empty-handed.
+     */
+    'take lamp',
+    ...WORKSITE_TO_SQUARE,
+    ...SQUARE_TO_WORKSITE,
+    ...GO_FORWARD,
   ];
+
+  /** Reached the end of the built content, in the broken chamber. */
+  function finished(state: ReturnType<typeof begin>): boolean {
+    return state.locationId === 'future.deep_chamber' && state.ended && state.chapter === 'future';
+  }
 
   /** Every way the two items can be arranged at the moment of crossing. */
   const ARRANGEMENTS: Array<{ name: string; setup: string[] }> = [
@@ -173,12 +243,12 @@ describe('the crossing cannot strand anything the player still needs', () => {
 
       const crossed = type(state, 'enter threshold');
       expect(crossed.accepted).toBe(true);
-      const finished = typeAll(crossed.state, FINISH);
-      expect(finished.ended, `could not finish with ${name}`).toBe(true);
+      const end = typeAll(crossed.state, FINISH);
+      expect(finished(end), `could not finish with ${name}`).toBe(true);
     });
   }
 
-  it('needs no item at all once the crossing is made', () => {
+  it('borrows a crew lamp when the hero left their own a century away', () => {
     const past = type(
       typeAll(begin(), [
         ...TO_SEALED,
@@ -190,9 +260,51 @@ describe('the crossing cannot strand anything the player still needs', () => {
       ]),
       'enter threshold'
     ).state;
+    /*
+     * The lantern is burning in an alcove in a chamber that will be sealed for
+     * a century, so nothing can fetch it and nothing pretends to. The second
+     * crossing needs a lamp, and the crew working this hole have lamps.
+     */
     expect(past.inventory).toEqual([]);
-    const finished = typeAll(past, FINISH);
-    expect(finished.ended).toBe(true);
+    expect(past.placements['lantern']).toEqual({ kind: 'fixture', fixtureId: 'sealed.alcove' });
+
+    const atPanel = typeAll(past, [
+      ...PAST_TO_SQUARE,
+      ...SAFFRA_REALISATION,
+      'leave',
+      ...RECITE,
+      ...FENN_ROUTE,
+      ...READ_PANEL,
+    ]);
+    expect(atPanel.inventory).not.toContain('lantern');
+
+    const borrowed = type(atPanel, 'take lamp');
+    expect(borrowed.accepted, 'the crew lamp should be takeable').toBe(true);
+    expect(borrowed.state.inventory).toContain('lantern');
+    // Taking a lamp in hand must not leave the old room describing one in a dish.
+    expect(borrowed.state.flags[FLAGS.lanternInAlcove]).toBe(false);
+
+    const end = typeAll(borrowed.state, [
+      ...WORKSITE_TO_SQUARE,
+      ...SQUARE_TO_WORKSITE,
+      ...GO_FORWARD,
+    ]);
+    expect(finished(end)).toBe(true);
+  });
+
+  it('hides the crew lamp from a hero who already has one', () => {
+    const carrying = typeAll(begin(), [
+      ...TO_SEALED,
+      ...SOLVE_RELIEF,
+      ...CROSS_FIRST,
+      ...PAST_TO_SQUARE,
+      ...SAFFRA_REALISATION,
+      ...WATER_ROUTE,
+      ...READ_PANEL,
+    ]);
+    expect(carrying.inventory).toContain('lantern');
+    const offered = getAffordances(carrying).objects.map((o) => o.id);
+    expect(offered).not.toContain('worksite.crewlamp');
   });
 });
 
@@ -327,14 +439,9 @@ describe('the renamed cast', () => {
   it('keeps the gating topic id that past-era saves depend on', () => {
     const past = typeAll(begin(), [
       ...TO_SEALED,
-      'use wedge on shutter',
-      'place lantern in alcove',
-      'light lantern',
-      'open seam',
-      'down',
-      'enter threshold',
-      'up',
-      'east',
+      ...SOLVE_RELIEF,
+      ...CROSS_FIRST,
+      ...PAST_TO_SQUARE,
       'talk to saffra',
       'the cave on the hill',
     ]);
