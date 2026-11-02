@@ -48,7 +48,9 @@ place.`;
 export const SAVE_HELP_TEXT = `SAVING
 
 Your progress is saved automatically in this browser after every action, along
-with a backup and a checkpoint from the start of the chapter.
+with a backup and a checkpoint. The checkpoint is normally the start of the
+current chapter; importing a save makes it the imported position instead,
+because a save file is one moment and has no chapter start in it to go back to.
 
 Saves live in this browser, on this web address only. They do not sync between
 devices or browsers, and a preview address has its own separate storage. Use

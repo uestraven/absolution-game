@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Opening-chapter prototype of a text-led adventure RPG.",
+  "description": "A complete short text-led adventure: a sixteen-year-old, a hill, and the rite nobody comes back from with anything.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

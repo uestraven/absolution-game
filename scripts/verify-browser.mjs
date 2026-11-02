@@ -959,6 +959,119 @@ async function newPage(viewport) {
   await context.close();
 }
 
+/* ---------- 7a. Importing a longer history with colliding ids ---------- */
+{
+  /*
+   * The reported bug, end to end with a real layout.
+   *
+   * Transcript entry ids are `t<seq>` and `seq` restarts at zero every new
+   * game, so two different playthroughs both have a `t8`. Import a save whose
+   * transcript is *longer* than the current one and it contains the id the
+   * component was using as its "last entry before this action" mark. Deducing
+   * replacement from that id therefore says "not replaced", and everything
+   * after the imported `t8` gets treated as newly printed output — dropping
+   * the reader into the middle of a history they have never read.
+   */
+  const { context, page, errors } = await newPage({ width: 1024, height: 768 });
+  await page.getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  await openSettings(page);
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('radio', { name: 'Type-only' }).click();
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: /Close|Done/ }).first().click();
+  const field = page.getByLabel('What do you do?');
+  const play = async (lines) => {
+    for (const line of lines) {
+      await field.fill(line);
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(90);
+    }
+  };
+
+  // Game A: long enough that its transcript covers the ids game B will reach.
+  await play(['take lantern', 'down', 'look', 'east', 'look', 'west', 'look', 'west', 'look', 'in', 'look']);
+  const longSave = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  await openSettings(page);
+  const download = page.waitForEvent('download');
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Export Save' }).click();
+  const longFile = await download;
+
+  // Game B: short, so its last entry id also exists inside game A's history.
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  await play(['take lantern', 'down']);
+  const shortSave = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  const shortLastId = shortSave.transcript.at(-1).id;
+  const collides = longSave.transcript.some((e) => e.id === shortLastId);
+  collides
+    ? ok('the import collision is actually reproduced', `both histories contain ${shortLastId}`)
+    : bad('could not set up the id collision', `${shortLastId} is not in the longer history`);
+
+  await openSettings(page);
+  page.once('dialog', (d) => d.accept());
+  const chooser2 = page.waitForEvent('filechooser');
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Import Save' }).click();
+  await (await chooser2).setFiles(await longFile.path());
+  await page.waitForTimeout(900);
+
+  const afterImport = await page.evaluate((lastId) => {
+    const t = document.querySelector('.transcript');
+    const tr = t.getBoundingClientRect();
+    const kids = [...t.children];
+    const top = (i) => (kids[i] ? kids[i].getBoundingClientRect().top - tr.top : null);
+    const lastEcho = kids.map((c) => c.className.includes('entry-command')).lastIndexOf(true);
+    // Where the id-based deduction would have put us: after the colliding id.
+    const stale = kids.findIndex((c) => c.dataset.entryId === lastId) + 1;
+    const respStart = lastEcho + 1;
+    return {
+      lastEcho,
+      respStart,
+      stale,
+      // Is the real last response on screen, from its own first line?
+      responseTop: top(respStart),
+      responseVisible: top(respStart) !== null && top(respStart) >= -2 && top(respStart) < tr.height,
+      wholeResponseVisible:
+        kids[kids.length - 1].getBoundingClientRect().bottom <= tr.bottom + 2,
+      // Where the bug would have left us, for contrast.
+      staleTop: top(stale),
+      overflows: t.scrollHeight > t.clientHeight + 1,
+    };
+  }, shortLastId);
+
+  /*
+   * The imported history must be showing its own last response from the first
+   * line of it — entire if it fits, which it does here — and must not be
+   * sitting where the stale mark pointed.
+   */
+  afterImport.overflows &&
+  afterImport.responseVisible &&
+  afterImport.wholeResponseVisible &&
+  afterImport.stale < afterImport.respStart &&
+  afterImport.staleTop < -2
+    ? ok(
+        'an imported history opens at its own last response, not after the stale mark',
+        `response at entry ${afterImport.respStart} (${afterImport.responseTop.toFixed(1)}px); ` +
+          `the stale mark pointed at entry ${afterImport.stale}, now ${afterImport.staleTop.toFixed(0)}px above`
+      )
+    : bad('an imported history was positioned by a stale mark', JSON.stringify(afterImport));
+
+  // And the stored reading position now describes the imported playthrough.
+  const markAfter = await page.evaluate(() => ({
+    mark: JSON.parse(localStorage.getItem('cave-of-absolution:reading') ?? 'null'),
+    seq: JSON.parse(localStorage.getItem('cave-of-absolution:save')).seq,
+  }));
+  markAfter.mark !== null && markAfter.mark.seq === markAfter.seq
+    ? ok('the reading position is stamped with the playthrough it belongs to', JSON.stringify(markAfter.mark))
+    : bad('the reading position is not scoped to the playthrough', JSON.stringify(markAfter));
+
+  errors.length === 0
+    ? ok('import collision: no console errors')
+    : bad('import collision: console errors', errors.slice(0, 2).join(' | '));
+  await context.close();
+}
+
 /* ---------- 7b. A desktop window at 200% browser zoom ---------- */
 {
   /*

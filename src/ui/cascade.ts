@@ -225,6 +225,103 @@ export function contentTopOf(el: HTMLElement, index: number): number | null {
 }
 
 /* ================================================================ *
+ * The decision
+ * ================================================================ */
+
+/**
+ * Where the transcript should be put, as a value.
+ *
+ * Separated from the measuring and the moving so that the whole policy is
+ * testable without a layout engine: jsdom reports every dimension as zero, so
+ * a test that checks a resulting pixel cannot tell one of these apart from
+ * another. A test that checks the decision can.
+ */
+export type Placement =
+  /** The top of the transcript. A new game, read from its first word. */
+  | { kind: 'top' }
+  /** Put a known entry back at a known offset. The reader's own position. */
+  | { kind: 'entry'; index: number; offset: number }
+  /** The start of a response, by rendered index. */
+  | { kind: 'response'; index: number; glide: boolean }
+  /** Nothing to move to. Do not move. */
+  | { kind: 'hold' };
+
+export interface PositionInput {
+  /** What is on screen, in order. */
+  rendered: readonly EntryRef[];
+  /** Every entry in the transcript, rendered or not. */
+  all: readonly string[];
+  /** Id of the last entry before this action's output, or null. */
+  mark: string | null;
+  /** This is the component's first paint. */
+  firstPaint: boolean;
+  /** The shell has declared that the history was replaced, not appended to. */
+  replaced: boolean;
+  /** Entering play by resuming rather than beginning. */
+  resumed: boolean;
+  /** The reading position found in storage, if any. */
+  stored: { id: string; offset: number; seq: number } | null;
+  /** The current save's transcript counter. */
+  seq: number;
+}
+
+/**
+ * The whole positioning policy, in one place.
+ *
+ * ## Why `replaced` is a parameter and not a deduction
+ *
+ * It is tempting to work out "was this history replaced?" by checking whether
+ * the previous last entry is still present. That is wrong, and wrong in a way
+ * that only shows up in real use: entry ids are `t<seq>` and `seq` restarts at
+ * zero every new game, so an imported transcript routinely contains the same
+ * ids as the one it replaced. When `t3` exists in both, the check says "not
+ * replaced", everything after the imported `t3` is taken for new output, and
+ * the reader is dropped into the middle of a history they have never read as
+ * though it had just been printed.
+ *
+ * So the shell, which knows whether the player pressed Import or typed a
+ * command, says which it was.
+ */
+export function decidePosition(input: PositionInput): Placement {
+  const { rendered, all, mark, firstPaint, replaced, resumed, stored, seq } = input;
+
+  /** The start of a restored transcript's last response. Never its end. */
+  const lastResponse = (): Placement => ({
+    kind: 'response',
+    index: lastResponseStart(rendered),
+    glide: false,
+  });
+
+  if (firstPaint) {
+    if (!resumed) return { kind: 'top' };
+    /*
+     * A stored position is only the reader's position if it came from this
+     * playthrough. The `seq` check is the whole of that: without it a mark
+     * naming `t3` resolves against another game's `t3` and opens somewhere
+     * plausible and wrong.
+     */
+    if (stored !== null && stored.seq === seq) {
+      const index = rendered.findIndex((entry) => entry.id === stored.id);
+      if (index !== -1) return { kind: 'entry', index, offset: stored.offset };
+    }
+    return lastResponse();
+  }
+
+  /*
+   * A replacement mid-mount: an import, or a checkpoint restart. None of it is
+   * new output, and the mark on disk describes the history just discarded, so
+   * it is not consulted either.
+   */
+  if (replaced) return lastResponse();
+
+  const index = responseStart(rendered, all, mark);
+  // Nothing new on screen: an action whose only output was an option list that
+  // selectable mode draws as buttons. Nothing to read, so nothing moves.
+  if (index === null) return { kind: 'hold' };
+  return { kind: 'response', index, glide: true };
+}
+
+/* ================================================================ *
  * Holding the reader's place
  * ================================================================ */
 

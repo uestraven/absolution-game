@@ -1,7 +1,8 @@
 # Release checklist — M6 candidate
 
 **Dated 2026-11-02.** Every number here was measured on that date, on this
-revision. It is a record of one run, not a standing claim: re-run the commands
+revision. Revised the same day after an owner review of `ab21a1c` found one
+scrolling bug and two stale strings — see [the review fixes](#0-review-of-ab21a1c). It is a record of one run, not a standing claim: re-run the commands
 and write a new section rather than editing these figures.
 
 | | |
@@ -14,15 +15,35 @@ and write a new section rather than editing these figures.
 
 ---
 
+## 0. Review of `ab21a1c`
+
+Three findings, all fixed.
+
+| Finding | Correction |
+| --- | --- |
+| **Imported histories could open at the wrong response.** Entry ids are `t<seq>` and `seq` restarts every game, so an imported transcript longer than the current one contains the id being used as the "last entry before this action" mark. Replacement was *deduced* from that id's absence, so a collision read as "not replaced" and everything after the imported id was treated as newly printed output | Replacement is now **declared** by the shell: `historyEpoch` is bumped on import and checkpoint restart, and the transcript never infers it from ids. Stored reading positions carry the `seq` of the save they came from, so a mark from another playthrough cannot resolve against a reused id. The positioning policy was extracted into a pure `decidePosition` so every case is unit-testable without a layout engine |
+| **The checkpoint confirmation contradicted import behaviour** — it promised "the start of the chapter" | Now asks *"Restart from the saved checkpoint?"*. The ending panel's button and the notice match, and the save help text explains the import exception |
+| **`package.json` still called this an "Opening-chapter prototype"** | Describes the completed adventure |
+
+Added for the bug: ten unit tests over `decidePosition` — including one that
+asserts the **old deduction gets it wrong**, so the reason the signal exists is
+written down as a test rather than a comment — and an end-to-end browser check
+that reproduces the collision (two playthroughs both containing `t7`), imports
+the longer history, and measures where it opens. Result: the imported history's
+own last response at entry 24, fully visible, with the stale mark's entry 7 now
+4533px above the viewport.
+
+---
+
 ## 1. Automated checks actually run
 
 | Command | Result |
 | --- | --- |
 | `npm ci` | clean install from `package-lock.json`, 0 vulnerabilities |
 | `npm run typecheck` (`tsc --noEmit`) | clean, no diagnostics |
-| `npm run test` (vitest) | **431 passed / 431**, 14 files, 6.6s |
+| `npm run test` (vitest) | **441 passed / 441**, 14 files, 5.6s |
 | `npm run build:only` (vite) | built; emits the 500kB chunk-size advisory, [discussed below](#5-bundle-and-packaging) |
-| `node scripts/verify-browser.mjs dist` | **119 passed / 119** |
+| `node scripts/verify-browser.mjs dist` | **123 passed / 123** |
 | `node scripts/verify-served.mjs dist` | **15 passed / 15** |
 
 `npm run verify` runs the build and both browser passes in sequence.
@@ -57,8 +78,8 @@ Neither is a substitute for a person playing the game.
 | Not the journal notice, end marker, command echo or last paragraph | `responseStart` skips `kind: 'command'` and takes the first new entry, not the last. Two unit tests |
 | Commit output, then measure and reposition once | A single `useLayoutEffect`, after the render that carries the whole batch |
 | Never per block, never on rerender | Write counter: 2 writes for 2 actions, 0 for opening settings, 0 for folding the status bar |
-| Stable entry identity, not array length | Entry ids throughout; the mark is an id. `responseStart` returns `null` when the id is gone rather than guessing |
-| Import / new game / checkpoint / review / restored history handled deliberately | New game → top. Restored → stored position, else the last response's start. Import and checkpoint replace the history, detected by the missing mark, and open at the last response's start. Review is an ordinary action |
+| Stable entry identity, not array length | Entry ids throughout; the mark is an id, and `responseStart` returns `null` when the id is gone rather than guessing. Identity alone is **not** used to detect replacement — ids are reused across playthroughs, so the shell declares it (`historyEpoch`) and the stored reading position is stamped with the save's `seq` |
+| Import / new game / checkpoint / review / restored history handled deliberately | New game → top. Restored → stored position (if it belongs to this playthrough), else the last response's start. Import and checkpoint are **declared** replacements and open at the restored history's own last response, ignoring the stored mark, which describes the history just discarded. Review is an ordinary action |
 | No artificial empty screen below a short response | The target is clamped to `maxScroll`; the short-response branch returns the content end |
 | Reading position preserved across non-story UI changes | Input-mode switch restores the anchored entry: measured 7391px→7585px of text, anchor held at −439.25px exactly. Settings and status-bar folding write nothing |
 | Hidden option blocks → nearest meaningful position | If the anchored entry was an option list that has just been hidden, nothing moves |
@@ -191,9 +212,11 @@ Measured on 2026-11-02:
 | `assets/index-*.js` | 561.9kB | 173.3kB | 141.4kB |
 | **total transfer** | **559.4kB** | **171.6kB** | **144.9kB** |
 
-Startup on a served loopback origin: `domContentLoaded` 65ms, `load` 65ms, first
-contentful paint 92ms. All five commands above were re-run after `npm ci` on a
-clean `node_modules`, and the figures here are from that run.
+Startup on a served loopback origin: `domContentLoaded` 59ms, `load` 59ms, first
+contentful paint 84ms. The install, typecheck, test and build figures came from
+a run after `npm ci` on a clean `node_modules`; the bundle and startup figures
+were re-measured after the review fixes (raw 560.1kB, gzip 171.9kB, brotli
+145.2kB — the +0.3kB is the review's new code).
 
 **Decision: no code splitting, and the warning is not suppressed.** 141kB brotli
 is what a browser downloads; Cloudflare compresses automatically. Splitting would

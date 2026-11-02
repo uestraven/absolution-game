@@ -5,8 +5,7 @@ import { readReadingMark, writeReadingMark } from '../persistence/storage';
 import {
   contentTopOf,
   createCascade,
-  lastResponseStart,
-  responseStart,
+  decidePosition,
   responseTarget,
   restoreAnchor,
   sampleAnchor,
@@ -52,6 +51,25 @@ export interface TranscriptProps {
    */
   actionCount: number;
   /**
+   * Bumped by the shell whenever it replaces the history wholesale — an
+   * import, a checkpoint restart — rather than appending to it.
+   *
+   * This is a signal, not a deduction. Entry ids are `t<seq>` and `seq`
+   * restarts at zero every new game, so an imported transcript routinely
+   * contains the same ids as the one it replaced. Working out "was this
+   * replaced?" by looking for the previous last id gets the answer wrong
+   * exactly when the ids collide: the id is still there, everything after it
+   * looks new, and the reader is dropped into the middle of a history they
+   * have not read as though it had just been printed. The shell knows which
+   * door was used; it says so instead.
+   */
+  historyEpoch: number;
+  /**
+   * The save's transcript counter, so a stored reading position can be scoped
+   * to the playthrough it came from.
+   */
+  seq: number;
+  /**
    * True when this transcript was restored — Continue, an import, a checkpoint
    * — rather than begun. It decides where the first paint sits, and is fixed
    * for the life of the mount.
@@ -63,6 +81,8 @@ export function Transcript({
   entries,
   showOptionLists,
   actionCount,
+  historyEpoch,
+  seq,
   resumed = false,
 }: TranscriptProps) {
   const shown = showOptionLists ? entries : entries.filter((e) => e.kind !== 'options');
@@ -86,6 +106,11 @@ export function Transcript({
   const anchor = useRef<ReadingAnchor | null>(null);
   /** When the reading position was last written back to storage. */
   const markWritten = useRef(0);
+  /** The history this component last positioned. */
+  const epoch = useRef(historyEpoch);
+  /** Latest `seq`, for stamping the reading position. */
+  const currentSeq = useRef(seq);
+  currentSeq.current = seq;
 
   /** Records where the reader is, for this mount and for the next one. */
   const remember = (el: HTMLElement, force = false) => {
@@ -95,7 +120,7 @@ export function Transcript({
     const now = Date.now();
     if (!force && now - markWritten.current < MARK_INTERVAL_MS) return;
     markWritten.current = now;
-    writeReadingMark({ id: sample.id, offset: sample.offset });
+    writeReadingMark({ id: sample.id, offset: sample.offset, seq: currentSeq.current });
   };
 
   // One position change per action, on the start of what the action produced.
@@ -105,65 +130,52 @@ export function Transcript({
     const here = rendered.current;
     const all = allIds.current;
 
-    /*
-     * Where a transcript nobody watched arrive should open.
-     *
-     * A stored reading position wins, because the reader chose it. Failing
-     * that, the start of the last response — never the bottom, which is how a
-     * reader ends up resuming at the end of an epilogue they never read.
-     */
-    const openRestored = () => {
-      const stored = resumed ? readReadingMark() : null;
-      if (stored !== null && here.some((entry) => entry.id === stored.id)) {
-        restoreAnchor(el, here, { ...stored, atBottom: false });
-        return;
-      }
-      const start = lastResponseStart(here);
-      const top = contentTopOf(el, start);
-      cascade.current.jumpTo(el, top === null ? 0 : responseTarget(top, el.clientHeight, el.scrollHeight));
-    };
+    const placement = decidePosition({
+      rendered: here,
+      all,
+      mark: mark.current,
+      firstPaint: firstPaint.current,
+      replaced: historyEpoch !== epoch.current,
+      resumed,
+      stored: firstPaint.current && resumed ? readReadingMark() : null,
+      seq: currentSeq.current,
+    });
 
-    if (firstPaint.current) {
-      firstPaint.current = false;
-      /*
-       * Neither case glides: there is nowhere to glide from on a first paint.
-       *
-       *  - **A new game starts at the top.** The opening is the first response
-       *    and the reader has not read a word yet, so it begins where it begins.
-       *  - **A restored transcript opens where it was left**, or at the start of
-       *    the last thing that happened.
-       */
-      if (resumed) openRestored();
-      else cascade.current.jumpTo(el, 0);
-      mark.current = all[all.length - 1] ?? null;
-      remember(el, true);
-      return;
-    }
-
-    const start = responseStart(here, all, mark.current);
+    firstPaint.current = false;
+    epoch.current = historyEpoch;
     mark.current = all[all.length - 1] ?? null;
 
-    if (start === null) {
-      /*
-       * Either the action put nothing new on screen — its only output was an
-       * option list that selectable mode draws as buttons — or the history was
-       * replaced wholesale by an import or a checkpoint restart. Nothing new to
-       * read in the first case; the restored transcript's last response in the
-       * second. Neither is "scroll to the bottom".
-       */
-      if (!here.some((entry) => entry.id === anchor.current?.id)) openRestored();
-      remember(el, true);
-      return;
-    }
-
-    cascade.current.glideTo(el, () => {
-      const top = contentTopOf(el, start);
+    /** The position a placement asks for, re-read so settling content counts. */
+    const targetOf = (index: number) => () => {
+      const top = contentTopOf(el, index);
       return top === null
         ? el.scrollTop
         : responseTarget(top, el.clientHeight, el.scrollHeight);
-    });
+    };
+
+    switch (placement.kind) {
+      case 'top':
+        cascade.current.jumpTo(el, 0);
+        break;
+      case 'entry':
+        restoreAnchor(el, here, {
+          id: here[placement.index]!.id,
+          offset: placement.offset,
+          atBottom: false,
+        });
+        break;
+      case 'response':
+        // Only an appended response glides; nothing arrived to glide from when
+        // a whole history is put on screen at once.
+        if (placement.glide) cascade.current.glideTo(el, targetOf(placement.index));
+        else cascade.current.jumpTo(el, targetOf(placement.index)());
+        break;
+      case 'hold':
+        break;
+    }
+
     remember(el, true);
-  }, [actionCount, resumed]);
+  }, [actionCount, historyEpoch, resumed]);
 
   /*
    * Switching input mode inserts or removes the written-out option lists
@@ -246,7 +258,17 @@ export function Transcript({
       aria-label="Story so far"
     >
       {shown.map((entry) => (
-        <article className={`entry entry-${entry.kind}`} key={entry.id}>
+        <article
+          className={`entry entry-${entry.kind}`}
+          key={entry.id}
+          /*
+           * Exposed for verification, not for styling or behaviour: the
+           * browser passes need to be able to say "this element is entry t8"
+           * when checking where a response was positioned. Nothing in the app
+           * reads it.
+           */
+          data-entry-id={entry.id}
+        >
           {entry.heading ? (
             <header className="entry-head">
               <h2 className="entry-title">{entry.heading}</h2>

@@ -330,6 +330,20 @@ export interface ReadingMark {
   id: string;
   /** Its offset from the top of the viewport, in CSS pixels. Usually <= 0. */
   offset: number;
+  /**
+   * The `seq` of the save this was taken from.
+   *
+   * Entry ids are `t<seq>` and `seq` restarts at zero every new game, so `t3`
+   * names a different paragraph in every playthrough. Without this, a mark left
+   * by one game resolves cheerfully against another one's `t3` — after an
+   * import, a new game, or a checkpoint restart — and opens the reader
+   * somewhere plausible and wrong.
+   *
+   * A mark is rewritten after every action and flushed on `pagehide`, so a
+   * genuine reload always matches. Anything else does not, and falls back to
+   * the start of the restored transcript's last response.
+   */
+  seq: number;
 }
 
 export function readReadingMark(): ReadingMark | null {
@@ -341,7 +355,8 @@ export function readReadingMark(): ReadingMark | null {
     const record = parsed as Record<string, unknown>;
     if (typeof record.id !== 'string' || record.id === '') return null;
     if (typeof record.offset !== 'number' || !Number.isFinite(record.offset)) return null;
-    return { id: record.id, offset: record.offset };
+    if (typeof record.seq !== 'number' || !Number.isFinite(record.seq)) return null;
+    return { id: record.id, offset: record.offset, seq: record.seq };
   } catch {
     return null;
   }

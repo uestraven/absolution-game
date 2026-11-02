@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   TOP_GAP_PX,
+  decidePosition,
   lastResponseStart,
   responseStart,
   responseTarget,
   type EntryRef,
+  type PositionInput,
 } from './cascade';
 
 /** Shorthand: `'c:take lantern'` is a command echo, anything else is prose. */
@@ -146,5 +148,150 @@ describe('where the scroller sits to show a response', () => {
     // Content shorter than the viewport cannot scroll at all.
     expect(responseTarget(400, 500, 300)).toBe(0);
     expect(responseTarget(5000, 500, 2000)).toBe(1500);
+  });
+});
+
+describe('deciding where to put the transcript', () => {
+  const base: PositionInput = {
+    rendered: [],
+    all: [],
+    mark: null,
+    firstPaint: false,
+    replaced: false,
+    resumed: false,
+    stored: null,
+    seq: 10,
+  };
+
+  it('opens a new game at the top', () => {
+    expect(
+      decidePosition({ ...base, firstPaint: true, rendered: refs('t0', 't1'), all: ids('t0', 't1') })
+    ).toEqual({ kind: 'top' });
+  });
+
+  it('opens an appended response at its start, gliding', () => {
+    const rendered = refs('t0', 'c:look', 't2', 't3');
+    expect(
+      decidePosition({ ...base, rendered, all: ids('t0', 'c:look', 't2', 't3'), mark: 't0' })
+    ).toEqual({ kind: 'response', index: 2, glide: true });
+  });
+
+  it('holds still when an action put nothing new on screen', () => {
+    const rendered = refs('t0', 't1');
+    expect(decidePosition({ ...base, rendered, all: ids('t0', 't1', 'opts'), mark: 't1' })).toEqual({
+      kind: 'hold',
+    });
+  });
+
+  describe('a replaced history', () => {
+    /*
+     * The bug this guards. An import or a checkpoint restart swaps the whole
+     * transcript — and because ids are `t<seq>` with `seq` restarting at zero
+     * every new game, the imported history usually contains the same ids as
+     * the one it replaced.
+     */
+    const rendered = refs('t0', 'c:go west', 't2', 't3', 't4', 't5');
+    const all = ids('t0', 'c:go west', 't2', 't3', 't4', 't5');
+
+    it('opens at the start of its own last response, not after the stale mark', () => {
+      const placement = decidePosition({ ...base, rendered, all, mark: 't2', replaced: true });
+      // The last command echo is at index 1, so the last response starts at 2.
+      expect(placement).toEqual({ kind: 'response', index: 2, glide: false });
+    });
+
+    it('would get it wrong if replacement were deduced from the ids', () => {
+      /*
+       * Documenting why `replaced` has to be told to us rather than worked
+       * out: the stale mark 't2' is present in the imported history, so the
+       * id-based check finds it and reports everything after it as newly
+       * printed output. This is the failure, asserted directly.
+       */
+      expect(responseStart(rendered, all, 't2')).toBe(3);
+      expect(decidePosition({ ...base, rendered, all, mark: 't2', replaced: false })).toEqual({
+        kind: 'response',
+        index: 3,
+        glide: true,
+      });
+    });
+
+    it('ignores a stored reading position, which describes the discarded history', () => {
+      const placement = decidePosition({
+        ...base,
+        rendered,
+        all,
+        mark: 't2',
+        replaced: true,
+        resumed: true,
+        stored: { id: 't4', offset: -120, seq: 10 },
+      });
+      expect(placement).toEqual({ kind: 'response', index: 2, glide: false });
+    });
+  });
+
+  describe('resuming a saved game', () => {
+    const rendered = refs('t0', 'c:look', 't2', 't3');
+    const all = ids('t0', 'c:look', 't2', 't3');
+
+    it('returns the reader to their own position', () => {
+      expect(
+        decidePosition({
+          ...base,
+          firstPaint: true,
+          resumed: true,
+          rendered,
+          all,
+          stored: { id: 't3', offset: -240, seq: 10 },
+        })
+      ).toEqual({ kind: 'entry', index: 3, offset: -240 });
+    });
+
+    it('ignores a position left by a different playthrough', () => {
+      /*
+       * `t3` exists in both games and means something different in each. The
+       * seq stamp is what tells them apart — without it this opens the reader
+       * at a paragraph they have never seen, in the middle of the history.
+       */
+      expect(
+        decidePosition({
+          ...base,
+          firstPaint: true,
+          resumed: true,
+          rendered,
+          all,
+          seq: 10,
+          stored: { id: 't3', offset: -240, seq: 47 },
+        })
+      ).toEqual({ kind: 'response', index: 2, glide: false });
+    });
+
+    it('ignores a position naming an entry that is no longer rendered', () => {
+      expect(
+        decidePosition({
+          ...base,
+          firstPaint: true,
+          resumed: true,
+          rendered,
+          all,
+          stored: { id: 'opts', offset: -10, seq: 10 },
+        })
+      ).toEqual({ kind: 'response', index: 2, glide: false });
+    });
+
+    it('never opens at the end of an unread passage', () => {
+      const ending = refs('t7', 'c:swing', 't9', 't10', 't11', 't12', 't13');
+      const placement = decidePosition({
+        ...base,
+        firstPaint: true,
+        resumed: true,
+        rendered: ending,
+        all: ending.map((e) => e.id),
+        stored: null,
+      });
+      expect(placement.kind).toBe('response');
+      if (placement.kind === 'response') {
+        expect(placement.index).toBe(2);
+        expect(placement.index).toBeLessThan(ending.length - 1);
+      }
+    });
   });
 });

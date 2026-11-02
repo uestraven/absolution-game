@@ -88,8 +88,10 @@ moment, not to the start of that chapter, and the previous checkpoint is gone.
 then Restart from checkpoint.
 
 **Why:** An export is a single state, not a history; there is no chapter-start
-inside the file to recover. The import notice now says so explicitly. It is
-listed here because it still surprises people who have not read the notice.
+inside the file to recover. The import notice says so explicitly, the
+confirmation dialog now asks *"Restart from the saved checkpoint?"* rather than
+promising the start of a chapter, and the save help text explains the exception.
+It is listed here because it still surprises people who read none of those.
 
 **Workaround:** Export again from the position you want as your fallback.
 
@@ -149,18 +151,39 @@ the unit suite. The DOM tests stub `Element.prototype` to check the *wiring*
 arithmetic is tested as pure functions in `src/ui/cascade.test.ts`, and the real
 measurement happens in the browser passes.
 
-**Consequence:** a change to `cascade.ts` that passes `npm run test` is not
-verified. Run `npm run verify` after touching it.
+**Mitigated, not removed:** the positioning *policy* is now a pure function,
+`decidePosition`, returning a placement value rather than moving anything. That
+is fully unit-tested, including every replacement and stale-mark case. What
+still needs a browser is the measurement: which pixel a placement resolves to.
+
+**Consequence:** a change to the measuring or animating half of `cascade.ts`
+that passes `npm run test` is not verified. Run `npm run verify` after touching
+it.
 
 ---
 
 ## No open defects in the game itself
 
-Everything found during the M6 pass was fixed in it: the obsolete
-`SUBTITLE`, the "Opening chapter prototype" meta description, the missing
-favicon (a 404 and a console error on every load), the transcript and the
-announcer both reading new output to screen readers, the command echo being
-targeted as a response start, and the unstated import-checkpoint consequence.
-The four reviewed continuity defects — the plank's handwriting, "three
+Everything found during the M6 pass and its review was fixed: the obsolete
+`SUBTITLE`, the "Opening-chapter prototype" meta description and `package.json`
+description, the missing favicon (a 404 and a console error on every load), the
+transcript and the announcer both reading new output to screen readers, the
+command echo being targeted as a response start, the unstated import-checkpoint
+consequence, the checkpoint confirmation that promised the start of a chapter,
+and — the one real bug in the review — **an imported history opening at the
+wrong response when its entry ids collided with the ones it replaced**.
+
+That last one is worth recording in full, because the shape of the mistake is
+reusable. Entry ids are `t<seq>` and `seq` restarts at zero every new game, so
+two playthroughs both contain a `t8`. Replacement was being *deduced* — "is the
+id I was using still present?" — and an imported transcript longer than the
+current one still contains it, so the answer came back "not replaced" and
+everything after the imported `t8` was treated as newly printed output. The fix
+is to stop deducing: the shell bumps a `historyEpoch` when it replaces a
+history, and the stored reading position carries the `seq` of the save it was
+taken from. Both are tested, including a test that asserts the old deduction
+gets it wrong.
+
+The four earlier continuity defects — the plank's handwriting, "three
 chapters", the sacrifice's lantern, and the opening wording — were fixed before
 M6 and are each covered by a test.

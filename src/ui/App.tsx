@@ -60,6 +60,16 @@ export function App() {
    * and no actions taken — so the shell, which knows which door was used, says.
    */
   const [resumed, setResumed] = useState(false);
+  /**
+   * Bumped whenever the history is replaced rather than appended to.
+   *
+   * Importing a save or restarting from a checkpoint swaps the whole
+   * transcript for a different one. The transcript cannot reliably tell that
+   * from the entries, because ids are `t<seq>` and `seq` restarts every game:
+   * an imported history usually contains the same ids as the one it replaced.
+   * So the replacement is declared here rather than deduced there.
+   */
+  const [historyEpoch, setHistoryEpoch] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
   const loaded = useRef(false);
   /** Mirrors `state` for synchronous reads inside `act`. */
@@ -222,17 +232,18 @@ export function App() {
       return;
     }
     const ok = window.confirm(
-      'Restart from the start of the chapter? Anything you have done since will be lost.'
+      'Restart from the saved checkpoint? Anything you have done since will be lost.'
     );
     if (!ok) return;
     stateRef.current = checkpoint;
     setState(checkpoint);
-    // A restored transcript is new output as far as the reader is concerned.
+    // Not new output: a different history, in place of this one.
+    setHistoryEpoch((n) => n + 1);
     setActionCount((n) => n + 1);
     setResumed(true);
     setScreen('play');
     setSettingsOpen(false);
-    setNotice('Restarted from the chapter checkpoint.');
+    setNotice('Restarted from the saved checkpoint.');
     setStorage(writeAutosave(checkpoint));
   }, []);
 
@@ -283,6 +294,7 @@ export function App() {
       }
       stateRef.current = result.state;
       setState(result.state);
+      setHistoryEpoch((n) => n + 1);
       setActionCount((n) => n + 1);
       setResumed(true);
       setScreen('play');
@@ -419,6 +431,8 @@ export function App() {
           entries={state.transcript}
           showOptionLists={prefs.inputMode === 'type'}
           actionCount={actionCount}
+          historyEpoch={historyEpoch}
+          seq={state.seq}
           resumed={resumed}
         />
       </main>
@@ -511,7 +525,7 @@ function EndingPanel({
         </button>
         {onRestartCheckpoint ? (
           <button type="button" className="btn" onClick={onRestartCheckpoint}>
-            Back to the start of the chapter
+            Back to the saved checkpoint
           </button>
         ) : null}
         <button type="button" className="btn btn-quiet" onClick={onNewGame}>
