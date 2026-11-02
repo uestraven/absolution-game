@@ -1,43 +1,86 @@
 /**
- * The kinetic line-feed, for the transcript.
+ * Where the transcript looks after an action, and how it gets there.
  *
- * An old terminal teleports its text up by a whole row. The scroll position
- * here is animated instead: when a new block lands, the text glides up to meet
- * the bottom over 60–100 ms on an exponential ease-out, at sub-pixel precision.
- * The letters themselves still appear immediately — nothing is typed out, held
- * back or faded in, because the visual spec forbids that and because a reader
- * should never be waiting on an animation to find out what happened.
+ * ## The rule
  *
- * Two rules it has to keep:
+ * The transcript does **not** chase the bottom of the text. Once an action's
+ * whole output has rendered, the scroller is positioned on the *start* of that
+ * output: if the response fits in the viewport it is revealed entire, and if it
+ * does not, its first line is placed near the top of the viewport so the reader
+ * begins at the beginning and reads down.
+ *
+ * Chasing the bottom is the wrong behaviour for a text game. A long response
+ * ends with its last paragraph against the input and its first paragraph
+ * somewhere above the top edge, so the reader has to scroll up to find out what
+ * they are reading — and the longer and more important the response, the worse
+ * it gets. Which is exactly backwards: the arrival in a new place, the
+ * recitation, the epilogue are the passages a reader most needs to start at the
+ * start of.
+ *
+ * ## One scroll per action
+ *
+ * The engine returns an action's events as one list and the shell commits them
+ * in one state update, so there is exactly one position change per action,
+ * taken after the whole response is in the DOM. Individual blocks within a
+ * response — narration, then a journal entry, then an objective — never scroll
+ * separately. The effect that drives this is keyed on the action counter alone,
+ * never on the entries, so a re-render that is not an action moves nothing.
+ *
+ * ## The motion
+ *
+ * The position is animated rather than teleported: an old terminal moves its
+ * text by a whole row, and this moves it at sub-pixel precision on a cubic
+ * ease-out. The letters themselves still appear immediately — nothing is typed
+ * out, held back or faded in, because the visual spec forbids it and because a
+ * reader should never wait on an animation to find out what happened.
+ *
+ * Three rules it has to keep:
  *
  *  - **`prefers-reduced-motion` wins.** The glide is replaced by the jump, with
  *    no residue.
  *  - **It never fights the reader.** Any in-flight glide is cancelled when a
- *    new one starts, and a reader who has scrolled up is not animated at all.
+ *    new one starts or when the reader touches the scroller.
+ *  - **It never moves focus.** Every move here is an assignment to `scrollTop`.
+ *    `scrollIntoView` and `focus()` are deliberately not used: scrolling is not
+ *    allowed to take the keyboard away from whatever the reader was using.
  */
 
 /**
  * Glide envelope, distance-scaled.
  *
- * The first version ran 60–100 ms, which over a thousand pixels is not a
- * glide, it is a blur with a stop at the end. Longer and gentler reads as
- * motion you can follow.
+ * Earlier versions ran 60–100 ms and then 170–380 ms. Both were quick enough
+ * that the motion read as a snap with a smear on it. At this length the eye can
+ * actually follow the text to its resting place, which is the whole point of
+ * animating it, and it gives the reader a moment to register that the position
+ * moved rather than that the screen changed.
  */
-const MIN_MS = 170;
-const MAX_MS = 380;
+const MIN_MS = 320;
+const MAX_MS = 720;
 
 /**
  * How much of the window the eye is asked to follow, at most.
  *
  * Animating a three-thousand-pixel jump is illegible however long it takes, so
- * a long drop teleports most of the way and glides the last three quarters of
- * a screen. The motion then has a consistent, readable speed no matter how
- * much text arrived.
+ * a long move teleports most of the way and glides the last three quarters of
+ * a screen. The motion then has a consistent, readable speed no matter how far
+ * the position actually moved.
  */
 const MAX_TRAVEL_SCREENS = 0.75;
 
+/**
+ * The breathing space left above a response placed at the top.
+ *
+ * Flush against the edge reads as clipped — as though the response has
+ * something above it that has been cut off. A line's worth of gap reads as a
+ * beginning.
+ */
+export const TOP_GAP_PX = 16;
+
 /** Past this much new content, the input gets a nudge as well. */
 export const BOUNCE_THRESHOLD_PX = 120;
+
+/** Treated as "the reader is at the bottom" when deciding what to preserve. */
+export const AT_BOTTOM_PX = 80;
 
 export function prefersReducedMotion(): boolean {
   try {
@@ -55,9 +98,167 @@ function easeOutCubic(t: number): number {
   return t >= 1 ? 1 : 1 - Math.pow(1 - t, 3);
 }
 
+/* ================================================================ *
+ * Finding the response
+ * ================================================================ */
+
+/**
+ * Index of the first rendered entry belonging to the newest response.
+ *
+ * `mark` is the id of the last entry that existed *before* the action, taken
+ * from the unfiltered list; `all` is the unfiltered list now; `rendered` is
+ * what is actually on screen, which in selectable mode omits the written-out
+ * option lists. Resolving the mark against `all` and then looking for the first
+ * of those new ids in `rendered` is what keeps the two in step — a mark that
+ * happens to name a hidden entry still locates the response.
+ *
+ * Returns `rendered.length` to mean "no rendered start": either the action
+ * added nothing visible, or the mark has aged out of the capped transcript. The
+ * caller reads that as "use the bottom", which is the old behaviour and is
+ * always safe; pointing at index 0 instead would fling the reader to the top of
+ * the entire history.
+ */
+export function responseStart(
+  rendered: readonly string[],
+  all: readonly string[],
+  mark: string | null
+): number {
+  // No mark: nothing preceded this response, so all of it is the response.
+  if (mark === null) return 0;
+  const i = all.indexOf(mark);
+  if (i === -1) return rendered.length;
+  const fresh = new Set(all.slice(i + 1));
+  if (fresh.size === 0) return rendered.length;
+  const at = rendered.findIndex((id) => fresh.has(id));
+  return at === -1 ? rendered.length : at;
+}
+
+/**
+ * The scroll position that shows a response from its beginning.
+ *
+ * The response is always the last thing in the content, so its height is the
+ * distance from its top to the end, and there are exactly two cases:
+ *
+ *  - **It fits.** Scroll to the end of the content. That is the only position
+ *    where all of it is on screen, and it leaves as much of what came before
+ *    visible above it as there is room for.
+ *  - **It does not fit.** Put its first line a gap below the top edge, with the
+ *    rest of it below that to read down into.
+ *
+ * The clamp on the second case matters: it keeps the result inside what the
+ * scroller can actually take when the measurement is odd — a response taller
+ * than the whole history, or a transcript that cannot scroll at all.
+ */
+export function responseTarget(
+  responseTop: number,
+  viewport: number,
+  scrollHeight: number
+): number {
+  const maxScroll = Math.max(0, scrollHeight - viewport);
+  if (scrollHeight - responseTop <= viewport) return maxScroll;
+  return Math.max(0, Math.min(maxScroll, responseTop - TOP_GAP_PX));
+}
+
+export function bottomOf(el: HTMLElement): number {
+  return Math.max(0, el.scrollHeight - el.clientHeight);
+}
+
+export function isAtBottom(el: HTMLElement): boolean {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < AT_BOTTOM_PX;
+}
+
+/**
+ * Distance from the top of the scrollable content to the top of one child, in
+ * the scroller's own coordinates.
+ *
+ * Measured from rectangles rather than `offsetTop` so it does not depend on
+ * which ancestor happens to be the offset parent. Returns null when there is
+ * nothing to measure, including under a test renderer with no layout.
+ */
+export function contentTopOf(el: HTMLElement, index: number): number | null {
+  const child = el.children.item(index);
+  if (!(child instanceof HTMLElement)) return null;
+  if (typeof child.getBoundingClientRect !== 'function') return null;
+  return child.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
+}
+
+/* ================================================================ *
+ * Holding the reader's place
+ * ================================================================ */
+
+/**
+ * Where the reader is reading: the topmost entry still in view, and how far
+ * above the viewport's top edge it begins.
+ */
+export interface ReadingAnchor {
+  id: string;
+  /** Offset of that entry's top from the viewport's top edge; usually ≤ 0. */
+  offset: number;
+  atBottom: boolean;
+}
+
+/**
+ * Samples the reading position.
+ *
+ * Taken while the reader scrolls, so that a later re-render which is not an
+ * action — switching input mode, which inserts or removes the written-out
+ * option lists throughout the history — can put the same words back under the
+ * same eye instead of leaving `scrollTop` pointing at different text.
+ */
+export function sampleAnchor(el: HTMLElement, ids: readonly string[]): ReadingAnchor | null {
+  if (typeof el.getBoundingClientRect !== 'function') return null;
+  const top = el.getBoundingClientRect().top;
+  const atBottom = isAtBottom(el);
+  for (let i = 0; i < el.children.length; i++) {
+    const child = el.children.item(i);
+    if (!(child instanceof HTMLElement)) continue;
+    const id = ids[i];
+    if (id === undefined) break;
+    const rect = child.getBoundingClientRect();
+    if (rect.bottom - top > 0) return { id, offset: rect.top - top, atBottom };
+  }
+  return null;
+}
+
+/**
+ * Puts a sampled reading position back after a non-action re-render.
+ *
+ * A reader pinned to the bottom stays pinned to the bottom; otherwise the
+ * anchored entry is returned to the offset it had. If the anchored entry is no
+ * longer rendered at all, nothing moves — a wrong correction is worse than
+ * none.
+ */
+export function restoreAnchor(
+  el: HTMLElement,
+  ids: readonly string[],
+  anchor: ReadingAnchor | null
+): void {
+  if (anchor === null) return;
+  if (anchor.atBottom) {
+    el.scrollTop = el.scrollHeight;
+    return;
+  }
+  const index = ids.indexOf(anchor.id);
+  if (index === -1) return;
+  const now = contentTopOf(el, index);
+  if (now === null) return;
+  el.scrollTop = Math.max(0, Math.min(bottomOf(el), now - anchor.offset));
+}
+
+/* ================================================================ *
+ * The glide
+ * ================================================================ */
+
 export interface Cascade {
-  /** Glide to the bottom. Returns the distance it will travel. */
-  toBottom: (el: HTMLElement) => number;
+  /**
+   * Glide to a position, re-read every frame so that content still settling —
+   * fonts, wrapping, images — does not leave the move short. Returns the
+   * distance the position is moving in total, which the shell uses to decide
+   * whether the command line gets a nudge.
+   */
+  glideTo: (el: HTMLElement, targetOf: () => number) => number;
+  /** Jump with no animation. */
+  jumpTo: (el: HTMLElement, target: number) => void;
   /** Jump to the bottom with no animation. */
   snapToBottom: (el: HTMLElement) => void;
   /** Stop any glide in flight. */
@@ -78,48 +279,61 @@ export function createCascade(): Cascade {
     }
   };
 
+  const jumpTo = (el: HTMLElement, target: number) => {
+    cancel();
+    el.scrollTop = target;
+  };
+
   const snapToBottom = (el: HTMLElement) => {
     cancel();
     el.scrollTop = el.scrollHeight;
   };
 
-  const toBottom = (el: HTMLElement) => {
+  const glideTo = (el: HTMLElement, targetOf: () => number) => {
     cancel();
-    const target = Math.max(0, el.scrollHeight - el.clientHeight);
-    const total = target - el.scrollTop;
+    const start = el.scrollTop;
+    const target = targetOf();
+    const total = target - start;
 
     // Nothing to do, no animation frames available, or motion is unwanted.
-    if (total <= 1 || prefersReducedMotion() || typeof requestAnimationFrame !== 'function') {
+    if (
+      Math.abs(total) <= 1 ||
+      prefersReducedMotion() ||
+      typeof requestAnimationFrame !== 'function'
+    ) {
       el.scrollTop = target;
-      return Math.max(0, total);
+      return Math.abs(total);
     }
 
     // Cover everything beyond one screenful instantly, then glide the rest.
     const maxTravel = Math.max(120, el.clientHeight * MAX_TRAVEL_SCREENS);
-    if (total > maxTravel) el.scrollTop = target - maxTravel;
+    if (Math.abs(total) > maxTravel) {
+      el.scrollTop = target - Math.sign(total) * maxTravel;
+    }
 
     const from = el.scrollTop;
-    const travel = target - from;
-    const duration =
-      MIN_MS + (Math.min(travel, maxTravel) / maxTravel) * (MAX_MS - MIN_MS);
+    const glided = Math.min(Math.abs(target - from), maxTravel);
+    const duration = MIN_MS + (glided / maxTravel) * (MAX_MS - MIN_MS);
     const started = performance.now();
 
     const step = (now: number) => {
       const t = Math.min(1, (now - started) / duration);
       // Re-read the target: content can still be settling (fonts, wrapping).
-      const live = Math.max(0, el.scrollHeight - el.clientHeight);
+      const live = targetOf();
       el.scrollTop = from + (live - from) * easeOutCubic(t);
       if (t < 1) {
         frame = requestAnimationFrame(step);
       } else {
         frame = 0;
-        el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight);
+        el.scrollTop = targetOf();
       }
     };
 
     frame = requestAnimationFrame(step);
-    return travel;
+    // The total move, not the glided remainder: it stands in for how much text
+    // arrived, which is what the nudge is reacting to.
+    return Math.abs(total);
   };
 
-  return { toBottom, snapToBottom, cancel };
+  return { glideTo, jumpTo, snapToBottom, cancel };
 }

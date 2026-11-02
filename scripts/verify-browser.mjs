@@ -81,6 +81,10 @@ async function newPage(viewport) {
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: 'Take', exact: true }).click();
   // Opening Things closed Go; reopen it to walk.
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /^Go/ }).click();
+  // Remembered so the probes below can tell which entries are the response to
+  // the walk, rather than guessing from the end of the text.
+  const beforeWalk = await page.evaluate(() =>
+    document.querySelectorAll('.transcript .entry').length);
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /lane down to the square/ }).click();
   const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
   place === 'the village square' ? ok('selectable mode: buttons move the story')
@@ -114,19 +118,39 @@ async function newPage(viewport) {
     ? ok('location stays visible; subtitle and objective are folded away')
     : bad('status disclosure', JSON.stringify(folded));
 
-  await page.waitForTimeout(700);
-  const scrolling = await page.evaluate(() => {
+  /*
+   * The positioning rule, measured on a real response: the transcript is the
+   * only scroller, and the response to the last action is shown from its
+   * beginning — entire if it fits, otherwise starting near the top edge.
+   */
+  await page.waitForTimeout(900);
+  const probeResponse = (n) => {
     const t = document.querySelector('.transcript');
+    const tr = t.getBoundingClientRect();
+    const first = t.children[n];
+    const last = t.lastElementChild;
+    if (!first || !last) return { missing: true };
+    const fr = first.getBoundingClientRect();
+    const lr = last.getBoundingClientRect();
     return {
-      docScrolls: document.documentElement.scrollHeight > document.documentElement.clientHeight + 1,
+      docScrolls:
+        document.documentElement.scrollHeight > document.documentElement.clientHeight + 1,
       transcriptOverflows: t.scrollHeight > t.clientHeight + 1,
-      atBottom: t.scrollHeight - t.scrollTop - t.clientHeight < 8,
-      newestVisible: t.lastElementChild.getBoundingClientRect().bottom <= t.getBoundingClientRect().bottom + 2,
+      // Distance from the top edge of the viewport to the start of the response.
+      startFromTop: +(fr.top - tr.top).toFixed(2),
+      fits: lr.bottom - fr.top <= t.clientHeight + 1,
+      wholeVisible: fr.top >= tr.top - 2 && lr.bottom <= tr.bottom + 2,
+      startVisible: fr.top >= tr.top - 2 && fr.top < tr.bottom,
     };
-  });
-  !scrolling.docScrolls && scrolling.transcriptOverflows && scrolling.atBottom && scrolling.newestVisible
-    ? ok('the transcript is the scroller and follows the newest output')
-    : bad('the transcript is the scroller and follows the newest output', JSON.stringify(scrolling));
+  };
+  const scrolling = await page.evaluate(probeResponse, beforeWalk);
+  const positioned = (p) => p.startVisible && (p.fits ? p.wholeVisible : p.startFromTop <= 24);
+  !scrolling.docScrolls && scrolling.transcriptOverflows && positioned(scrolling)
+    ? ok(
+        'the transcript is the scroller and opens a response at its beginning',
+        scrolling.fits ? 'response fits: shown entire' : `starts ${scrolling.startFromTop}px from the top`
+      )
+    : bad('the transcript is the scroller and opens a response at its beginning', JSON.stringify(scrolling));
 
   const overflow2 = await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -135,12 +159,13 @@ async function newPage(viewport) {
 
   // Let any earlier glide finish, or it will overwrite the reset below and the
   // samples will describe a one-pixel nudge instead of real motion.
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(1200);
   const glide = await page.evaluate(async () => {
     const t = document.querySelector('.transcript');
     t.scrollTop = 0;
     await new Promise((r) => requestAnimationFrame(() => r()));
-    // A real action, so there is genuinely new output to glide to.
+    const before = t.querySelectorAll('.entry').length;
+    // A real action, so there is genuinely new output to move to.
     [...document.querySelectorAll('.panel-meta button')]
       .find((b) => b.textContent.trim() === 'look')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -149,30 +174,46 @@ async function newPage(viewport) {
       let n = 0;
       const tick = () => {
         samples.push(t.scrollTop);
-        if (++n < 40) requestAnimationFrame(tick);
+        if (++n < 80) requestAnimationFrame(tick);
         else resolve();
       };
       requestAnimationFrame(tick);
     });
-    await new Promise((r) => setTimeout(r, 700));
-    const distanceToBottom = t.scrollHeight - t.scrollTop - t.clientHeight;
+    await new Promise((r) => setTimeout(r, 1200));
+    const tr = t.getBoundingClientRect();
+    const first = t.children[before];
+    const last = t.lastElementChild;
+    const fr = first.getBoundingClientRect();
+    const lr = last.getBoundingClientRect();
     // Deltas between frames: a cubic ease-out decelerates steadily.
     const deltas = samples.slice(1).map((v, i) => Math.abs(v - samples[i])).filter((d) => d > 0);
     return {
       samples: samples.slice(0, 4).map((v) => +v.toFixed(2)),
       deltas: deltas.slice(0, 4),
+      frames: deltas.length,
       decelerates: deltas.length >= 2 && deltas[0] > deltas[deltas.length - 1] * 2,
-      distanceToBottom: +distanceToBottom.toFixed(2),
-      settled: distanceToBottom < 2,
+      startFromTop: +(fr.top - tr.top).toFixed(2),
+      fits: lr.bottom - fr.top <= t.clientHeight + 1,
+      wholeVisible: fr.top >= tr.top - 2 && lr.bottom <= tr.bottom + 2,
+      startVisible: fr.top >= tr.top - 2 && fr.top < tr.bottom,
       animated: new Set(samples.map((v) => Math.round(v))).size > 1,
     };
   });
-  glide.settled && glide.animated
+  glide.animated && positioned(glide)
     ? ok(
-        'the kinetic glide animates and lands at the bottom',
-        `${glide.samples.join(' -> ')} ... ${glide.distanceToBottom}px`
+        'the glide animates and lands on the start of the response',
+        `${glide.samples.join(' -> ')} ... start ${glide.startFromTop}px from the top`
       )
     : bad('the kinetic glide', JSON.stringify(glide));
+
+  /*
+   * Slower than a snap, and slow enough to follow. The glide is distance-scaled
+   * over 320–720 ms, so a move worth animating has to occupy a good many frames
+   * rather than one or two.
+   */
+  glide.frames >= 8
+    ? ok('the glide is slow enough to read as motion', `${glide.frames} moving frames`)
+    : bad('the glide is slow enough to read as motion', JSON.stringify(glide));
   /*
    * Not asserted here: that a long drop teleports most of the way and glides
    * only the last screenful. The teleport happens inside the same layout
@@ -197,17 +238,132 @@ async function newPage(viewport) {
     ? ok('a non-action re-render leaves the scroll position alone', `scrollTop ${heldOnRerender}`)
     : bad('a non-action re-render moved the reader', `scrollTop ${heldOnRerender}`);
 
-  // An action always returns to the bottom, wherever the reader had got to.
+  // An action opens its response from the start, wherever the reader had got to.
   await page.evaluate(() => { document.querySelector('.transcript').scrollTop = 0; });
+  const beforeLook = await page.evaluate(() =>
+    document.querySelectorAll('.transcript .entry').length);
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: 'look' }).click();
-  await page.waitForTimeout(700);
-  const afterAction = await page.evaluate(() => {
+  await page.waitForTimeout(1200);
+  const afterAction = await page.evaluate(probeResponse, beforeLook);
+  positioned(afterAction)
+    ? ok('an action from the top of the history opens its response, not the end of the text')
+    : bad('an action left its response badly placed', JSON.stringify(afterAction));
+
+  /*
+   * The branch that matters most, forced: with the viewport shortened, no
+   * response can fit, so the response must begin near the top edge rather than
+   * running off it. This is the case the old scroll-to-bottom got wrong — the
+   * first line of a long answer ended up above the top of the window.
+   */
+  await page.evaluate(() => {
     const t = document.querySelector('.transcript');
-    return t.scrollHeight - t.scrollTop - t.clientHeight;
+    t.dataset.probeHeight = '1';
+    t.style.height = '140px';
+    t.style.flex = '0 0 auto';
   });
-  afterAction < 2
-    ? ok('every action scrolls to the bottom, even from the top of the history')
-    : bad('an action did not scroll to the bottom', `${afterAction.toFixed(2)}px short`);
+  const beforeShort = await page.evaluate(() =>
+    document.querySelectorAll('.transcript .entry').length);
+  await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: 'look' }).click();
+  await page.waitForTimeout(1200);
+  const shortView = await page.evaluate(probeResponse, beforeShort);
+  await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    t.style.height = '';
+    t.style.flex = '';
+    delete t.dataset.probeHeight;
+  });
+  !shortView.fits && shortView.startVisible && shortView.startFromTop <= 24 && shortView.startFromTop >= -2
+    ? ok(
+        'a response too tall for the viewport starts near the top, not off it',
+        `start ${shortView.startFromTop}px from the top`
+      )
+    : bad('a tall response was not positioned on its start', JSON.stringify(shortView));
+
+  /*
+   * Scrolling is never allowed to take the keyboard away from the reader. The
+   * action is dispatched synthetically rather than clicked, because a real
+   * click moves focus by itself and would prove nothing.
+   */
+  const focusKept = await page.evaluate(async () => {
+    const t = document.querySelector('.transcript');
+    t.scrollTop = 0;
+    const held = document.querySelector('.topbar-toggle');
+    held.focus();
+    const before = document.activeElement === held;
+    [...document.querySelectorAll('.panel-meta button')]
+      .find((b) => b.textContent.trim() === 'look')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 1200));
+    return {
+      before,
+      after: document.activeElement === held,
+      moved: +t.scrollTop.toFixed(2),
+      who: document.activeElement?.className ?? '',
+    };
+  });
+  focusKept.before && focusKept.after && focusKept.moved > 0
+    ? ok('positioning the transcript does not move keyboard focus', `moved ${focusKept.moved}px`)
+    : bad('scrolling moved keyboard focus', JSON.stringify(focusKept));
+
+  /*
+   * Switching input mode inserts the written-out option lists throughout the
+   * history: a UI change, not a story event, so the words under the reader's
+   * eye have to stay there.
+   */
+  // A conversation, so there is a written-out option list for the switch to
+  // insert. Without one the transcript does not change and the check is empty.
+  await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /^People/ }).click();
+  await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: 'Talk to Sage' }).click();
+  await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: /leave/i }).first().click();
+  await page.waitForTimeout(1200);
+  const anchored = await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    t.scrollTop = Math.round((t.scrollHeight - t.clientHeight) * 0.45);
+    // Let the scroll sampler run before the mode switch.
+    return new Promise((r) =>
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          const tr = t.getBoundingClientRect();
+          for (const c of t.children) {
+            const rect = c.getBoundingClientRect();
+            if (rect.bottom - tr.top > 0) {
+              /*
+               * Tagged rather than matched on its text: repeated looks at the
+               * same place produce identical entries, and the probe has to
+               * measure the same element afterwards, not its twin.
+               */
+              c.dataset.probeAnchor = '1';
+              r({ offset: +(rect.top - tr.top).toFixed(2), height: t.scrollHeight });
+              return;
+            }
+          }
+          r(null);
+        })
+      )
+    );
+  });
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('radio', { name: 'Type-only' }).click();
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Close' }).click();
+  await page.waitForTimeout(300);
+  const stillAnchored = await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    const c = t.querySelector('[data-probe-anchor]');
+    if (!c) return { found: false };
+    return {
+      found: true,
+      offset: +(c.getBoundingClientRect().top - t.getBoundingClientRect().top).toFixed(2),
+      height: t.scrollHeight,
+    };
+  });
+  stillAnchored.found &&
+  stillAnchored.height > anchored.height &&
+  Math.abs(stillAnchored.offset - anchored.offset) <= 4
+    ? ok(
+        'switching input mode holds the reading position',
+        `${anchored.height}px of text -> ${stillAnchored.height}px, anchor ${anchored.offset}px -> ${stillAnchored.offset}px`
+      )
+    : bad('switching input mode moved the reader', JSON.stringify({ anchored, stillAnchored }));
 
   errors.length === 0 ? ok('no console or page errors (selectable)')
                       : bad('no console or page errors (selectable)', errors.join(' | '));

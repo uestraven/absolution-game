@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { App } from './App';
 import { KEYS } from '../persistence/storage';
 
@@ -204,6 +204,66 @@ describe('accessibility affordances', () => {
     toggle.focus();
     await user.keyboard('{Enter}');
     expect(screen.getByLabelText('Current objective')).toBeTruthy();
+  });
+
+  /*
+   * jsdom has no layout, so the arithmetic of where to sit is tested in
+   * cascade.test.ts and the measurement in the browser pass. What is worth
+   * testing here is the wiring: how often the position is written to, and when.
+   */
+  it('moves the reading position once per action, and not for other renders', async () => {
+    const user = await startPlaying('type');
+    const log = screen.getByRole('log', { name: 'Story so far' });
+
+    // Count writes to scrollTop on this element only.
+    let writes = 0;
+    let value = 0;
+    Object.defineProperty(log, 'scrollTop', {
+      configurable: true,
+      get: () => value,
+      set: (next: number) => {
+        writes++;
+        value = next;
+      },
+    });
+
+    const input = screen.getByLabelText('What do you do?');
+    await user.type(input, 'look{Enter}');
+    // One action, one move — however many narration, objective and journal
+    // blocks it produced.
+    expect(writes).toBe(1);
+
+    await user.type(input, 'journal{Enter}');
+    expect(writes).toBe(2);
+
+    // Opening and closing settings is not an action, so the reader stays put.
+    await user.click(screen.getByRole('button', { name: 'Settings' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Settings' })).getByRole('button', {
+        name: 'Close',
+      })
+    );
+    expect(writes).toBe(2);
+
+    // Nor is folding the status bar.
+    await user.click(screen.getByRole('button', { name: /show subtitle and objective/ }));
+    expect(writes).toBe(2);
+  });
+
+  it('does not move focus when it moves the transcript', async () => {
+    await startPlaying('select');
+    const log = screen.getByRole('log', { name: 'Story so far' });
+    // A reader who has focused the history to arrow-key through it keeps it.
+    log.focus();
+    expect(document.activeElement).toBe(log);
+    /*
+     * Dispatched rather than clicked through user-event, because a real click
+     * focuses the button it lands on and would hide the thing being tested.
+     */
+    fireEvent.click(
+      within(screen.getByRole('region', { name: 'Actions' })).getByRole('button', { name: 'look' })
+    );
+    expect(document.activeElement).toBe(log);
   });
 
   it('does not steal focus from the transcript while reading', async () => {

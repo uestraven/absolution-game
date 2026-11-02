@@ -1,7 +1,17 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { TranscriptEntry } from '../engine/types';
 import { RichText } from './RichText';
-import { BOUNCE_THRESHOLD_PX, createCascade } from './cascade';
+import {
+  BOUNCE_THRESHOLD_PX,
+  bottomOf,
+  contentTopOf,
+  createCascade,
+  responseStart,
+  responseTarget,
+  restoreAnchor,
+  sampleAnchor,
+  type ReadingAnchor,
+} from './cascade';
 
 /**
  * Spoken name for each entry kind. Every colour in the transcript is backed by
@@ -28,10 +38,13 @@ export interface TranscriptProps {
    */
   showOptionLists: boolean;
   /**
-   * Increments once per player action. Any change scrolls to the bottom,
-   * wherever the reader had got to — they just did something and want to see
-   * what happened. Re-renders that are not actions (opening settings, folding
-   * the status bar, switching input mode) leave the position alone.
+   * Increments once per player action.
+   *
+   * This is the only thing that moves the scroll position, and it moves it
+   * once, after the action's whole output has rendered — to the beginning of
+   * that output, not to the bottom of the text. Re-renders that are not actions
+   * (opening settings, folding the status bar, switching input mode) hold the
+   * reader's place instead.
    */
   actionCount: number;
   /**
@@ -53,47 +66,112 @@ export function Transcript({
   const cascade = useRef(createCascade());
   const firstPaint = useRef(true);
 
-  // Every action goes to the bottom. A reader who scrolled up to check
-  // something and then typed a command is asking to see the result of it.
+  /*
+   * Latest-value refs, so the effects below can read what is on screen without
+   * taking the entries as dependencies — which would make them fire per render
+   * instead of per action, and scroll for individual blocks.
+   */
+  const renderedIds = useRef<string[]>([]);
+  renderedIds.current = shown.map((e) => e.id);
+  const allIds = useRef<string[]>([]);
+  allIds.current = entries.map((e) => e.id);
+
+  /** Id of the last entry that existed before the current action's output. */
+  const mark = useRef<string | null>(null);
+  /** The reader's own position, sampled as they move. */
+  const anchor = useRef<ReadingAnchor | null>(null);
+
+  // One position change per action, on the start of what the action produced.
   useLayoutEffect(() => {
     const el = scroller.current;
     if (!el) return;
+    const rendered = renderedIds.current;
+    const all = allIds.current;
+    const remember = () => {
+      mark.current = all[all.length - 1] ?? null;
+      anchor.current = sampleAnchor(el, rendered);
+    };
+
     if (firstPaint.current) {
-      // Arriving at a restored transcript should not play a glide.
+      // Arriving at a restored transcript should not play a glide, and should
+      // show its end: the reader is resuming, not reading a new response.
       firstPaint.current = false;
       cascade.current.snapToBottom(el);
+      remember();
       return;
     }
-    const travelled = cascade.current.toBottom(el);
+
+    const start = responseStart(rendered, all, mark.current);
+    const targetOf =
+      start >= rendered.length
+        ? // Nothing new is on screen — an action whose only output was an
+          // option list that selectable mode draws as buttons. Fall back to the
+          // end of the text, which is where the reader already is.
+          () => bottomOf(el)
+        : () => {
+            const top = contentTopOf(el, start);
+            return top === null ? bottomOf(el) : responseTarget(top, el.clientHeight, el.scrollHeight);
+          };
+
+    const travelled = cascade.current.glideTo(el, targetOf);
+    remember();
     if (travelled >= BOUNCE_THRESHOLD_PX) onHeavyFeed?.(travelled);
   }, [actionCount, onHeavyFeed]);
 
-  // Switching input mode changes what is rendered but is not an action, so the
-  // position is kept rather than reset.
+  /*
+   * Switching input mode inserts or removes the written-out option lists
+   * throughout the history. That is a UI change, not a story event, so the
+   * reader's place is put back rather than reset: the words that were under
+   * their eye stay under their eye.
+   */
   useLayoutEffect(() => {
     const el = scroller.current;
     if (!el || firstPaint.current) return;
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-    if (atBottom) cascade.current.snapToBottom(el);
+    restoreAnchor(el, renderedIds.current, anchor.current);
+    anchor.current = sampleAnchor(el, renderedIds.current);
   }, [showOptionLists]);
 
-  // A reader touching the scrollbar mid-glide takes it over immediately.
+  /*
+   * Reader-driven scrolling: it takes over any glide in flight immediately, and
+   * it keeps the reading anchor current. Sampling is coalesced to one frame
+   * because a scroll fires far more often than it needs measuring.
+   */
   useEffect(() => {
     const el = scroller.current;
     if (!el) return;
-    const stop = () => cascade.current.cancel();
-    el.addEventListener('wheel', stop, { passive: true });
-    el.addEventListener('touchstart', stop, { passive: true });
-    el.addEventListener('pointerdown', stop, { passive: true });
+    let pending = 0;
+    const onScroll = () => {
+      if (pending || typeof requestAnimationFrame !== 'function') return;
+      pending = requestAnimationFrame(() => {
+        pending = 0;
+        anchor.current = sampleAnchor(el, renderedIds.current);
+      });
+    };
+    const takeOver = () => {
+      cascade.current.cancel();
+      onScroll();
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    el.addEventListener('wheel', takeOver, { passive: true });
+    el.addEventListener('touchstart', takeOver, { passive: true });
+    el.addEventListener('pointerdown', takeOver, { passive: true });
     return () => {
-      el.removeEventListener('wheel', stop);
-      el.removeEventListener('touchstart', stop);
-      el.removeEventListener('pointerdown', stop);
+      if (pending) cancelAnimationFrame(pending);
+      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('wheel', takeOver);
+      el.removeEventListener('touchstart', takeOver);
+      el.removeEventListener('pointerdown', takeOver);
     };
   }, []);
 
   useEffect(() => () => cascade.current.cancel(), []);
 
+  /*
+   * `tabIndex` makes the history keyboard-scrollable, which is the only reason
+   * it is focusable. Nothing in here calls `focus()` or `scrollIntoView`:
+   * moving the position must never move the keyboard off whatever the reader
+   * was using.
+   */
   return (
     <div className="transcript" ref={scroller} tabIndex={0} role="log" aria-label="Story so far">
       {shown.map((entry) => (

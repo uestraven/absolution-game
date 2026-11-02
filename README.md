@@ -72,31 +72,57 @@ because showing all three at once takes eleven buttons and half of a phone.
 Selectable mode on a narrow screen is the weakest case and is floor-limited:
 legible exit names at 44px tap height cannot be made much smaller.
 
+### Where the transcript looks
+
+**The transcript does not chase the bottom of the text.** Once an action's whole
+output has rendered, the scroller is positioned on the *start* of that output:
+
+- **If the response fits in the viewport, all of it is revealed.**
+- **If it does not, its first line is placed a little below the top edge**, with
+  the rest below it to read down into.
+
+Chasing the bottom is wrong for a text game. A long response ends with its last
+paragraph against the input and its first paragraph somewhere off the top of the
+window, so the reader has to scroll *up* to find the beginning of what they just
+asked for — and the longer the response, the worse it gets, which is backwards.
+The arrival in a new place, the recitation and the epilogue are exactly the
+passages that need to start at the start.
+
+There is **one position change per action**, taken after the whole response is
+in the DOM. Individual blocks within a response — narration, then a journal
+entry, then an objective — never scroll separately.
+
+Re-renders that are *not* actions hold the reader's place: folding the status
+bar and opening settings move nothing, and switching input mode, which inserts
+or removes the written-out option lists throughout the history, puts the
+anchored entry back at the offset it had. Scrolling **never moves keyboard
+focus** — every move is an assignment to `scrollTop`, and neither
+`scrollIntoView` nor `focus()` is used, so a reader who has focused the history
+to arrow-key through it keeps it.
+
 ### Motion
 
-New text appears immediately. What moves is the scroll position: when a block
-lands, the transcript glides up to meet it on a cubic ease-out, driven from
-`requestAnimationFrame` rather than CSS so the target can be re-read while
-content settles. A heavy block also nudges the anchored command line 3px and
-back, so it reads as being pushed by the text rather than as a separate widget.
+New text appears immediately. What moves is the scroll position, on a cubic
+ease-out driven from `requestAnimationFrame` rather than CSS so the target can
+be re-read while content settles. A heavy block also nudges the anchored command
+line 3px and back, so it reads as being pushed by the text rather than as a
+separate widget.
 
 Two things keep it legible:
 
-- **170–380 ms, scaled by distance.** An earlier 60–100 ms envelope was a blur
-  with a stop at the end.
-- **Travel is bounded to three quarters of a screen.** A long drop covers
+- **320–720 ms, scaled by distance.** Earlier envelopes of 60–100 ms and then
+  170–380 ms were both quick enough to read as a snap with a smear on it. At
+  this length the eye can follow the text to its resting place, which is the
+  point of animating it at all.
+- **Travel is bounded to three quarters of a screen.** A long move covers
   everything beyond that instantly and glides the rest, so the eye always
-  follows the same readable distance however much text arrived. Animating a
+  follows the same readable distance however far the position moved. Animating a
   three-thousand-pixel jump is illegible at any duration.
 
-**Every action scrolls to the bottom**, wherever the reader had got to — if you
-scroll up to check something and then type a command, you want to see the
-result. Re-renders that are *not* actions (folding the status bar, opening
-settings, switching input mode) leave the position alone, and a glide is
-cancelled the instant a reader touches the wheel, a scrollbar or the screen. A
-restored transcript snaps rather than replaying. Under
-`prefers-reduced-motion` the glide becomes the jump, verified as settling
-within one frame.
+A glide is cancelled the instant a reader touches the wheel, a scrollbar or the
+screen. A restored transcript snaps rather than replaying. Under
+`prefers-reduced-motion` the glide becomes the jump, with the positioning rule
+unchanged.
 
 A minimal terminal: soft white on near-black, one monospace face at 18px
 (16–18px on mobile) with 1.6 line spacing, and a single centred reading column
@@ -277,13 +303,14 @@ than overwritten.
 - The command field stays visible when a phone keyboard opens.
 - Semantic controls and labelled inputs throughout; visible focus rings.
 - New output is announced through a small live region, not by re-reading the
-  whole transcript. Focus is never taken from someone reading history.
+  whole transcript. Focus is never taken from someone reading history — moving
+  the transcript's position does not move the keyboard.
 - Entry kinds are conveyed by text as well as colour, and no meaning depends on
   hue: see **Look and feel** above.
 - Comfortable 44px touch targets where the pointer is coarse, left compact for a
   mouse.
 - `prefers-reduced-motion` and `prefers-contrast: more` are both honoured; the
-  kinetic scroll degrades to an instant jump.
+  glide degrades to an instant jump, which lands in the same place.
 - Type-only mode is completable with the keyboard alone; Selectable Actions mode
   is completable without typing anything.
 
