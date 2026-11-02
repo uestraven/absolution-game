@@ -388,7 +388,83 @@ describe('the three lamp positions are places, not distances', () => {
     const refused = type(owed, 'enter aperture');
     expect(refused.accepted).toBe(false);
     expect(refused.state.era).toBe('past');
-    expect(lastText(refused)).toContain('still owed');
+  });
+
+  it('refuses in the right terms for what has actually been said down there', () => {
+    /*
+     * Worksite access does not run through Saffra, so a player can be standing
+     * at this panel having been asked a question, having only found out that
+     * nobody here knows the words, or having never raised it at all. The
+     * refusal has to know which.
+     */
+    const crossed = typeAll(begin(), [...TO_SEALED, ...SOLVE_RELIEF, ...CROSS_FIRST]);
+
+    // 1. Never discussed. Straight past Saffra to the water and the workings.
+    const silent = typeAll(crossed, [
+      'up',
+      'east',
+      'east',
+      'take skins',
+      'west',
+      'north',
+      'fill skins',
+      'south',
+      'west',
+      'give skins to lovage',
+      ...READ_PANEL,
+    ]);
+    expect(silent.flags[FLAGS.heardNoProphecy]).toBeUndefined();
+    expect(silent.flags[FLAGS.askedForWords]).toBeUndefined();
+    const neverAsked = lastText(type(silent, 'enter aperture'));
+    expect(neverAsked).toContain('not once asked them');
+    expect(neverAsked, 'nothing has been owed yet').not.toContain('waiting on you');
+
+    // 2. Asked them, found nothing, and let it go.
+    const shocked = typeAll(inTheSquare(), [...WATER_ROUTE, ...READ_PANEL]);
+    expect(shocked.flags[FLAGS.heardNoProphecy]).toBe(true);
+    expect(shocked.flags[FLAGS.askedForWords]).toBeUndefined();
+    const unfinished = lastText(type(shocked, 'enter aperture'));
+    expect(unfinished).toContain('finish the conversation');
+    expect(unfinished, 'they have not asked anything yet').not.toContain('waiting on you');
+
+    // 3. Asked a straight question, and not answered it.
+    const asked = typeAll(shocked, [
+      ...WORKSITE_TO_SQUARE,
+      'talk to saffra',
+      'why you asked',
+      'leave',
+      ...SQUARE_TO_WORKSITE,
+    ]);
+    expect(asked.flags[FLAGS.askedForWords]).toBe(true);
+    expect(asked.locationId).toBe('past.worksite');
+    const owing = lastText(type(asked, 'enter aperture'));
+    expect(owing).toContain('waiting on you');
+    expect(owing).toContain('owing them');
+
+    // All three are distinct, and none of them lets the hero through.
+    expect(new Set([neverAsked, unfinished, owing]).size).toBe(3);
+  });
+
+  it('keeps the deduction a working conclusion rather than a fact', () => {
+    const concluded = type(
+      typeAll(inTheSquare(), ['leave', ...RECITE, ...FENN_ROUTE, 'down', 'north', 'examine drawing', 'examine slate']),
+      'examine dishes'
+    );
+    expect(concluded.state.flags[FLAGS.knowsSettings]).toBe(true);
+    const text = stripMarkup(lastText(concluded));
+
+    // Hedged, and says out loud that it is a guess off very little.
+    expect(text).toContain('perhaps');
+    expect(text).toContain('It is a guess');
+    expect(text).toContain('If you have it right');
+    // Not asserted as established fact.
+    expect(text).not.toContain('So the heights are not distances');
+    expect(text).not.toMatch(/They are places —/);
+
+    // And the journal records it as a guess too, not as something known.
+    const entry = concluded.state.journal.find((e) => e.id === 'j.settings')!;
+    expect(entry.text).toContain('it is a guess');
+    expect(entry.text).toContain('may not be distances');
   });
 
   it('keeps the three positions unaddressable until the panel has been read', () => {

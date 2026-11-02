@@ -277,13 +277,23 @@ table in `src/engine/puzzles/worksite.ts` is the whole of it.
 
 What the hero actually gets is three pieces of evidence — the drawing
 (`read_drawing`), the crew's slate (`read_crew_notes`) and the dishes
-(`examined_dishes`) — and when all three are in, in any order,
-`knows_settings` fires with the deduction: the low height *does nothing* for the
-crew and brought the hero here from year 0, so the heights are places and one of
-the three must be home; it is not the low one; the middle one has no dish.
+(`examined_dishes`) — and when all three are in, in any order, `knows_settings`
+fires with the hero's reasoning.
 
-That leaves one setting they can light and no way to know what it is. **It is a
-reasoned gamble on sound evidence, not a mistake and not an arithmetic error.**
+**That reasoning is a working conclusion, and the prose keeps it one.** All they
+have is one arrival of their own and one sentence on somebody else's slate, and
+they say so: *one arrival, and one man's sentence about another man.* The low
+height did nothing for Caraway and everything for them, so *perhaps* the heights
+are places rather than distances — it is the only thing they can think of that
+accounts for both, and they tell themselves plainly that it is a guess, and that
+fitting is not the same as being so. Everything after it is conditional: *if you
+have it right*, one of the three is home, it is not the low one, and the middle
+one has no dish. The journal entry records it the same way.
+
+That leaves one setting they can light, and no way to check any of it without
+using it. **A reasoned gamble on thin evidence, not a mistake and not an
+arithmetic error** — and the game never confirms the rule to the player, in this
+chapter or at the arrival.
 
 | Attempt | Result |
 | --- | --- |
@@ -307,6 +317,19 @@ with a different stated reason at each missing step: the square still unanswered
 (`recited_prophecy`), the panel not understood (`knows_settings`), nothing
 standing in the dish (`lantern_in_high_dish`), or the wick cold
 (`lantern_lit`).
+
+The first of those is itself three refusals, because worksite access does not
+run through Saffra and a player can arrive at this panel in any of three states:
+
+| State | What the hero is refusing over |
+| --- | --- |
+| `asked_for_words` | They were asked a straight question and are walking away holding the answer |
+| `heard_no_prophecy` only | They found out the words are not here yet and let the conversation move on to trowels |
+| neither | They never raised it at all, having assumed — and they do not actually know whether these people keep it |
+
+All three are distinct and all three send the player back down the hill;
+`engine/chapter2.test.ts` reaches the panel in each state and asserts the
+wording is the right one.
 
 ### The wrongnesses
 

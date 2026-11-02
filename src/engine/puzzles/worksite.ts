@@ -1,5 +1,6 @@
 import type { GameState, NarrativeEvent, ResolveResult } from '../types';
 import { FLAGS } from '../../content/flags';
+import { m } from '../../content/markup';
 import { CROSSING_FORWARD, END_OF_CONTENT, FUTURE_ARRIVAL, OBJECTIVES } from '../../content/text';
 import {
   addJournal,
@@ -66,7 +67,13 @@ function hasAllThreePieces(state: GameState): boolean {
 
 /**
  * Fires once, when the drawing, the slate and the dishes have all been looked
- * at. The conclusion is the hero's own and it is as far as the evidence goes.
+ * at.
+ *
+ * The conclusion is the hero's, and it is a **working conclusion from thin
+ * evidence** — one arrival of their own and one sentence on somebody else's
+ * slate. The prose has to stay inside that: it is the best thing that fits
+ * what they have, and it is not knowledge. They have no way to check it and
+ * nobody to check it with, and they say so to themselves before they act on it.
  */
 export function noteSettings(draft: Draft, events: NarrativeEvent[]): void {
   if (f(draft, FLAGS.knowsSettings)) return;
@@ -76,31 +83,41 @@ export function noteSettings(draft: Draft, events: NarrativeEvent[]): void {
   events.push({
     kind: 'narration',
     text:
-      'You stand back from the panel with the drawing on your left and the slate on your right ' +
-      'and you work it out, and it takes you a long time, and none of it is clever.\n\n' +
-      'Caraway stood in the low one and came out of the hole he went in by. The crew wrote that ' +
-      'down as *it does nothing*, and they were being careful rather than stupid: from where ' +
-      'they are standing, that is precisely what it does.\n\n' +
-      'But you came into this century on a lamp at that height. You crouched in a dished alcove ' +
-      'with your knee on the stone and you came out *here*.\n\n' +
-      'So the heights are not distances. They are not *back* and *further back*. They are ' +
-      'places — the same three places, whichever one of them you happen to be standing in — ' +
-      'and that is why the low one did nothing for Caraway and everything for you.\n\n' +
-      'Which means one of these three is home.\n\n' +
-      'It is not the low one; the low one is this. The middle one is a chalk ellipse on rough ' +
-      'rock that nobody is going to cut this season.\n\n' +
-      'That leaves the high one, and there is no possible way to find out what the high one is ' +
-      'except to stand a lamp in it and go.',
+      'You sit down on the trestle with the drawing on one side of you and the slate on the ' +
+      'other, and you try to make the two of them agree. It takes a long time and none of it ' +
+      'is clever.\n\n' +
+      'Here is everything you have. Caraway stood in the low one and came out of the hole he ' +
+      'went in by, and the crew wrote that down as *it does nothing* — and they were being ' +
+      'careful rather than stupid, because from where they are standing that is exactly what ' +
+      'it does. And you came into this century on a lamp at that height: crouched at a dished ' +
+      'alcove with your knee on the stone, and you came out *here*.\n\n' +
+      'One arrival, and one man\'s sentence about another man. That is the whole of it, and you ' +
+      'are not going to pretend to yourself that it is much.\n\n' +
+      'But if the heights were *distances* — back, and further back again — then the low one ' +
+      'ought to have taken Caraway somewhere, and it did not take him anywhere at all.\n\n' +
+      'So perhaps they are not distances. Perhaps each height is a ' + m('place') + ' — the ' +
+      'same place every time, whoever lights it, and whenever. That would account for the low ' +
+      'one doing nothing for him and everything for you, and you sit there a while longer and ' +
+      'cannot think of anything else that would.\n\n' +
+      'It is a guess. You make yourself say that, because there is nobody down here to say it ' +
+      'to you: it is the best thing that fits, and fitting is not the same as being so.\n\n' +
+      'If you have it right, one of these three is home.\n\n' +
+      'And if you have it right, it is not the low one, because the low one is this. The middle ' +
+      'one is a chalk ellipse on rough rock that nobody is going to cut this season.\n\n' +
+      'Which leaves the high one — and there is no way to find out what the high one is, or ' +
+      'whether any of this holds together at all, except to stand a lamp in it and go.',
   });
   journalEvents(
     addJournal(draft, [
       {
         id: 'j.settings',
         text:
-          'The three heights are places, not distances — the same three from any of them. The ' +
-          'low one is this century, which is why it did nothing for the man who tried it and ' +
-          'everything for me. One of the other two must be home. The middle has no dish. That ' +
-          'leaves the high one, and no way to know what it is without using it.',
+          'Best I can work out, off one arrival and one line on a slate, so it is a guess: the ' +
+          'three heights may not be distances but places — the same place each time, whoever ' +
+          'lights it. That would explain why the low one did nothing for the man who tried it ' +
+          'and everything for me. If I have it right, one of the other two is home; the low one ' +
+          'is this, and the middle has no dish. Which leaves the high one, and no way to check ' +
+          'any of it without using it.',
       },
     ]),
     events
@@ -206,16 +223,63 @@ export function placeLanternInDish(
  * Going
  * ------------------------------------------------------------------ */
 
-/** Why the aperture will not take the hero yet, or null when it will. */
+/**
+ * Why the aperture will not take the hero yet, or null when it will.
+ *
+ * The first refusal is about the square, and it has to know which square it is
+ * talking about. Having been asked a straight question and not answered it is
+ * a different thing from having found out nobody here has heard the words, and
+ * both are different from never having raised it at all — and a player can
+ * reach this panel in any of those three states, because worksite access does
+ * not run through Saffra.
+ */
 export function apertureRefusal(state: GameState): string | null {
   if (!f(state, FLAGS.recitedProphecy)) {
-    return (
+    const preamble =
       'You stand in front of the half-cut aperture with your hand flat on the thinned panel, ' +
-      'and you do not do it.\n\n' +
-      'Down in that square there is a woman on a plank who stopped working to ask you a ' +
-      'straight question, and a boy who wanted to know if it was a poem, and you have not ' +
-      'answered either of them. Whatever is on the other side of this stone, you are not going ' +
-      'through it with that still owed.'
+      'and you do not do it.\n\n';
+
+    // They asked. The hero is holding an answer and walking away from it.
+    if (f(state, FLAGS.askedForWords)) {
+      return (
+        preamble +
+        'Down in that square there is a woman who came down off a wet course to ask you a ' +
+        'straight question, and a boy who wanted to know whether it was a poem, and they are ' +
+        'both still waiting on you.\n\n' +
+        'Whatever is on the other side of this stone, you are not going through it owing them ' +
+        'that.'
+      );
+    }
+
+    // They have not asked, but the hero knows the words are not here yet, and
+    // walked away from that rather than following it.
+    if (f(state, FLAGS.heardNoProphecy)) {
+      return (
+        preamble +
+        'You asked a woman on a plank whether she had ever heard of the ' +
+        m('Wanderer') +
+        ', and watched the word land on her and find nothing to land on, and then you let the ' +
+        'conversation move on to trowels.\n\n' +
+        'You have been carrying that around all day without looking straight at it. It is the ' +
+        'only thing you have found down here that nobody can explain to you, and you are about ' +
+        'to put a hundred years of hill between yourself and the one person who noticed you ' +
+        'asking.\n\n' +
+        'Not yet. Go back down and finish the conversation.'
+      );
+    }
+
+    // Nobody has discussed it at all. The hero does not actually know whether
+    // these people keep the words, and has not thought to find out.
+    return (
+      preamble +
+      'You have spent a day in a village that is your village, among people who are not your ' +
+      'people, and you have talked to them about water and chalk lines and whose tree it is.\n\n' +
+      'And you have not once asked them the thing you grew up with. You have no idea whether ' +
+      'there is a plank by that well in their year, or a cord of lanterns, or a night in ' +
+      'midwinter when somebody reads something out. You have not asked because you assumed, ' +
+      'the way you assume about a step you have climbed ten thousand times.\n\n' +
+      'Go down and find out. Whatever is behind this panel can wait the length of a ' +
+      'conversation.'
     );
   }
   if (!f(state, FLAGS.knowsSettings)) {
