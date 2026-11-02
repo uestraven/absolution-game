@@ -10,12 +10,17 @@
  * Save format.
  *
  * 2 adds the future era: `era: 'future'`, `chapter: 'future'`, the
- * `future.*` location ids, and the items and flags Chapter 2 introduces. No
- * field was removed or retyped, so the 1 → 2 migration is a value fix-up
- * rather than a reshape — see persistence/validate.ts.
+ * `future.*` location ids, and the items and flags Chapter 2 introduces.
+ *
+ * 3 adds the return: `chapter: 'return'`, which is the original era for the
+ * second time. That is the first value a format-2 build would refuse, which is
+ * why the version moves even though no field was removed or retyped. It is also
+ * the hook the end-of-content normalisation hangs on — see
+ * persistence/validate.ts, where both migrations are value fix-ups rather than
+ * reshapes.
  */
-export const SCHEMA_VERSION = 2;
-export const CONTENT_VERSION = '0.2.0';
+export const SCHEMA_VERSION = 3;
+export const CONTENT_VERSION = '0.3.0';
 
 /* ------------------------------------------------------------------ *
  * Identity
@@ -77,7 +82,11 @@ export type LocationId =
   | 'past.cave_path'
   | 'past.spring'
   | 'past.square'
-  | 'future.deep_chamber';
+  | 'future.deep_chamber'
+  | 'future.cave_path'
+  | 'future.entrance'
+  | 'future.sealed_chamber'
+  | 'future.square';
 
 export type ItemId = 'lantern' | 'wedge' | 'stone' | 'water_skins' | 'mallet';
 
@@ -167,11 +176,20 @@ export type PendingState = PendingConversation | PendingClarification;
  * ------------------------------------------------------------------ */
 
 /**
- * Which chapter the save is in. One chapter per era, and the two always move
- * together: `rite` ⟺ present, `crossing` ⟺ past, `future` ⟺ future. Save
- * validation enforces that pairing.
+ * Which chapter the save is in.
+ *
+ * Chapter and era move together, but the pairing is no longer one-to-one: the
+ * original era happens twice, once going out and once coming back, and the two
+ * are different chapters in the same place. `chaptersForEra` in
+ * engine/reducer.ts is the single declaration of which pairs are legal, and
+ * save validation checks membership rather than equality.
+ *
+ *   rite      → present   the opening
+ *   crossing  → past
+ *   future    → future
+ *   return    → present   the same rooms, a hero with one eye, and two of them
  */
-export type Chapter = 'select' | 'rite' | 'crossing' | 'future';
+export type Chapter = 'select' | 'rite' | 'crossing' | 'future' | 'return';
 
 export const MAX_TRANSCRIPT = 240;
 export const MAX_JOURNAL = 80;
@@ -248,6 +266,16 @@ export type GameAction =
    */
   | { type: 'RECITE' }
   | { type: 'WAIT' }
+  /** Swing something heavy at something that is in the way. */
+  | { type: 'BREAK'; target: string; using?: string }
+  /** Shift loose material out of the way of something behind it. */
+  | { type: 'CLEAR'; target: string }
+  /**
+   * Stop and put together what has been found. A deliberate action rather
+   * than an automatic unlock: the hero draws the inference, the player
+   * chooses when.
+   */
+  | { type: 'REFLECT' }
   | { type: 'TALK'; target: string }
   | { type: 'TOPIC'; topic: string }
   | { type: 'END_CONVERSATION' }
@@ -347,13 +375,23 @@ export type SelectableVerb =
   | 'use'
   | 'retrieve'
   | 'cross'
-  | 'fill';
+  | 'fill'
+  | 'break'
+  | 'clear';
 
 export interface PersonDef {
   id: string;
   name: string;
   nouns: string[];
   locationId: LocationId;
+  /**
+   * Whether this person is here at all right now.
+   *
+   * Needed because a room can be revisited in a different chapter with
+   * different people in it: the sealed chamber has nobody in it during the
+   * opening and somebody very specific in it on the return.
+   */
+  available?: (state: GameState) => boolean;
   /** Line shown when the conversation opens. */
   greeting: (state: GameState) => string;
   /** Shown for EXAMINE on the person. */

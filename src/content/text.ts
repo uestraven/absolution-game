@@ -37,8 +37,14 @@ export const OBJECTIVES = {
   recite: 'Answer them.',
   /** Once the three positions are understood. */
   settings: 'Use the one position you can light, and hope.',
-  /** The future arrival, and the end of what is built. */
-  future: 'Find out what happened here.',
+  /** The future arrival. */
+  future: 'Get out of this hill and find out where you are.',
+  /** Once the settlement has been found. */
+  settlement: 'Find out what happened here.',
+  /** Once the hero has put the evidence together. */
+  responsible: 'Get back to the night it started.',
+  /** The return, and the end of what is built. */
+  returned: 'Stop yourself going through.',
 } as const;
 
 export const CROSSING = `You do not jump, and you do not fall. You put a hand flat on the rim, and then a foot over it, the way you would get into a cold river in the dark — testing for a bottom you have already been told is not there.
@@ -158,20 +164,132 @@ You are not in your own village. You know that before you have got your feet und
 
 export const END_OF_CONTENT = `— End of the current content —
 
-This is as far as the story is built. What happens in this place, who is still living in it, and how a person gets home from here are the next chapters, and they are not written yet.
+This is as far as the story is built. What the two of you say to each other, and what it costs, is the last chapter, and it is not written yet.
 
 This is not the ending. Nothing here is the end of the story.
 
 You can keep looking around, read your JOURNAL, or use Settings to restart from the checkpoint at the start of this chapter. Settings will tell you whether this browser is keeping your progress, and Export Save works either way.`;
 
 /**
- * Shown once to a player continuing a save that stopped at the old
- * end-of-prototype marker, so the transcript they are looking at — which still
- * ends in "the story does not continue past this point yet" — is corrected
- * rather than silently contradicted.
+ * Shown once to a player continuing a save that stopped at an older
+ * end-of-content marker, so the transcript they are looking at — which still
+ * says the story stops there — is corrected rather than silently contradicted.
+ *
+ * One of these per boundary that has ever shipped. Each is appended under a
+ * fixed transcript id so it cannot land twice.
  */
 export const CONTINUATION_NOTICE = `— The story continues past this point now —
 
 Your saved game ended where the prototype used to stop. The chapter carries on from here: everything above is still yours, and nothing has been reset.
 
 You are in the square, a hundred years before the one you grew up in, and you need to get home.`;
+
+/* ------------------------------------------------------------------ *
+ * The ruined century
+ * ------------------------------------------------------------------ */
+
+export const CONTINUATION_FUTURE = `— The story continues past this point now —
+
+Your saved game ended where the previous build stopped. The chapter carries on from here: everything above is still yours, and nothing has been reset.
+
+You are on the floor of a broken chamber with a tear in the wall above you and daylight coming through it, and you do not yet know where you are.`;
+
+export const OUT_THROUGH_THE_TEAR = `You get a shoulder and then a hip through, and the rock lets you out onto the side of the hill about the height of a house above where the mouth used to be.
+
+Then you stop, with one hand still on the stone, and you look at it.
+
+${m('The valley is the valley')}. That is the first thing, and it is the worst thing: the shape of the ridge, the bend where the track should go, the flat place by the water where the village is. You could draw this from memory. You have drawn this from memory, on a slate, for a woman who wanted to know what was over the ford.
+
+The roofs are wrong. There are fewer of them and they are lower and the colours are wrong, and something has been burned a long time ago and grown over since.
+
+And the sky. The sky is doing the thing you saw from the chamber and it is worse out here, because out here there is a lot of it: an even, steady, wrong colour, with no weather in it at all. Not cloud. Not haze. A ceiling.
+
+Below you, somebody is walking up the track with a bucket, and they have not seen you yet.`;
+
+export const SEAL_FIRST_BLOW = `You set the mallet against the stone the way you watched men set mallets for three days, and you swing.
+
+The sound is enormous and goes nowhere. It comes out of the hill, hits the hillside, and stops dead, and the silence afterwards is the loudest part of it.
+
+The course shifts. Dust goes out of the joint in a thin grey breath, and the stone above it drops a hair's width onto the wedge and stays there.
+
+Sorrel, from four paces back, says nothing at all.`;
+
+export const SEAL_SECOND_BLOW = `You swing again.
+
+The course goes. It comes out of the wall in three pieces and the fitted stone above it slumps into the gap and the whole seal opens along its own courses like a book falling off a shelf, and there is cold air out of the hill and the smell of a closed room.
+
+Then something hits you on the left side of the face.
+
+It is a stone the size of a fist and it comes from above and slightly behind, and it is not a stone you loosened, and you are on your knees on the shale with your hand over your eye before you have understood that you have been hit.
+
+${m('The fall it came out of starts afterwards')}.
+
+You hear it begin above you — the long dry rattle of a hillside letting go, pebbles first, then the bigger stuff, running down the rock face to your right and out onto the track and away downhill. You hear all of it. You hear the start of it, clearly, with the thing it sent already in your hand.
+
+Sorrel is shouting for somebody.
+
+The pain arrives properly about four seconds late, and it is not like anything, and your hand is wet and you do not take it away.`;
+
+export const EYE_AFTERMATH = `You lose a while.
+
+Not consciousness. The order of things: you are sitting with your back against the sealed stone that is no longer sealed, and there are three people here now instead of one, and somebody has your chin in their hand and is turning your face towards the light.
+
+"Hold still." Not Sorrel. An older woman, grey, with water and a cloth and the expression of somebody who has done this before and would rather not be doing it now. She does not tell you it will be fine.
+
+The cloth comes away and she looks at it and puts it back and says, to Sorrel rather than to you, "Fetch the other one."
+
+What you understand, over the next little while, is that the eye is gone. Not damaged. Gone, and the socket cleaned and packed and bound with a strip of linen that goes round your head twice, and the woman's hands are steady and quick and she says *sorry* once, quietly, when you make a sound.
+
+Nobody asks you what you were doing. That is the thing you notice through all of it. They have watched a stranger break open the hill they sealed, and nobody has asked.`;
+
+export const WANDERER_NAMED = `You get up, eventually, with a hand on the stone.
+
+There is a fourth person on the track now, a man with a bucket he has not put down, and he has been looking at you since before you stood up.
+
+You turn your head to see him, because turning your head is how you see anything on that side now, and whatever that looks like from four paces away, it is enough.
+
+The bucket goes down. He does not run. He goes backwards two steps, and then another one, and he says a word.
+
+It is a word you have said in a cold square every midwinter of your life, standing between your mother and a bowl of salt, while somebody read it off a plank.
+
+Sorrel says, "Don't." But she says it to him and not to you, and she does not say he is wrong.`;
+
+export const CROSSING_BACK = `The middle dish takes the lantern the way the others took it. Of course it does. They were all cut by the same hands in the same week, by men who did not know what they were cutting.
+
+The panel answers. The pressure arrives in your jaw, in the hinge of it, on the side of your face that still has a hinge.
+
+You stand there a long time with your hand flat on stone that is a hundred years from both the places you have been.
+
+This is a guess. You want that on the record, in your own head, standing here: low went back, high came here, and so the middle one is the one that is left, and *left* is not the same as *home*. You have been wrong about less.
+
+But the room behind you is dry and the hill is dead and there is a man down in that village who put a name to your face, and the only thing you have left to be wrong about is the way back.
+
+You put your shoulder into the gap in the panel.
+
+There is no falling and no weather. There is a long moment of being nowhere at all, which you are getting used to, and which you hope very much you will never get used to.
+
+Then light. Warm, close, low down, and moving.`;
+
+export const RETURN_ARRIVAL = `You come out onto your hands and knees on a floor you swept your own knee-dust off this morning.
+
+It is a small square room, four steps across, with three walls cut in overlapping scales and a worked pillar in the middle of it holding the roof up. You know the crack at the base of that pillar. You know the grit under it.
+
+Low on the fourth wall, a stone shutter is standing open in its grooves with an oak wedge driven in under it, and in the alcove behind the shutter there is a hooded lantern, lit, sitting level in a dish cut for something about that size.
+
+The light from it goes up through the carved eye above the alcove and lands on the patterned wall as a long bright fan. And in the fan, one line of the scale-pattern is reading as a shadow instead of a cut.
+
+Somebody is kneeling in front of that wall with their back to you.
+
+They are sixteen years old. They have been sixteen for about as long as they have been awake. There is lime dust on the shoulder of their shirt from a wall they will not see built for a hundred years, and they are leaning forward with one hand half-raised towards the seam, and they have not turned round yet, because the room is doing something to sound that it has never done before and they have not worked out what.
+
+You are not quiet. You land badly and you are breathing like a man who has carried a mallet up a hill with one eye.
+
+They turn round.`;
+
+export const END_OF_CONTENT_RETURN = `— End of the current content —
+
+Everything after this — what the two of you say, what you do about it, and what it costs — is the last chapter, and it is not written yet.
+
+This is not the ending. Nothing here is the end of the story, and nothing here has been decided.
+
+You can look, read your JOURNAL, check your INVENTORY, or use Settings to restart from the checkpoint at the start of this chapter. Export Save works whether or not this browser is keeping your progress.`;

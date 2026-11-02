@@ -1,5 +1,6 @@
 import type { GameState } from '../engine/types';
 import { FLAGS } from './flags';
+import { missingEvidence } from '../engine/puzzles/evidence';
 
 const f = (state: GameState, key: string): boolean => Boolean(state.flags[key]);
 
@@ -11,6 +12,10 @@ export type HintContext =
   | 'access'
   | 'recite'
   | 'worksite'
+  | 'future_out'
+  | 'investigate'
+  | 'seal'
+  | 'home'
   | 'done';
 
 /**
@@ -22,7 +27,14 @@ export type HintContext =
  * is no timer.
  */
 export function hintContext(state: GameState): HintContext {
-  if (state.era === 'future' || f(state, FLAGS.crossedForward)) return 'done';
+  if (state.chapter === 'return') return 'done';
+  if (state.era === 'future') {
+    if (state.locationId === 'future.sealed_chamber') return 'home';
+    if (f(state, FLAGS.sealOpened)) return 'home';
+    if (f(state, FLAGS.knowsResponsibility)) return 'seal';
+    if (f(state, FLAGS.leftTheHill)) return 'investigate';
+    return 'future_out';
+  }
   // Standing in the workings beats everything: that is what the player is
   // looking at. Otherwise an open question in the square comes first, because
   // it is the thing the aperture is waiting on.
@@ -216,6 +228,114 @@ const WORKSITE_LADDER: Array<(state: GameState) => string> = [
   },
 ];
 
+/** Out of a broken room with one way out of it. */
+const FUTURE_OUT_LADDER: Array<(state: GameState) => string> = [
+  () =>
+    'The stair you came up this morning is closed and it is not going to open. The other thing ' +
+    'in this room is a tear in the wall with daylight in it.',
+  () =>
+    'EXAMINE TEAR, if you want to know what you are getting into. Then go UP, or OUT, or CLIMB ' +
+    '— they all mean the same thing here.',
+  () =>
+    'Up through the tear onto the hillside, and then EAST and down to the village. Everything ' +
+    'in this chapter is down there.',
+];
+
+/** The evidence, and the thing the hero has to do with it. */
+const INVESTIGATE_LADDER: Array<(state: GameState) => string> = [
+  () =>
+    'There is a woman sitting against a chest in that square, and a standing stone by the well. ' +
+    'Those two are most of it.',
+  (state) => {
+    const missing = missingEvidence(state);
+    if (missing.length === 0) {
+      return (
+        'You have everything. Stop and put it together: REFLECT, or *add it up* in the list of ' +
+        'actions. It is a deliberate thing the hero does, and nothing will do it for you.'
+      );
+    }
+    return (
+      'Four things, and you can find them in any order:\n\n' +
+      "1. Rue's records — ask her what she is sitting against, and read the Account she hands " +
+      'over.\n' +
+      '2. The memorial by the well, and the year at the foot of it.\n' +
+      '3. The oldest thing Rue knows, which is not written down. Ask her, after the chest.\n' +
+      '4. Your own JOURNAL, read here, with the other three in your head.\n\n' +
+      `Still missing: ${missing.join('; ')}.`
+    );
+  },
+  (state) => {
+    const steps: string[] = [];
+    if (!f(state, FLAGS.readAccount)) {
+      steps.push('TALK TO RUE, ask what she is sitting against, LEAVE, then EXAMINE ACCOUNT.');
+    }
+    if (!f(state, FLAGS.heardMissingChild)) {
+      steps.push('TALK TO RUE again and ask about the oldest thing she knows.');
+    }
+    if (!f(state, FLAGS.readMemorial)) steps.push('EXAMINE MEMORIAL.');
+    if (!f(state, FLAGS.checkedJournal)) steps.push('JOURNAL, standing here.');
+    steps.push('Then REFLECT.');
+    steps.push(
+      'While you are in the square: EXAMINE SHELL, where the workshop was. There are things ' +
+        'in it you are going to want.'
+    );
+    return 'The full solution:\n\n' + steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  },
+];
+
+/** The wall somebody built on purpose. */
+const SEAL_LADDER: Array<(state: GameState) => string> = [
+  () =>
+    'The way home is behind the stone wall under the overhang, and the stair to it from the ' +
+    'inside is gone. You are going to have to open the wall.',
+  (state) =>
+    f(state, FLAGS.knowsLooseCourse)
+      ? 'Third course up, left-hand end. Put something under it before you swing, or the whole ' +
+        'wall settles onto it and you have made it worse.'
+      : 'A dry wall has one bad course and the whole job is knowing which. Somebody sits on ' +
+        'that rubble every day with a knife and a tally stick. Ask her.',
+  (state) => {
+    const steps: string[] = [];
+    if (!state.inventory.includes('mallet')) {
+      steps.push('EXAMINE SHELL in the square and TAKE MAUL. A mason\'s mallet would do too.');
+    }
+    if (!state.inventory.includes('wedge')) {
+      steps.push('TAKE BLOCKS from the hollow in the shell — the old oak wedges.');
+    }
+    if (!f(state, FLAGS.knowsLooseCourse)) {
+      steps.push(
+        'TALK TO SORREL at the mouth: ask why the hill is walled up, then whether the wall is ' +
+          'as good as it looks.'
+      );
+    }
+    if (!f(state, FLAGS.coursePropped)) steps.push('USE WEDGE ON SEAL.');
+    steps.push('BREAK SEAL. Twice.');
+    return 'The full solution:\n\n' + steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  },
+];
+
+/** The one position nobody has ever lit. */
+const HOME_LADDER: Array<(state: GameState) => string> = [
+  () =>
+    'Three positions up that panel. Two of them are plastered flat and solid. The third is ' +
+    'cracked.',
+  () =>
+    'EXAMINE FILL, then CLEAR FILL. Then the dish behind it takes a lamp like the other two ' +
+    'did, and the lamp has to be lit, and going through is its own separate decision.',
+  (state) => {
+    const steps: string[] = [];
+    if (!f(state, FLAGS.examinedFill)) steps.push('EXAMINE FILL.');
+    if (!f(state, FLAGS.fillCleared)) steps.push('CLEAR FILL.');
+    if (!state.inventory.includes('lantern') && !f(state, FLAGS.lanternInMiddleDish)) {
+      steps.push('Find your lantern — INVENTORY will say where you left it.');
+    }
+    if (!f(state, FLAGS.lanternInMiddleDish)) steps.push('PLACE LANTERN IN MIDDLE DISH.');
+    if (!f(state, FLAGS.lanternLit)) steps.push('LIGHT LANTERN.');
+    steps.push('ENTER APERTURE.');
+    return 'The full solution:\n\n' + steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  },
+];
+
 const LADDERS: Record<HintContext, Array<(state: GameState) => string>> = {
   prep: PREP_LADDER,
   puzzle: PUZZLE_LADDER,
@@ -224,6 +344,10 @@ const LADDERS: Record<HintContext, Array<(state: GameState) => string>> = {
   access: ACCESS_LADDER,
   recite: RECITE_LADDER,
   worksite: WORKSITE_LADDER,
+  future_out: FUTURE_OUT_LADDER,
+  investigate: INVESTIGATE_LADDER,
+  seal: SEAL_LADDER,
+  home: HOME_LADDER,
   done: [
     () =>
       'This is as far as the story is built. There is nothing here left to solve, and this is ' +

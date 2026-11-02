@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { begin, progressOf, type, typeAll } from '../testing/harness';
+import {
+  begin,
+  finishChapterThree,
+  hasReturned,
+  progressOf,
+  type,
+  typeAll,
+} from '../testing/harness';
 import { resolve } from './reducer';
 import { getAffordances, type Affordance } from './affordances';
 import type { GameAction, GameState } from './types';
@@ -40,6 +47,7 @@ const placeIn = (item: string, target: string) => (a: Affordances) =>
 const itemVerb = (item: string, verb: string) => (a: Affordances) =>
   a.items.find((i) => i.id === item)?.actions.find((x) => x.key === `item-${item}-${verb}`);
 const person = (id: string) => (a: Affordances) => a.people.find((p) => p.key === `talk-${id}`);
+const meta = (key: string) => (a: Affordances) => a.meta.find((m) => m.key === key);
 const topic = (id: string) => (a: Affordances) => a.topics?.find((t) => t.key === `topic-${id}`);
 /** Handing something over is a target in the item's "use on…" list. */
 const giveTo = (item: string, personId: string) => (a: Affordances) =>
@@ -109,6 +117,38 @@ describe('the two input modes are the same game', () => {
       { typed: 'examine pillar', chosen: objectVerb('worksite.pillar', 'examine') },
       { typed: 'place lantern in high dish', chosen: placeIn('lantern', 'worksite.highdish') },
       { typed: 'enter aperture', chosen: objectVerb('worksite.aperture', 'cross') },
+      // Chapter 3
+      { typed: 'go up', chosen: exit('to_path') },
+      { typed: 'examine bird', chosen: objectVerb('futurepath.bird', 'examine') },
+      { typed: 'go east', chosen: exit('to_square') },
+      { typed: 'talk to rue', chosen: person('rue') },
+      { typed: 'what she is sitting against', chosen: topic('the_chest') },
+      { typed: 'the oldest thing she knows', chosen: topic('the_child') },
+      { typed: 'leave', chosen: leave() },
+      { typed: 'examine account', chosen: objectVerb('futuresquare.account', 'examine') },
+      { typed: 'examine memorial', chosen: objectVerb('futuresquare.memorial', 'examine') },
+      { typed: 'journal', chosen: meta('meta-journal') },
+      { typed: 'examine shell', chosen: objectVerb('futuresquare.workshop', 'examine') },
+      { typed: 'take maul', chosen: objectVerb('futuresquare.maul', 'take') },
+      // The synthesis, offered as an action in both modes.
+      { typed: 'reflect', chosen: meta('reflect') },
+      { typed: 'go west', chosen: exit('to_path') },
+      { typed: 'go west', chosen: exit('to_entrance') },
+      { typed: 'talk to sorrel', chosen: person('sorrel') },
+      { typed: 'why the hill is walled up', chosen: topic('the_seal') },
+      { typed: 'whether the wall is as good as it looks', chosen: topic('loose_course') },
+      { typed: 'leave', chosen: leave() },
+      { typed: 'use wedge on seal', chosen: useOn('wedge', 'futureentrance.seal') },
+      { typed: 'break seal', chosen: objectVerb('futureentrance.seal', 'break') },
+      { typed: 'break seal', chosen: objectVerb('futureentrance.seal', 'break') },
+      { typed: 'go west', chosen: exit('to_sealed') },
+      { typed: 'examine fill', chosen: objectVerb('futuresealed.fill', 'examine') },
+      { typed: 'clear fill', chosen: objectVerb('futuresealed.fill', 'clear') },
+      {
+        typed: 'place lantern in middle dish',
+        chosen: placeIn('lantern', 'futuresealed.middledish'),
+      },
+      { typed: 'enter aperture', chosen: objectVerb('futuresealed.aperture', 'cross') },
     ];
 
     let typed = begin('basilia');
@@ -120,9 +160,8 @@ describe('the two input modes are the same game', () => {
       expect(progressOf(selected), `after "${step.typed}"`).toEqual(progressOf(typed));
     }
 
-    expect(typed.locationId).toBe('future.deep_chamber');
-    expect(typed.ended).toBe(true);
-    expect(selected.ended).toBe(true);
+    expect(hasReturned(typed)).toBe(true);
+    expect(hasReturned(selected)).toBe(true);
   });
 });
 
@@ -144,6 +183,10 @@ describe('end to end', () => {
     'past.square',
     'past.worksite',
     'future.deep_chamber',
+    'future.cave_path',
+    'future.square',
+    'future.entrance',
+    'future.sealed_chamber',
   ];
 
   it('completes the chapter by typing, visiting every location', () => {
@@ -250,9 +293,11 @@ describe('end to end', () => {
       'examine pillar',
       'examine aperture',
       'take mallet',
-      // The low position, tried on purpose. It costs nothing and it is the
-      // cleanest confirmation the hero can get that the heights are places.
+      // The low position, tried on purpose. Standing the lamp and going
+      // through are separate acts; it costs nothing, and it is the cleanest
+      // confirmation the hero can get that the heights are places.
       'place lantern in low dish',
+      'enter aperture',
       // P4: still owed, and the aperture will not take them until it is paid.
       'south',
       'up',
@@ -270,15 +315,60 @@ describe('end to end', () => {
       'examine basin',
       'examine stair',
       'examine tear',
+      // Chapter 3: out of the hill, the settlement, the evidence, the seal.
+      'up',
+      'examine sky',
+      'examine bird',
+      'examine ground',
+      'east',
+      'examine well',
+      'examine memorial',
+      'examine chest',
+      'talk to rue',
+      'what she is sitting against',
+      'the writing from other places',
+      'asking to open the hill',
+      'leave',
+      // Read it before asking her about it: her opinions are gated on having
+      // seen the thing she has opinions about.
+      'examine account',
+      'talk to rue',
+      'the oldest thing she knows',
+      'what she thinks came',
+      'how any of it works',
+      'leave',
+      'journal',
+      'examine shell',
+      'reflect',
+      'west',
+      'west',
+      'examine seal',
+      'examine mark',
+      'talk to sorrel',
+      'where you have come from',
+      'why the hill is walled up',
+      'whether the wall is as good as it looks',
+      'what is left anywhere else',
+      'leave',
+      'use wedge on seal',
+      'break seal',
+      'break seal',
+      'west',
+      'examine fill',
+      'clear fill',
+      'examine middle dish',
+      'examine pillar',
+      'place lantern in middle dish',
+      'enter aperture',
+      'examine them',
+      'examine their lantern',
+      'examine seam',
     ]);
 
-    expect(state.ended).toBe(true);
-    expect(state.era).toBe('future');
-    expect(state.chapter).toBe('future');
-    expect(state.locationId).toBe('future.deep_chamber');
-    expect(state.objective).toBe(OBJECTIVES.future);
+    expect(hasReturned(state)).toBe(true);
+    expect(state.objective).toBe(OBJECTIVES.returned);
     expect([...state.visited].sort()).toEqual([...EXPECTED_ORDER].sort());
-    expect(state.journal.length).toBeGreaterThan(24);
+    expect(state.journal.length).toBeGreaterThan(34);
     // Nothing in this run should have been rejected as nonsense.
     expect(state.transcript.filter((e) => e.kind === 'failure')).toEqual([]);
   });
@@ -357,12 +447,37 @@ describe('end to end', () => {
       exit('to_worksite'),
       placeIn('lantern', 'worksite.highdish'),
       objectVerb('worksite.aperture', 'cross'),
+      exit('to_path'),
+      objectVerb('futurepath.sky', 'examine'),
+      objectVerb('futurepath.bird', 'examine'),
+      exit('to_square'),
+      person('rue'),
+      topic('the_chest'),
+      topic('the_child'),
+      leave(),
+      objectVerb('futuresquare.account', 'examine'),
+      objectVerb('futuresquare.memorial', 'examine'),
+      meta('meta-journal'),
+      objectVerb('futuresquare.workshop', 'examine'),
+      meta('reflect'),
+      exit('to_path'),
+      exit('to_entrance'),
+      person('sorrel'),
+      topic('the_seal'),
+      topic('loose_course'),
+      leave(),
+      useOn('wedge', 'futureentrance.seal'),
+      objectVerb('futureentrance.seal', 'break'),
+      objectVerb('futureentrance.seal', 'break'),
+      exit('to_sealed'),
+      objectVerb('futuresealed.fill', 'examine'),
+      objectVerb('futuresealed.fill', 'clear'),
+      placeIn('lantern', 'futuresealed.middledish'),
+      objectVerb('futuresealed.aperture', 'cross'),
     ];
     for (const step of path) state = click(state, step);
 
-    expect(state.ended).toBe(true);
-    expect(state.chapter).toBe('future');
-    expect(state.locationId).toBe('future.deep_chamber');
+    expect(hasReturned(state)).toBe(true);
     expect([...state.visited].sort()).toEqual([...EXPECTED_ORDER].sort());
   });
 });
@@ -409,10 +524,40 @@ describe('the documented shortest route', () => {
     'examine dishes',
     'place lantern in high dish',
     'enter aperture',
+    'up',
+    'examine bird',
+    'east',
+    'talk to rue',
+    'what she is sitting against',
+    'the oldest thing she knows',
+    'leave',
+    'examine account',
+    'examine memorial',
+    'journal',
+    'examine shell',
+    'take maul',
+    'take blocks',
+    'reflect',
+    'west',
+    'west',
+    'talk to sorrel',
+    'why the hill is walled up',
+    'whether the wall is as good as it looks',
+    'leave',
+    'use wedge on seal',
+    'break seal',
+    'break seal',
+    'west',
+    'examine fill',
+    'clear fill',
+    'place lantern in middle dish',
+    'enter aperture',
   ];
 
   /** Where the opening chapter's own shortest route used to stop. */
   const OPENING_LENGTH = 13;
+  /** Where the second chapter's shortest route stopped. */
+  const SECOND_LENGTH = 36;
 
   it('finishes the chapter with nothing refused along the way', () => {
     let state = begin('basil');
@@ -421,14 +566,13 @@ describe('the documented shortest route', () => {
       expect(result.accepted, `"${line}" was refused at ${state.locationId}`).toBe(true);
       state = result.state;
     }
-    expect(SHORTEST).toHaveLength(36);
-    expect(state.ended).toBe(true);
-    expect(state.locationId).toBe('future.deep_chamber');
-    expect(state.objective).toBe(OBJECTIVES.future);
+    expect(SHORTEST).toHaveLength(64);
+    expect(hasReturned(state)).toBe(true);
+    expect(state.objective).toBe(OBJECTIVES.returned);
   });
 
   it('takes the recitation-first order, so both recovery routes are load-bearing', () => {
-    const state = typeAll(begin(), SHORTEST);
+    const state = typeAll(begin(), SHORTEST.slice(0, SECOND_LENGTH));
     expect(state.flags[FLAGS.recitedProphecy]).toBe(true);
     // Lovage had already turned against them, so this route never used water.
     expect(state.flags[FLAGS.lovageDistrust]).toBe(true);
@@ -481,7 +625,10 @@ describe('the documented shortest route', () => {
       'enter aperture',
     ]);
     expect(state.locationId).toBe('future.deep_chamber');
-    expect(state.ended).toBe(true);
+
+    // And on through the ruined century, borrowing both tools from the shed.
+    const finished = finishChapterThree(state);
+    expect(hasReturned(finished.state)).toBe(true);
   });
 
   it('does not require the echo chamber or any conversation before the cave', () => {
@@ -557,7 +704,8 @@ describe('selectable mode can reach everything typing can', () => {
       'enter aperture',
     ]);
     expect(finished.locationId).toBe('future.deep_chamber');
-    expect(finished.ended).toBe(true);
+    const end = finishChapterThree(finished);
+    expect(hasReturned(end.state)).toBe(true);
   });
 });
 

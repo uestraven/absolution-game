@@ -4,6 +4,7 @@ import { OBJECTS, objectVerbs } from '../content/objects';
 import { FLAGS } from '../content/flags';
 import { activeTopics, peopleHere, roomItems, visibleExits, visibleObjects } from './selectors';
 import { canRecite } from './puzzles/recitation';
+import { canReflect } from './puzzles/evidence';
 
 /**
  * The selectable-mode action list, computed by the engine rather than the UI.
@@ -61,6 +62,8 @@ const VERB_LABELS: Record<string, string> = {
   light: 'Light',
   cross: 'Step into it',
   fill: 'Fill from it',
+  break: 'Break it open',
+  clear: 'Clear it away',
 };
 
 function verbAction(objectId: string, verb: string): GameAction | null {
@@ -78,6 +81,10 @@ function verbAction(objectId: string, verb: string): GameAction | null {
       return { type: 'CROSS_THRESHOLD' };
     case 'fill':
       return { type: 'FILL', target: objectId };
+    case 'break':
+      return { type: 'BREAK', target: objectId };
+    case 'clear':
+      return { type: 'CLEAR', target: objectId };
     default:
       return null;
   }
@@ -245,10 +252,31 @@ export function getAffordances(state: GameState): Affordances {
 
   if (canSpeak && state.pending?.kind !== 'conversation') meta.push(reciteAffordance);
 
+  /*
+   * The synthesis, offered once the hero actually has the pieces. A deliberate
+   * action in both modes — it is never taken on the player's behalf, and it is
+   * not hidden behind typing a verb somebody has to guess.
+   */
+  if (canReflect(state)) {
+    meta.push({
+      key: 'reflect',
+      label: 'add it up',
+      action: { type: 'REFLECT' },
+    });
+  }
+
   // Items resting in a fixture can always be recovered.
   for (const [id, placement] of Object.entries(state.placements)) {
     if (placement.kind !== 'fixture') continue;
-    if (OBJECTS[placement.fixtureId]?.locationId !== state.locationId) continue;
+    const fixture = OBJECTS[placement.fixtureId];
+    if (fixture?.locationId !== state.locationId) continue;
+    /*
+     * Not from a host that is not currently part of the room. The shutter in
+     * the sealed chamber is a different object's business on the return, and
+     * offering to take something back out of it would be reaching into
+     * somebody else's belongings.
+     */
+    if (fixture.hiddenWhen?.(state) ?? false) continue;
     const itemId = id as ItemId;
     const host = objects.find((o) => o.id === placement.fixtureId);
     const entries: Affordance[] = [];

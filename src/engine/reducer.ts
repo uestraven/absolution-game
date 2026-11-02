@@ -38,6 +38,14 @@ import {
   placeLanternInDish,
   type DishId,
 } from './puzzles/worksite';
+import { doReflect } from './puzzles/evidence';
+import { propCourse, strikeSeal, unpropCourse } from './puzzles/futureSeal';
+import {
+  clearFill,
+  enterPanel,
+  placeLanternInMiddleDish,
+  returnBoundary,
+} from './puzzles/futureReturn';
 import { CONTENT_VERSION, SCHEMA_VERSION } from './types';
 import { LOCATIONS } from '../content/locations';
 import { OBJECTS, OBJECTS_BY_LOCATION, objectVerbs } from '../content/objects';
@@ -99,11 +107,18 @@ export function eraOf(locationId: LocationId): GameState['era'] {
   return 'present';
 }
 
-/** The chapter that belongs with an era. Enforced by the validator. */
-export function chapterForEra(era: GameState['era']): GameState['chapter'] {
-  if (era === 'past') return 'crossing';
-  if (era === 'future') return 'future';
-  return 'rite';
+/**
+ * The chapters that may legitimately occur in an era.
+ *
+ * Not one-to-one any more: the original era happens twice, once on the way out
+ * and once on the way back, and those are different chapters in the same
+ * rooms. This is the single declaration of the legal pairs, and save
+ * validation checks membership against it.
+ */
+export function chaptersForEra(era: GameState['era']): ReadonlyArray<GameState['chapter']> {
+  if (era === 'past') return ['crossing'];
+  if (era === 'future') return ['future'];
+  return ['rite', 'return'];
 }
 
 /* ------------------------------------------------------------------ *
@@ -184,7 +199,12 @@ function enterLocation(draft: Draft, locationId: LocationId, events: NarrativeEv
     draft,
     (OBJECTS_BY_LOCATION[locationId] ?? []).filter((o) => o.initiallyVisible).map((o) => o.id)
   );
-  discover(draft, (PEOPLE_BY_LOCATION[locationId] ?? []).map((p) => p.id));
+  discover(
+    draft,
+    (PEOPLE_BY_LOCATION[locationId] ?? [])
+      .filter((p) => p.available?.(draft) ?? true)
+      .map((p) => p.id)
+  );
 
   const firstVisit = !draft.visited.includes(locationId);
   if (firstVisit) draft.visited.push(locationId);
@@ -193,7 +213,34 @@ function enterLocation(draft: Draft, locationId: LocationId, events: NarrativeEv
   // Beats that belong to arriving somewhere, in a fixed order and each one
   // latched so a reload cannot replay it.
   maybePastRealisation(draft, events);
+  maybeFutureBeats(draft, events);
   maybeSymptom(draft, events);
+}
+
+/**
+ * Two latched beats in the ruined century: getting out of the hill, and
+ * reaching the settlement. Each only moves the objective, which is what the
+ * player needs next rather than a conclusion they have not earned.
+ */
+function maybeFutureBeats(draft: Draft, events: NarrativeEvent[]): void {
+  if (draft.era !== 'future') return;
+  if (draft.locationId === 'future.cave_path' && !f(draft, FLAGS.leftTheHill)) {
+    draft.flags[FLAGS.leftTheHill] = true;
+    journalEvents(
+      addJournal(draft, [
+        {
+          id: 'j.out_of_the_hill',
+          text:
+            'Out of the hill through the tear. The valley is my valley, the ridge is the ' +
+            'ridge, and the sky has no weather in it and does not move.',
+        },
+      ]),
+      events
+    );
+  }
+  if (draft.locationId === 'future.square' && !f(draft, FLAGS.knowsResponsibility)) {
+    setObjective(draft, OBJECTIVES.settlement, events);
+  }
 }
 
 
@@ -247,6 +294,8 @@ const CONVERSATION_SAFE: ReadonlySet<GameAction['type']> = new Set<GameAction['t
   // Said to the people in front of you: it belongs inside the conversation
   // rather than turning away from it.
   'RECITE',
+  // Thinking is not turning away from anybody.
+  'REFLECT',
 ]);
 
 const NON_TURN: ReadonlySet<GameAction['type']> = new Set<GameAction['type']>([
@@ -386,6 +435,15 @@ function dispatch(draft: Draft, action: GameAction, events: NarrativeEvent[]): R
     case 'FILL':
       return doFill(draft, action.target, events);
 
+    case 'BREAK':
+      return doBreak(draft, action.target, events);
+
+    case 'CLEAR':
+      return doClear(draft, action.target, events);
+
+    case 'REFLECT':
+      return doReflect(draft, events);
+
     case 'GIVE':
       return doGive(draft, action.item, action.target, events);
 
@@ -500,6 +558,10 @@ function doGo(draft: Draft, target: string, events: NarrativeEvent[]): ResolveRe
           exit.label.toLowerCase().includes(wanted) ||
           (exit.aliases ?? []).some((alias) => alias.toLowerCase() === wanted))
     );
+    if (draft.chapter === 'return') {
+      events.push({ kind: 'failure', text: returnBoundary(draft, 'leave') });
+      return commit(draft, events, false);
+    }
     if (blocked?.id === 'to_worksite' && draft.locationId === 'past.deep_chamber') {
       events.push({
         kind: 'failure',
@@ -699,6 +761,33 @@ function retrieveItem(draft: Draft, item: ItemId, events: NarrativeEvent[]): Res
             : ''),
     });
     return commit(draft, events, true);
+  }
+
+  if (item === 'lantern' && itemIsIn(draft, 'lantern', 'worksite.lowdish')) {
+    giveItem(draft, item);
+    draft.flags[FLAGS.lanternInLowDish] = false;
+    events.push({
+      kind: 'success',
+      text: 'You crouch and lift the lantern back out of the low dish.',
+    });
+    return commit(draft, events, true);
+  }
+
+  if (item === 'lantern' && itemIsIn(draft, 'lantern', 'futuresealed.middledish')) {
+    giveItem(draft, item);
+    draft.flags[FLAGS.lanternInMiddleDish] = false;
+    events.push({
+      kind: 'success',
+      text:
+        'You lift the lantern back out of the middle dish, and the pressure goes out of your ' +
+        'jaw, and the panel is a panel again. It will still be there.',
+    });
+    return commit(draft, events, true);
+  }
+
+  if (item === 'wedge' && itemIsIn(draft, 'wedge', 'futureentrance.seal')) {
+    giveItem(draft, item);
+    return unpropCourse(draft, events);
   }
 
   if (item === 'lantern' && itemIsIn(draft, 'lantern', 'worksite.highdish')) {
@@ -925,6 +1014,18 @@ function doUse(
   if (item === 'water_skins' && target.kind === 'person' && target.id === 'lovage') {
     return giveWater(draft, events);
   }
+  if (item === 'wedge' && target.kind === 'object' && target.id === 'futureentrance.seal') {
+    return propCourse(draft, events);
+  }
+  if (item === 'mallet' && target.kind === 'object' && target.id === 'futureentrance.seal') {
+    return strikeSeal(draft, events);
+  }
+  if (item === 'mallet' && target.kind === 'object' && target.id === 'futuresealed.fill') {
+    return clearFill(draft, events);
+  }
+  if (item === 'lantern' && target.kind === 'object' && target.id === 'futuresealed.middledish') {
+    return placeLanternInMiddleDish(draft, events);
+  }
   if (item === 'mallet' && target.kind === 'object' && target.id === 'worksite.pillar') {
     events.push({
       kind: 'failure',
@@ -1028,6 +1129,22 @@ function doPlace(
     );
   }
   const target = targetRefs[0]!;
+
+  if (target.kind === 'object' && target.id === 'futuresealed.middledish') {
+    if (item !== 'lantern') {
+      events.push({
+        kind: 'failure',
+        text:
+          `The dish is cut for a lamp and nothing else. The ${ITEMS[item].name} would sit in ` +
+          'it and the panel would go on being a panel.',
+      });
+      return commit(draft, events, false);
+    }
+    return placeLanternInMiddleDish(draft, events);
+  }
+  if (target.kind === 'object' && target.id === 'futureentrance.seal' && item === 'wedge') {
+    return propCourse(draft, events);
+  }
 
   const dish = target.kind === 'object' ? DISH_OF[target.id] : undefined;
   if (dish !== undefined) {
@@ -1324,6 +1441,13 @@ function doCross(draft: Draft, events: NarrativeEvent[]): ResolveResult {
   if (draft.locationId === 'past.worksite') {
     return enterAperture(draft, events);
   }
+  if (draft.locationId === 'future.sealed_chamber') {
+    return enterPanel(draft, events);
+  }
+  if (draft.chapter === 'return') {
+    events.push({ kind: 'failure', text: returnBoundary(draft, 'cross') });
+    return commit(draft, events, false);
+  }
   if (draft.locationId === 'past.deep_chamber') {
     events.push({ kind: 'narration', text: THRESHOLD_SPENT });
     return commit(draft, events, true);
@@ -1399,6 +1523,81 @@ function maybePastRealisation(draft: Draft, events: NarrativeEvent[]): boolean {
 /* ------------------------------------------------------------------ *
  * Chapter 2 verbs
  * ------------------------------------------------------------------ */
+
+/**
+ * Swinging something heavy. One target in the game so far, and a refusal that
+ * explains what the thing in front of you actually needs rather than refusing
+ * in general.
+ */
+function doBreak(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {
+  const refs = resolveNoun(draft, target);
+  if (refs.length === 0) {
+    events.push({ kind: 'failure', text: `You cannot see any ${target.trim()} here.` });
+    return commit(draft, events, false);
+  }
+  if (refs.length > 1) {
+    return askWhich(
+      draft,
+      events,
+      'Break which one?',
+      refs.map((r) => ({ label: refLabel(r), action: { type: 'BREAK', target: r.id } as GameAction }))
+    );
+  }
+  const ref = refs[0]!;
+
+  if (ref.kind === 'object' && ref.id === 'futureentrance.seal') {
+    return strikeSeal(draft, events);
+  }
+  if (ref.kind === 'object' && ref.id === 'futuresealed.fill') {
+    return clearFill(draft, events);
+  }
+  if (draft.chapter === 'return') {
+    events.push({ kind: 'failure', text: returnBoundary(draft, 'violence') });
+    return commit(draft, events, false);
+  }
+  if (ref.kind === 'person') {
+    events.push({ kind: 'failure', text: `You are not going to do that to ${ref.label}.` });
+    return commit(draft, events, false);
+  }
+  events.push({
+    kind: 'failure',
+    text:
+      `Breaking the ${ref.label} would not get you anything, and you would have to live with ` +
+      'having done it.',
+  });
+  return commit(draft, events, false);
+}
+
+/** Shifting loose material out of the way of whatever is behind it. */
+function doClear(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {
+  const refs = resolveNoun(draft, target);
+  if (refs.length === 0) {
+    events.push({ kind: 'failure', text: `You cannot see any ${target.trim()} here.` });
+    return commit(draft, events, false);
+  }
+  const ref = refs[0]!;
+  if (ref.kind === 'object' && ref.id === 'futuresealed.fill') {
+    return clearFill(draft, events);
+  }
+  if (ref.kind === 'object' && ref.id === 'futuredeep.stair') {
+    draft.flags[FLAGS.triedBlockedStair] = true;
+    events.push({
+      kind: 'failure',
+      text:
+        'You pull at it for a while. The pieces at the face are the size of your head and ' +
+        'bedded into each other, and behind every one you shift there is another one, and the ' +
+        'whole thing has had a century to settle into being a wall.\n\n' +
+        'A gang with bars and a week could do it. You have a mallet and one eye\'s worth of ' +
+        'depth and no week at all.',
+    });
+    return commit(draft, events, false);
+  }
+  events.push({
+    kind: 'failure',
+    text: `There is nothing loose about the ${ref.label}.`,
+  });
+  return commit(draft, events, false);
+}
 
 function doFill(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {
   const refs = resolveNoun(draft, target);
@@ -1549,6 +1748,15 @@ function doWait(draft: Draft, events: NarrativeEvent[]): ResolveResult {
 }
 
 function doJournal(draft: Draft, events: NarrativeEvent[]): ResolveResult {
+  /*
+   * Reading your own record back is one of the four things the inference needs,
+   * and it has to be the player's act rather than something assumed: standing
+   * in that square with the memorial behind you and going through your own
+   * dates is the moment the other three pieces have something to attach to.
+   */
+  if (draft.era === 'future' && draft.journal.length > 0) {
+    draft.flags[FLAGS.checkedJournal] = true;
+  }
   if (draft.journal.length === 0) {
     events.push({
       kind: 'system',

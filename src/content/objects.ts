@@ -507,6 +507,14 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['shutter', 'stone shutter', 'slab', 'frame', 'grooved frame', 'stone'],
     acceptsItems: true,
     locationId: 'present.sealed_chamber',
+    /*
+     * Hidden on the return. The same stone, but the lamp in that alcove and
+     * the wedge under that shutter belong to somebody else now, and these
+     * descriptions read the player's own placement flags. The return gets its
+     * own objects rather than borrowing ones that would describe the wrong
+     * person's belongings.
+     */
+    hiddenWhen: (state) => state.chapter === 'return',
     initiallyVisible: true,
     listAs: (state) =>
       f(state, FLAGS.shutterHeld)
@@ -550,6 +558,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['alcove', 'recess', 'niche', 'squared recess', 'hollow'],
     acceptsItems: true,
     locationId: 'present.sealed_chamber',
+    hiddenWhen: (state) => state.chapter === 'return',
     initiallyVisible: false,
     listAs: (state) =>
       f(state, FLAGS.shutterHeld)
@@ -585,6 +594,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['eye', 'carved eye', 'hole', 'stone eye', 'opening in the wall'],
     acceptsItems: true,
     locationId: 'present.sealed_chamber',
+    hiddenWhen: (state) => state.chapter === 'return',
     initiallyVisible: true,
     listAs: c('a carved eye pierced through the wall above the shutter'),
     verbs: () => ['examine'],
@@ -623,6 +633,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     ],
     acceptsItems: true,
     locationId: 'present.sealed_chamber',
+    hiddenWhen: (state) => state.chapter === 'return',
     initiallyVisible: true,
     listAs: c('walls cut in a pattern of overlapping scales'),
     verbs: (state) => (f(state, FLAGS.seamRevealed) && !f(state, FLAGS.passageOpen) ? ['examine', 'open'] : ['examine']),
@@ -665,21 +676,38 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['seam', 'line', 'crack', 'joint', 'edge'],
     locationId: 'present.sealed_chamber',
     initiallyVisible: false,
-    hiddenWhen: (state) => f(state, FLAGS.passageOpen),
-    listAs: c('a seam in the pattern, picked out by the light'),
-    verbs: () => ['examine', 'open'],
-    description: () =>
-      'It runs up from the floor to shoulder height, turns, runs level for the width of a door, ' +
-      'and turns down again. Where the light crosses it the gap is the thickness of a knife.\n\n' +
-      'The scale-pattern has been laid out so that the seam falls exactly along the edge of one ' +
-      'row. Straight on, under a torch, it is invisible. You have been standing in front of it ' +
-      'for several minutes.',
+    /*
+     * One seam, in two chapters. On the return it is the same cut in the same
+     * wall with the same light on it, so it is this object with a second
+     * description rather than a duplicate the room would have to disambiguate.
+     */
+    hiddenWhen: (state) => state.chapter !== 'return' && f(state, FLAGS.passageOpen),
+    listAs: (state) =>
+      state.chapter === 'return'
+        ? c('the seam, picked out in the fan of light')
+        : c('a seam in the pattern, picked out by the light'),
+    verbs: (state) => (state.chapter === 'return' ? ['examine'] : ['examine', 'open']),
+    description: (state) =>
+      state.chapter === 'return'
+        ? 'One line of the scale-pattern, inside the bright fan, reading as a shadow instead ' +
+          'of a cut. Floor to shoulder height, along the edge of one row.\n\n' +
+          'You know exactly how long it takes from here. You get up, you put both hands flat ' +
+          'on the wall above it, you lean, and the whole panel swings back on stone that was ' +
+          'cut to pivot, and there is a passage going down.\n\n' +
+          'It takes about a minute. There is about a minute.'
+        : 'It runs up from the floor to shoulder height, turns, runs level for the width of a ' +
+          'door, and turns down again. Where the light crosses it the gap is the thickness of ' +
+          'a knife.\n\n' +
+          'The scale-pattern has been laid out so that the seam falls exactly along the edge ' +
+          'of one row. Straight on, under a torch, it is invisible. You have been standing in ' +
+          'front of it for several minutes.',
   },
   {
     id: 'sealed.passage',
     name: 'opened passage',
     nouns: ['passage', 'opening', 'opened passage', 'doorway', 'door', 'steps'],
     locationId: 'present.sealed_chamber',
+    hiddenWhen: (state) => state.chapter === 'return',
     initiallyVisible: false,
     listAs: c('the opened passage, going down'),
     verbs: () => ['examine'],
@@ -1528,6 +1556,508 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+  },
+  /* ================================================================ *
+   * future.cave_path
+   * ================================================================ */
+  {
+    id: 'futurepath.sky',
+    name: 'sky',
+    nouns: ['sky', 'light', 'colour', 'ceiling', 'air'],
+    locationId: 'future.cave_path',
+    initiallyVisible: true,
+    listAs: c('the sky, and whatever is the matter with it'),
+    verbs: () => ['examine'],
+    description: () =>
+      'You stand on the shale and look at it properly, which takes a while, because there is ' +
+      'nothing in it to look at.\n\n' +
+      'No cloud. No haze, no smoke-edge, no horizon-colour different from the colour overhead. ' +
+      'An even, steady, faintly wrong brown-grey from one side of the valley to the other, with ' +
+      'the sun somewhere behind it as a brighter patch you could cover with your hand.\n\n' +
+      'It does not move. You watch it for the length of about fifty breaths and it does not ' +
+      'move at all, and that is the thing that makes your scalp go tight: a sky is the one ' +
+      'thing you have never had to wonder about.',
+    onExamine: {
+      journal: [
+        {
+          id: 'j.future_sky',
+          text:
+            'The sky here has no cloud, no edge and no weather in it. The same wrong colour ' +
+            'everywhere, and it does not move. The sun is a brighter patch behind it.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'futurepath.bird',
+    name: 'bird',
+    nouns: ['bird', 'crow', 'something flying'],
+    locationId: 'future.cave_path',
+    initiallyVisible: false,
+    listAs: c('a bird going over, again'),
+    verbs: () => ['examine'],
+    description: () =>
+      'It comes over the ridge from the north, crosses the whole width of the sky at an even ' +
+      'height, and goes out of sight behind the shoulder of the hill to the south.\n\n' +
+      'Then it comes over the ridge from the north.\n\n' +
+      'Same line. Same height. Same unhurried four beats and a glide, and you have watched it ' +
+      'do this five times now, and nothing has come back the other way.\n\n' +
+      'You have seen one thing like this before, in a village square a hundred years ago, with ' +
+      'a door and the wind that shut it arriving in the wrong order.',
+    onExamine: {
+      flags: { [FLAGS.sawFutureSymptom]: true },
+      journal: [
+        {
+          id: 'j.future_bird',
+          text:
+            'A bird crosses the sky on the same line at the same height over and over and ' +
+            'never comes back the other way. It is the same kind of wrongness as the door and ' +
+            'the wind in the square.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'futurepath.ground',
+    name: 'the ground',
+    nouns: ['ground', 'shale', 'hillside', 'turn', 'stump', 'tree'],
+    locationId: 'future.cave_path',
+    initiallyVisible: true,
+    listAs: c('the shale where the turn in the path should be'),
+    verbs: () => ['examine'],
+    description: () =>
+      'You pace it out. Twenty-two from the tear to where the turn is, and the turn is not ' +
+      'there, and neither is anything else: no stump, no root-plate, no hollow where a ' +
+      'root-plate rotted out.\n\n' +
+      'The whole shoulder of the hill has dropped. You can see the line of it running away ' +
+      'east, a long shallow step in the ground with grass grown over the lip, the way ground ' +
+      'looks a lifetime after it has moved.\n\n' +
+      'So the tree went with it, and so did the chalk marks, and so did the path everybody in ' +
+      'your life has walked up to be told to mind the loose bit.',
+  },
+
+  /* ================================================================ *
+   * future.entrance
+   * ================================================================ */
+  {
+    id: 'futureentrance.seal',
+    name: 'seal',
+    nouns: ['seal', 'wall', 'stone', 'fitted stone', 'courses', 'masonry'],
+    locationId: 'future.entrance',
+    initiallyVisible: true,
+    acceptsItems: true,
+    listAs: (state) =>
+      state.flags[FLAGS.sealOpened]
+        ? c('the seal, down in courses where it fell')
+        : c('the seal across the mouth'),
+    verbs: (state) =>
+      state.flags[FLAGS.sealOpened] ? ['examine'] : ['examine', 'break'],
+    description: (state) => {
+      if (state.flags[FLAGS.sealOpened]) {
+        return (
+          'Nine courses of good stone in a heap, and the hole they were keeping shut.\n\n' +
+          'You can see the beds now that they are apart: every one of them laid dry, no mortar ' +
+          'anywhere, every stone cut to sit on the one below it. Somebody closed this hill ' +
+          'without a bucket of lime, which means they did it in a hurry, and did it properly ' +
+          'anyway.'
+        );
+      }
+      return (
+        'Nine courses, laid dry — no mortar in any joint, every stone squared and bedded so it ' +
+        'sits on the one below it and nothing else. It fills the mouth from the floor to the ' +
+        'rock.\n\n' +
+        'You put a hand on it and work along it. The top courses are tight enough that you ' +
+        'cannot get a fingernail in.' +
+        (state.flags[FLAGS.knowsLooseCourse]
+          ? '\n\nThe third course from the bottom is not tight. There is a gap under the ' +
+            'left-hand end of it you could lay two fingers in, and the stone rocks a hair when ' +
+            'you lean on it.'
+          : '\n\nSomewhere in it there will be a course that is not, because there always is. ' +
+            'You have no idea which.') +
+        (state.flags[FLAGS.coursePropped]
+          ? '\n\nYour wedge is driven in under the loose course, holding it off the stone below.'
+          : '') +
+        (state.flags[FLAGS.sealSettled]
+          ? '\n\nThere is a bright bruise on the face of the third course where you hit it, and ' +
+            'the whole wall is sitting a little more comfortably than it was.'
+          : '')
+      );
+    },
+    onExamine: {
+      journal: [
+        {
+          id: 'j.future_seal',
+          text:
+            'The mouth has been closed with nine courses of dry-laid stone, no mortar, every ' +
+            'stone squared and bedded. Deliberate work, done in a hurry and done well.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'futureentrance.mark',
+    name: 'cut mark',
+    nouns: ['mark', 'cut mark', 'sign', 'writing', 'carving'],
+    locationId: 'future.entrance',
+    initiallyVisible: true,
+    listAs: c('a mark cut into the face of the seal'),
+    verbs: () => ['examine'],
+    description: () =>
+      'Cut into the flat of the middle course, deep, with a chisel, by somebody who took their ' +
+      'time.\n\n' +
+      'It is not words. It is a shape: a ring, and a line through the ring, and three strokes ' +
+      'under it like rain.\n\n' +
+      'You have never seen it before in your life. It means something to whoever cut it and it ' +
+      'means something to whoever has walked past it since, and it does not mean anything to ' +
+      'you at all, and that is the loneliest thing that has happened to you today.',
+    onExamine: {
+      journal: [
+        {
+          id: 'j.future_mark',
+          text:
+            'There is a mark cut into the seal: a ring, a line through it, three strokes under ' +
+            'it. Not writing. I have never seen it before.',
+        },
+      ],
+    },
+  },
+
+  /* ================================================================ *
+   * future.sealed_chamber
+   * ================================================================ */
+  {
+    id: 'futuresealed.fill',
+    name: 'cracked fill',
+    nouns: ['fill', 'cracked fill', 'plaster', 'render', 'patch'],
+    locationId: 'future.sealed_chamber',
+    initiallyVisible: true,
+    acceptsItems: true,
+    hiddenWhen: (state) => Boolean(state.flags[FLAGS.fillCleared]),
+    listAs: c('the cracked fill over the middle position'),
+    verbs: () => ['examine', 'clear'],
+    description: () =>
+      'Lime and stone dust and hair, floated on flush with the panel and smoothed over with a ' +
+      'wet trowel by somebody who did not want anybody to find it.\n\n' +
+      'They did it to all three. You can see where the low one was done, and the high one, and ' +
+      'both of those are solid — you knock on them and the hill knocks back.\n\n' +
+      'This one has cracked. A single split runs right across it from edge to edge where the ' +
+      'panel has flexed, and the two halves are standing a little proud of each other, and ' +
+      'there is a dark line of air behind.\n\n' +
+      'It is holding on out of habit. You could get your fingers into that crack.',
+    onExamine: {
+      flags: { [FLAGS.examinedFill]: true },
+      journal: [
+        {
+          id: 'j.future_fill',
+          text:
+            'The crew filled all three positions when they finished and smoothed them over. ' +
+            'The fill on the middle one has cracked right across and is loose.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'futuresealed.middledish',
+    name: 'middle dish',
+    nouns: ['middle dish', 'middle', 'dish', 'second dish', 'two', 'socket'],
+    locationId: 'future.sealed_chamber',
+    initiallyVisible: false,
+    acceptsItems: true,
+    listAs: (state) =>
+      state.flags[FLAGS.lanternInMiddleDish]
+        ? c('the middle dish, with your lantern standing in it')
+        : c('the middle dish, cut and never used'),
+    verbs: () => ['examine'],
+    description: () =>
+      'Dressed smooth inside, undercut at the lip, at about the height of your chest. The same ' +
+      'depth as the other two and the same careful undercut, cut by the same hands in the same ' +
+      'week.\n\n' +
+      'And new. Not worn anywhere. No smoke on the stone above it, no scuff on the lip, no ' +
+      'grease in the grain. A hundred and more years and nobody has ever stood anything in it.\n\n' +
+      'The chalk ellipse is still faintly there, under the dressing, where somebody drew it ' +
+      'round the idea of this.',
+    onExamine: {
+      journal: [
+        {
+          id: 'j.future_middledish',
+          text:
+            'The middle dish is cut, dressed and completely unused — no smoke, no wear. They ' +
+            'finished it and then filled it in.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'futuresealed.aperture',
+    name: 'gap in the panel',
+    nouns: ['gap', 'aperture', 'panel', 'thinned panel', 'gap in the panel', 'opening'],
+    locationId: 'future.sealed_chamber',
+    initiallyVisible: true,
+    listAs: c('the gap in the thinned panel'),
+    verbs: () => ['examine', 'cross'],
+    description: (state) =>
+      'The same half-cut opening, low and wide, with the waste still under it where it fell a ' +
+      'hundred years ago. Nobody ever finished it and nobody ever will.\n\n' +
+      'You get your head and one shoulder into it. On the far side is the rest of the hill, a ' +
+      'thumb from your face.\n\n' +
+      'There is no draught through it. There was no draught through it the last time either, ' +
+      'and the time before that, and you are the only person alive who knows that is the point.' +
+      (state.flags[FLAGS.lanternInMiddleDish] && state.flags[FLAGS.lanternLit]
+        ? '\n\nWith the lamp standing where it is standing, the opening has a pressure in it ' +
+          'like a held note, and the rock a thumb from your face is no longer the nearest thing.'
+        : ''),
+  },
+  {
+    id: 'futuresealed.pillar',
+    name: 'broken pillar',
+    nouns: ['pillar', 'column', 'support', 'broken pillar', 'pieces'],
+    locationId: 'future.sealed_chamber',
+    initiallyVisible: true,
+    listAs: c('the pillar, in two pieces under the fall'),
+    verbs: () => ['examine'],
+    description: () =>
+      'It went at about chest height. The lower piece is still standing on its own footprint ' +
+      'and the upper piece is lying across the rubble with its dressed faces up.\n\n' +
+      'You get close enough to see the break. It did not shear clean: it crushed, from the ' +
+      'base upward, the way a thing goes when it has been carrying more than it should for a ' +
+      'long time and then stops.\n\n' +
+      'The crack you know at the foot of it has opened into a hand\'s width of crumbled stone.',
+    onExamine: {
+      journal: [
+        {
+          id: 'j.future_pillar',
+          text:
+            'The worked pillar failed. It crushed from the base up, where the crack was, and ' +
+            'the roof came down on this chamber.',
+        },
+      ],
+    },
+  },
+
+  /* ================================================================ *
+   * future.square
+   * ================================================================ */
+  {
+    id: 'futuresquare.memorial',
+    name: 'memorial stone',
+    nouns: ['memorial', 'stone', 'memorial stone', 'writing', 'inscription', 'names'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    listAs: c('a standing stone by the well with writing cut into it'),
+    verbs: () => ['examine'],
+    description: () =>
+      'A slab set upright beside the well-cap, about shoulder high, cut over in three different ' +
+      'hands in three different centuries of weathering.\n\n' +
+      'The oldest cutting, at the top, is the deepest and the plainest:\n\n' +
+      '    IN THE YEAR THE WATER TURNED\n' +
+      '    AND THE SKY SHUT\n' +
+      '    AND IT DID NOT STOP AFTER\n\n' +
+      'Under it, in a shallower hand, a list of about forty names. Under that, a second list, ' +
+      'longer, and less carefully cut. Under that, scratches.\n\n' +
+      'And at the foot of the stone, worn almost out, the thing you came over here to read ' +
+      'without knowing it: a year, counted from something, in a notation you were taught at ' +
+      'school.\n\n' +
+      'You do the arithmetic twice. It is the year you turned sixteen.',
+    onExamine: {
+      flags: { [FLAGS.readMemorial]: true },
+      journal: [
+        {
+          id: 'j.future_memorial',
+          text:
+            'The memorial by the well dates the beginning — the water turning, the sky ' +
+            'shutting — to the year I turned sixteen. Then forty names, then more names, then ' +
+            'scratches.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'futuresquare.well',
+    name: 'capped well',
+    nouns: ['well', 'cap', 'pump', 'capped well', 'slab', 'bucket'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    listAs: c('the well, capped and pumped'),
+    verbs: () => ['examine'],
+    description: () =>
+      'The same well. The same stones round the top of it, and you could find the chipped one ' +
+      'with your foot in the dark.\n\n' +
+      'It has been capped with a cut slab and the joint round the edge is sealed with ' +
+      'something black and tarry that has been renewed many times. A hand pump is bolted ' +
+      'through the middle of the slab, and the four people in the queue are each drawing ' +
+      'exactly one bucket and then standing aside, without being told to, and one of them is ' +
+      'keeping count on a tally stick.\n\n' +
+      'Nobody argues about it. It is older than arguing.',
+    onExamine: {
+      journal: [
+        {
+          id: 'j.future_well',
+          text:
+            'The well is capped and sealed and drawn through a pump, one bucket each, counted ' +
+            'on a tally stick. Nobody argues about it.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'futuresquare.workshop',
+    name: 'roofless shell',
+    nouns: ['shell', 'workshop', 'roofless shell', 'goats', 'ruin'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    listAs: c("the shell where the joiner's workshop was"),
+    verbs: () => ['examine'],
+    description: () =>
+      'Three walls to shoulder height and no roof, on the footprint you could walk blind. ' +
+      'There are two goats in it and a lot of straw and a feed trough made out of a door.\n\n' +
+      'You get over the wall and stand where the bench was.\n\n' +
+      'The floor is still the floor: beaten earth with sawdust trodden into it so deep and so ' +
+      'long ago that it has gone to a dark felt, and under one wall, where the basket lived, ' +
+      'the goats have scuffed a hollow and there are tapered blocks of oak in it, grey with ' +
+      'age, a dozen of them, that nobody has needed for a century.',
+    onExamine: {
+      reveals: ['futuresquare.maul', 'futuresquare.chock'],
+      journal: [
+        {
+          id: 'j.future_workshop',
+          text:
+            "The joiner's workshop is three walls and goats. The sawdust is still in the floor " +
+            'and there is a scatter of old oak wedges where the basket used to be.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'futuresquare.maul',
+    name: 'maul',
+    nouns: ['maul', 'hammer', 'mallet', 'sledge'],
+    locationId: 'future.square',
+    initiallyVisible: false,
+    hiddenWhen: (state) => state.inventory.includes('mallet'),
+    listAs: c('a maul leaning in the corner of the shell'),
+    item: 'mallet',
+    verbs: () => ['examine', 'take'],
+    takeText: () =>
+      'You take the maul. It is a good deal heavier than a mason\'s mallet and the haft is too ' +
+      'long for one hand, and it will do exactly one thing well, which happens to be the thing ' +
+      'you want.\n\n' +
+      'Nobody comes over to object.',
+    description: () =>
+      'A long-hafted maul with an iron-banded head, leaning in the corner of the shell with ' +
+      'the handle worn pale. Somebody splits wood with this, or did; there is a block beside it ' +
+      'with the top chewed out of it.\n\n' +
+      'It is not a mason\'s tool and it is not delicate. For getting a dressed stone out of a ' +
+      'wall it would be better than nothing and worse than the right thing.',
+  },
+  {
+    id: 'futuresquare.chock',
+    name: 'oak blocks',
+    nouns: ['blocks', 'oak blocks', 'wedge', 'chock', 'offcuts'],
+    locationId: 'future.square',
+    initiallyVisible: false,
+    hiddenWhen: (state) => state.inventory.includes('wedge'),
+    listAs: c('old oak blocks in the hollow the goats have scuffed'),
+    item: 'wedge',
+    verbs: () => ['examine', 'take'],
+    takeText: () =>
+      'You pick one out and turn it over. Cut off-square, so it bites rather than slides, with ' +
+      'saw marks scored across one face.\n\n' +
+      'They cost him nothing and he handed them out to anybody who asked, and there are a ' +
+      'dozen of them in a goat shed, and you take one.',
+    description: () =>
+      'Tapered blocks of oak the size of your palm, grey and silvered on the outside and sound ' +
+      'all the way through when you knock two together. A dozen of them, in a hollow under the ' +
+      'wall where a basket used to stand.\n\n' +
+      'One face of each is scored with saw marks. The same cut, the same angle, the same ' +
+      'off-square taper. The same hand.',
+  },
+  {
+    id: 'futuresquare.chest',
+    name: 'record chest',
+    nouns: ['chest', 'record chest', 'box', 'oilcloth', 'records'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    listAs: c('a chest under a scrap of oilcloth'),
+    verbs: () => ['examine'],
+    description: (state) =>
+      'Plank-built, iron-cornered, with a lid that has been rehung twice. The oilcloth over it ' +
+      'is weighted at the corners with stones and the woman sitting against it does not move ' +
+      'when you look at it.\n\n' +
+      'It holds what they have kept: boards, slates, a roll of hide, a tally of winters, and ' +
+      'the Account.' +
+      (state.flags[FLAGS.gaveStone]
+        ? '\n\nThere is also a shallow wooden tray of small things, and in the tray, among a ' +
+          'copper button and two teeth and a bead, there is a grey pebble with a pale band ' +
+          'through it, labelled in a hand that has been copied and recopied: *from past the ' +
+          'names, given*.'
+        : ''),
+    onExamine: {
+      journal: [
+        {
+          id: 'j.future_chest',
+          text:
+            'The settlement keeps a chest of records under oilcloth: boards, slates, hide, a ' +
+            'tally of winters, and the Account. Rue sits against it.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'futuresquare.account',
+    name: 'Account',
+    nouns: ['account', 'the account', 'roll', 'hide', 'history', 'words'],
+    locationId: 'future.square',
+    initiallyVisible: false,
+    listAs: c('the Account, out of the chest'),
+    verbs: () => ['examine'],
+    description: () =>
+      'A roll of scraped hide, backed onto linen where it has split, written over in four or ' +
+      'five hands and read often enough that the edges are furred.\n\n' +
+      'Most of it is commentary — long, careful, argued-over, with crossings-out and ' +
+      'disagreements in the margins about what the lines mean and what should be done about ' +
+      'them. Two different hands have written *this is the hill* beside the same phrase, a ' +
+      'century apart.\n\n' +
+      'And in the middle of all of it, set apart, in the oldest and plainest hand on the roll, ' +
+      'copied from a board that is named and is not here any more:\n\n' +
+      prophecyBlock() + '\n\n' +
+      'You read it four times. It is not nearly, and it is not mostly. It is the words, in the ' +
+      'order you were taught them, with the same stop in the middle of the second line.\n\n' +
+      'At the top of the roll, over the whole thing, somebody has written a title: ' +
+      m('WHAT CAME, AND WHY') + '.',
+    onExamine: {
+      flags: { [FLAGS.readAccount]: true },
+      journal: [
+        {
+          id: 'j.future_account',
+          text:
+            'The Account is a century of commentary wrapped round the prophecy, copied word ' +
+            'for word from a named board that is gone. Titled: what came, and why.',
+        },
+      ],
+    },
+  },
+
+  /* ================================================================ *
+   * present.sealed_chamber, on the return
+   *
+   * Hidden outside the return chapter, so the opening cannot address them.
+   * ================================================================ */
+  {
+    id: 'returnsealed.lamp',
+    name: "their lantern",
+    nouns: ['their lantern', 'their lamp', 'the other lantern', 'alcove lamp'],
+    locationId: 'present.sealed_chamber',
+    initiallyVisible: true,
+    hiddenWhen: (state) => state.chapter !== 'return',
+    listAs: c('their lantern, burning in the alcove'),
+    verbs: () => ['examine'],
+    description: () =>
+      'Tin, dented along one shoulder, horn pane, sliding hood. The striker hangs off the base ' +
+      'on its short chain and the wick is burning at about the size of a thumbnail, and it is ' +
+      'standing dead level in the dish because the dish was cut for it.\n\n' +
+      'It is the lantern in your hand.\n\n' +
+      'You look from one to the other for a moment and then stop, because there is nothing at ' +
+      'the end of that.',
   },
 ];
 

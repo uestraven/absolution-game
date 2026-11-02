@@ -34,8 +34,37 @@ prefixes; the player never sees any of them used as an era label.
                 past.cave_path ──north── past.spring
                      | east                      v
                 past.square                 future.deep_chamber
-                                            (end of the built content)
+                                                 | up  (the tear)
+                                            future.cave_path ──east── future.square
+                                                 | west
+                                            future.entrance
+                                                 | west   (gated on seal_opened)
+                                            future.sealed_chamber
+                                                 ¦
+                                                 ¦  ENTER APERTURE
+                                                 v
+                                            present.sealed_chamber
+                                            (chapter: return — two of them in it,
+                                             and the end of the built content)
 ```
+
+### The ruined century is two spaces, and the seal is the obstacle
+
+| | Route | State |
+| --- | --- | --- |
+| **The lower half** | `future.cave_path` ⇄ *the tear* ⇄ `future.deep_chamber` | A subsidence crack well above the old mouth. The hero arrives in the basin chamber and **leaves this way**, which is why they reach the settlement without touching the seal |
+| **The upper half** | `future.entrance` → `future.sealed_chamber` and the middle dish | Nine courses of dry-laid stone with the village's mark on it. **The only way to the dish**, and the reason the seal has to come down |
+| **Between the two** | the old worked stair | Closed by a fall that set solid a century ago. `CLEAR STAIR` is answered on its own terms and gets nowhere |
+
+### The original era, twice
+
+`present.*` is reached in two chapters. `rite` is the opening; `return` is the
+same rooms at dusk with a one-eyed hero in them. `chaptersForEra` in
+`engine/reducer.ts` is the single declaration of the legal pairs, and the
+sealed chamber has its own description, its own objects and its own exits for
+the return — the opening's shutter, alcove, eye and wall are **hidden**, because
+the lamp in that alcove and the wedge under that shutter belong to somebody
+else now and the opening's descriptions read the player's own placement flags.
 
 Every exit has a reverse route; `src/content/content.test.ts` asserts that, and
 that the connection set matches exactly the pairs the tests declare. Two exits
@@ -48,8 +77,8 @@ way out and is not an exit, because the hillside beyond it is Milestone 4.
 
 ## Shortest completion
 
-Thirty-six commands, from the character screen. This is the
-recitation-first order, which is the shorter of the two: it never needs the
+Sixty-four commands, from the character screen. This is the recitation-first
+order, which is the shorter of the two through Chapter 2: it never needs the
 water, so both of the recovery routes into the workings are load-bearing.
 
 ```
@@ -89,6 +118,34 @@ examine slate             · 33
 examine dishes            · 34   ← P3, the deduction fires here
 place lantern in high dish· 35
 enter aperture            · 36   ← crossing 2
+up                        · 37   ← out through the tear
+examine bird              · 38
+east                      · 39   ← the settlement
+talk to rue               · 40
+what she is sitting against · 41
+the oldest thing she knows  · 42
+leave                     · 43
+examine account           · 44
+examine memorial          · 45
+journal                   · 46   ← read here, which is the fourth source
+examine shell             · 47
+take maul                 · 48
+take blocks               · 49   ← both tool substitutes, in a goat shed
+reflect                   · 50   ← P5, the inference fires here
+west                      · 51
+west                      · 52   ← the sealed mouth
+talk to sorrel            · 53
+why the hill is walled up · 54
+whether the wall is as good as it looks · 55
+leave                     · 56
+use wedge on seal         · 57
+break seal                · 58
+break seal                · 59   ← P6: it opens, and takes the left eye
+west                      · 60
+examine fill              · 61
+clear fill                · 62
+place lantern in middle dish · 63
+enter aperture            · 64   ← crossing 3
 ```
 
 Run verbatim as a test in `src/engine/equivalence.test.ts`, so this list cannot
@@ -363,32 +420,140 @@ not believe a man who said he did.
 Nothing fires before the recitation, and nothing fires in the opening era at
 all.
 
+## Chapter 3, state by state
+
+### Getting out, and the scale of it
+
+The arrival room has one way out: the tear. Reaching `future.cave_path` latches
+`left_the_hill` and records the valley; reaching `future.square` sets the
+objective to *Find out what happened here*. Nothing before that point asks the
+hero to prove anything, because they have not learned anything.
+
+Three signs carry the scale, and none of them is one character knowing the
+state of every continent:
+
+| Sign | What it is | Whose knowledge |
+| --- | --- | --- |
+| `futurepath.sky` | No cloud, no edge, no movement, the sun a brighter patch behind it | The hero's own eyes |
+| `futurepath.bird` | Crosses on the same line at the same height, never comes back the other way. Sets `saw_future_symptom` | The hero's own eyes, after counting |
+| Rue's *elsewhere* topic | Eleven places wrote or were written down. The sea rose, a city burned, **nine of the eleven simply stop** | Documents, and she says so |
+
+Sorrel has been as far as the water and a burnt place, and says to ask Rue. Rue
+says she has not known about the one other surviving place for thirty-one years.
+
+### P5 — the evidence
+
+Four sources, each with its own flag, inspectable in **any order**. The
+inference is a deliberate action (`REFLECT`, or *add it up* in selectable mode)
+and is never taken on the player's behalf.
+
+| Flag | Source | Why it counts |
+| --- | --- | --- |
+| `read_account` | The Account, handed over by Rue's `the_chest` topic | Carries the canonical text verbatim inside a century of argument — the downstream end of something the hero did |
+| `read_memorial` | The standing stone by the well | Dates the beginning in stone, cut by people with no interest in the prophecy |
+| `heard_missing_child` | Rue's `the_child` topic, unwritten, from her mother | A sixteen-year-old went up to the rite that night and did not come out — an event the hero knows happened |
+| `checked_journal` | `JOURNAL`, read while standing in this century | The only thing that ties the other three to one person |
+
+`REFLECT` before all four are in is refused **and says which are missing**, by
+name. It is not offered as an affordance until the prerequisites are met, so
+selectable play cannot stumble into it either.
+
+**What is deliberately not here.** No mechanism, anywhere, from anybody. Rue
+has four written explanations on her roll — a judgement, a machine under the
+hill, the words doing it by being said, and her great-grandfather's comet — and
+believes none of them. There is no water ledger, no gauge, no aquifer, no
+anchoring inscription, and **no witness to a one-eyed figure in year 0**,
+because in this history the hero never came back.
+
+The Account's claim that it came *out of the hill* is marked as later
+commentary, by Rue, in as many words: *that is in the commentary, not the words.
+Nobody saw anything come out of anywhere.*
+
+Return is gated on `knows_responsibility`, and the refusal is the hero's own
+reason — there is a village down that hill with everything that is known
+written down in a box, and they have not finished with it.
+
+### P6 — the seal, and the eye
+
+| Step | Flag | Refusal if skipped |
+| --- | --- | --- |
+| Something heavy in hand | — | Nine dry-laid courses do not care about hands or a lantern |
+| Sorrel names the course | `knows_loose_course` | A wall has one bad course and the whole job is knowing which |
+| Brace it | `course_propped` | Shift the loose one and the weight above sits on it; `seal_settled` records the swing, and costs nothing |
+| `BREAK SEAL` | `seal_struck` | — |
+| `BREAK SEAL` again | `seal_opened`, `lost_eye` | — |
+
+Asking Rue's permission (`asked_rue`) is refused and blocks nothing: *I am not
+going to stop you. I am telling you the answer is no, and that you will have
+been told.* Taking the wedge back out before the wall comes down is always
+allowed.
+
+**The injury** is one authored event inside the successful opening, outside, in
+front of witnesses. It latches, so revisiting or swinging again never replays
+it. The stone arrives and the fall it came out of **begins afterwards** — an
+observation, not an argument: nobody in the text concludes anything from it, and
+Sorrel's version is the nearest thing to an account anybody offers, which is
+that things do that here.
+
+There is **no interface consequence**: no visual filter, no mask, no
+half-hidden screen, no altered controls. Asserted in the browser pass.
+
+Afterwards the witness names it — a man with a bucket, out of what he believes —
+and Rue's `the_eye` topic says she cannot tell the hero it does not fit the
+words, and also that the words never promised a stranger to blame. Other topics
+stay themselves.
+
+**Tool substitutes.** The roofless shell where the workshop was holds a maul and
+a dozen of Oreg's oak wedges, each hidden when the hero already has that item.
+Either can be reached from either direction, so leaving the mallet in the past
+or the wedge under a shutter costs nothing.
+
+### The way home
+
+`EXAMINE FILL` → `CLEAR FILL` → the middle dish, dressed and never used.
+`PLACE LANTERN IN MIDDLE DISH`, light it, then `ENTER APERTURE` — three separate
+acts. Standing the lamp moves nobody and neither does lighting it.
+
+The hero still presents the destination as a guess in their own voice: *low went
+back, high came here, and so the middle one is the one that is left, and left is
+not the same as home.* Nothing confirms the rule for them, in this chapter or at
+the arrival.
+
 ## The endpoint
 
-`future.deep_chamber`. The transition is one commit: era, chapter, location, the
-lamp coming out of the dish and into the hero's hands, objective, journal, the
-end-of-content marker and the chapter checkpoint all move together, so no reload
-can land half-crossed and no reload can fire the arrival twice.
+`present.sealed_chamber`, chapter `return`. The transition is one commit: era,
+chapter, location, the lamp out of the dish and into the hero's hands,
+objective, journal, the arrival prose, the people in the room, the
+end-of-content marker and the chapter checkpoint.
 
-Three things to examine — the dry cracked basin, the stair closed by a fall, the
-tear in the wall with daylight in it — and no exits, because there is nowhere
-built to go. The room states the Milestone 4 boundary without opening it: the
-tear is the way out, the stair toward the portal chamber is closed, and the
-village's seal is not something the player has already walked through.
+The arrival lands on a **fixed** moment — the instant the younger self's lamp
+picks the seam out of the wall. There is no dial and no date. The hero
+recognises it because they lived it from the other side, not because anybody
+told them and not because a future self was ever inserted into Chapter 1.
 
-The hero arrives **uninjured**. There is no eye injury here, no identity reveal,
-no settlement, and no usable return setting. The marker says *End of the current
-content* and then *This is not the ending*, and the objective reads *Find out
-what happened here* rather than anything that sounds like a conclusion.
+The lamp in the alcove is **theirs**, not the player's; the player's is in their
+hand. `returnsealed.lamp` describes the first and the room description says the
+second, and the opening's own fixtures are hidden so nothing can describe the
+wrong person's belongings or offer to take something back out of them.
 
-After it the player keeps full control: look around, read the journal, export,
-or restart from the checkpoint — which is now the arrival in the broken chamber,
-because the chapter advanced at the crossing.
+`earlier_self` is a `PersonDef` with `available: chapter === 'return'`, so the
+room has nobody in it during the opening and somebody very specific in it now.
+Their lantern is an object, not an item: there is one lantern record in the
+save and it is the hero's, carried.
+
+**Blocked, truthfully:** violence (*what happens next is the last chapter of
+this story, and it is not written yet*), leaving the room, and reopening the
+portal. Allowed: `LOOK`, `EXAMINE`, `JOURNAL`, `INVENTORY`, settings,
+export, checkpoint restart, and one exchange with the person in front of them.
+
+The marker says *End of the current content*, then *This is not the ending*,
+then *nothing here has been decided*. The checkpoint holds the return with the
+eye and the reason intact, which is what the last chapter would continue from.
 
 ## Everything worth seeing
 
 Full route for content review, in `src/engine/equivalence.test.ts` as the typed
-end-to-end test. It visits all sixteen locations, hears every person, and
+end-to-end test. It visits all twenty locations, hears every person, and
 asserts that no command in the run was rejected.
 
 | Location | Objects | People |
@@ -411,6 +576,11 @@ asserts that no command in the run was rejected.
 | `past.square` | great tree, unfinished building, new well, water skins | Saffra, Fenn |
 | `past.worksite` | drawing, slate, cut dishes, low dish*, high dish*, chalk outline*, aperture, worked pillar, crew lamp, mallet | — |
 | `future.deep_chamber` | dry basin, blocked stair, tear in the rock | — |
+| `future.cave_path` | sky, bird*, the ground where the turn was | — |
+| `future.entrance` | seal, cut mark | Sorrel |
+| `future.sealed_chamber` | cracked fill, middle dish*, gap in the panel, broken pillar | — |
+| `future.square` | memorial, capped well, roofless shell, maul*, oak blocks*, record chest, Account* | Rue |
+| `present.sealed_chamber` *(on the return)* | their lantern, the seam, the worked pillar | the one with the lantern |
 
 `*` starts undiscovered.
 
@@ -426,7 +596,7 @@ asserts that no command in the run was rejected.
 
 ## Automated coverage
 
-287 tests across eleven files.
+335 tests across twelve files.
 
 | File | Covers |
 | --- | --- |
@@ -434,7 +604,8 @@ asserts that no command in the run was rejected.
 | `engine/engine.test.ts` | Hidden-object access (typed *and* dispatched directly), identical refusal for hidden exits, ambiguity, the four distinct puzzle failures, order independence, latching, item recovery, optional branch, the crossing, the endpoint, journal contents, the hint ladder, useless-input invariants |
 | `engine/equivalence.test.ts` | Step-for-step state equality between typed and clicked play, through both chapters to the arrival; one full completion per input mode visiting all sixteen locations; the thirty-six-command route above, run verbatim; completion after crossing with both items left behind, via the crew's lamp; recovering a dropped item with buttons only and finishing afterwards; selectable labels giving nothing away; undiscovered things absent from the panel |
 | `engine/chapter2.test.ts` | The recitation (canonical text identical to the plank, refused before the villagers ask and outside the square, fires once, declining costs nothing, never spoken on the player's behalf, reloads before/during/after); worksite access by all three routes and in both orders, with the recovery routes reachable from required-path state alone; the three heights as fixed destinations, the low position's harmless round trip, the uncut middle refused on physical terms, the high gamble; the aperture's four refusals; wrong attempts and waiting consuming nothing; hints free and repeatable; the wrongnesses fired once each and never explained; the arrival as one commit, not duplicated on reload, with no injury, reveal, exploration or return; the opening chapter unaffected and completable without any of the new optional content |
-| `persistence/migration.test.ts` | Format 1 → 2: a mid-opening save keeping every field, a save stopped at the old prototype marker becoming playable in place, the historical transcript kept and corrected rather than contradicted, idempotency through both formats, no wholesale clearing of completion flags, the migration running on the autosave, backup, checkpoint and import routes, newer and never-shipped formats refused clearly, and format 2 written back out once played on |
+| `engine/chapter3.test.ts` | The ruined century: reaching the settlement through the tear without touching the seal, the blocked stair refusing to bypass it, the seal guarding the actual return dish and staying open; the four evidence sources in two different orders, the inference refused with the missing sources named and not offered as an affordance until they are in, fired once, every source still readable afterwards; the mechanism never explained anywhere in the chapter; the Account's out-of-the-hill claim marked as commentary; the canonical text identical in all three places; no return without a reason; the scale carried by three signs with each one's provenance; every wrong way at the seal costing nothing; the eye taken once in the right place with witnesses, not replayed on revisit, swing or reload, and impossible to trigger by experimenting; both tool substitutes; the fill, the lamp and the crossing as three separate acts with light required; the return committing coherently, not reading as the opening, keeping the earlier self's belongings out of the inventory, blocking the confrontation truthfully, and writing a continuable checkpoint; four incoherent-import cases; the hint ladders; and the low position as a real placement that needs a light |
+| `persistence/migration.test.ts` | Format 1 → 2 and 2 → 3: a mid-opening save keeping every field, a save stopped at the old prototype marker becoming playable in place, the historical transcript kept and corrected rather than contradicted, idempotency through both formats, no wholesale clearing of completion flags, the migration running on the autosave, backup, checkpoint and import routes, newer and never-shipped formats refused clearly, and format 2 written back out once played on |
 | `content/content.test.ts` | Dialogue discipline (a length and single-paragraph budget per answer, the rescue told one way everywhere, a named list of removed over-explanations that must not come back, follow-up detail actually gated behind a follow-up); map matches the brief, era/id agreement, reverse routes, unique ids and directions, only the deep exit gated, flag and reveal references valid, journal id consistency, no placeholder prose, no later reveals in player-facing text, the herb naming convention (every name on the list, ids matching names, no survivors of the earlier cast, no puns, the twins never explained, and no time vocabulary anywhere in Tyme's dialogue) |
 | `content/characters.test.ts` | Both names and pronoun sets, pronoun substitution in NPC lines, identical progress for either character, no unrendered placeholders anywhere |
 | `persistence/persistence.test.ts` | Round trip, export/import, reload mid-puzzle, resuming pending conversations and questions, atomic crossing, backup and checkpoint fallbacks, quarantine, storage-failure reporting, loading and exporting while writes are impossible, preferences kept apart from progress, 27 rejected-import cases, transcript sanitising |
@@ -445,44 +616,59 @@ asserts that no command in the run was rejected.
 ## Manual and browser verification
 
 `scripts/verify-browser.mjs` drives the built bundle in Chromium (see the README
-for how to run it). Last run: **66 of 66 checks passed.**
+for how to run it). Last run: **87 of 87 checks passed.**
 
 **Layout and input.** 360px with no horizontal scrolling, before and during play
 · touch targets at least 40px tall · buttons alone move the story · the
 transcript owns most of the window and is the scroller · it follows new output ·
-no console or page errors in either mode · New Game reachable by tabbing ·
-command field focused on arrival · reduced motion collapses transitions and
-replaces the glide with a jump · Settings is a real modal: focus moves inside,
-Tab and Shift+Tab stay inside, Escape closes and returns focus.
+no console or page errors in any mode · New Game reachable by tabbing · command
+field focused on arrival · reduced motion collapses transitions and replaces the
+glide with a jump · Settings is a real modal: focus moves inside, Tab and
+Shift+Tab stay inside, Escape closes and returns focus.
 
-**Both chapters, both modes.** The whole of both chapters completed with the
-keyboard alone, ending in the broken chamber · the recitation saying the
-canonical text · the end-of-current-content marker shown, and not claiming to be
-the ending · objective updated · inspection still possible afterwards · the
-whole of both chapters completed by clicking with no typing at all, including
-the first crossing, the recitation offered as an action, Fenn's route opening the
-workings, and the arrival · the arrival room offering no way on · no console
-errors across the clicked run.
+**All three chapters, both modes.** The whole game completed with the keyboard
+alone, ending in the sealed chamber facing the earlier self · the recitation
+saying the canonical text · the end-of-current-content marker shown, and not
+claiming to be the ending · the confrontation blocked with a reason · objective
+updated · inspection still possible afterwards · the whole game completed by
+clicking with no typing at all, including both crossings, the recitation, Fenn's
+route, the synthesis offered as an action once the pieces are in, the seal
+opening with the stone arriving before the fall, and the return · the return
+offering no way out of the room · the only person in that room being the one
+with the lantern.
 
 **Mode switching.** Switching to buttons mid-puzzle keeps the puzzle state ·
 switching to typing mid-conversation keeps the topic list readable · a
 conversation started by clicking can be finished by typing.
 
+**Reloads, at each stage.** Mid-investigation: the evidence is kept and the
+conclusion is not jumped to · after the injury: it persists and is not
+replayed, and swinging again does not take a second eye · at the return:
+chapter, era and place all survive, and there is one lantern record and it is
+the hero's · no console errors across three chapters and four reloads.
+
+**No accessibility penalty for the injury.** At 360px, after losing the eye:
+no horizontal overflow, the transcript still full height, no CSS filter, no clip
+path or mask outside the screen-reader-only helpers, full opacity.
+
 **Saves.** Continue after reload restores place and transcript · mode switch
 preserves every stored transcript entry and the player's position · export
-downloads `adventure-save.json` containing the current state in format 2 · that
-file imports back · a malformed file is refused and the game is untouched · New
-Game confirms before overwriting and cancelling keeps progress · checkpoint
-restart returns to the start of the current chapter — the bedroom mid-rite, the
-broken chamber after the second crossing · storage failure shows a persistent
-warning and play continues.
+downloads `adventure-save.json` containing the current state in format 3, with
+the injury in it · that file imports back · a malformed file is refused and the
+game is untouched · New Game confirms before overwriting and cancelling keeps
+progress · checkpoint restart returns to the start of the current chapter — the
+bedroom mid-rite, the sealed chamber after the last crossing — and that
+checkpoint still carries the eye and the reason, which is what the last chapter
+would continue from · storage failure shows a persistent warning and play
+continues.
 
-**A save from the old build.** A format-1 file written at the old
-end-of-prototype marker is offered as Continue · resumes in place without
-replaying the opening · the transcript the player read is still there · and is
-corrected rather than contradicted · the objective points at the rest of the
-chapter · it plays on into content that did not exist when it was written · and
-is written back out in the current format.
+**Saves from both previous builds.** A format-1 file written at the old
+end-of-prototype marker, and a format-2 file written at the ruined-future
+arrival: each is offered as Continue · resumes in place without replaying any
+chapter · keeps the transcript the player read · is corrected rather than
+contradicted · gets the objective the hero actually needs next · plays on into
+content that did not exist when it was written · and is written back out in
+format 3.
 
 **Visual specification.** Exact palette values (`#080A0C` / `#DEDFDA` /
 `#EB8FD8` / `#79DCE8` / `#A3DB96`) · monospace at 16px mobile and 18px desktop
@@ -508,8 +694,12 @@ document beyond the single-shot anchor nudge.
 - No deployment has been performed. The Cloudflare Pages settings in
   `docs/DEPLOYMENT.md` were read from current Cloudflare documentation, not
   confirmed by deploying.
-- **Milestones 4 and 5 are not built.** The future settlement, Rue and Sorrel's
-  investigation, breaking the seal, the eye injury, the return crossing, the
-  confrontation and the epilogue are all design only. `docs/FULL_GAME_DESIGN.md`
-  describes them; nothing in this build implements or tests any of them, and
-  reaching the broken chamber is not an ending.
+- **The last chapter is not built.** The confrontation, the killing, the
+  sacrifice, the destruction of the cave and the epilogue are design only.
+  `docs/FULL_GAME_DESIGN.md` describes them; nothing in this build implements or
+  tests any of them, and reaching the sealed chamber on the return is not an
+  ending. The player can look, read, examine and say one thing; everything after
+  that is refused with a reason.
+- **No screenshots are kept in this repo.** The browser pass reports measured
+  values rather than images, and any screenshots taken for layout review are
+  left out deliberately: they would be spoiler images of the last two chapters.

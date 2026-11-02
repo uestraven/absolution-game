@@ -1,6 +1,6 @@
 import type { NarrativeEvent } from '../types';
 import { FLAGS } from '../../content/flags';
-import { addJournal, flag as f, journalEvents, type Draft } from '../mechanics';
+import { addJournal, discover, flag as f, journalEvents, type Draft } from '../mechanics';
 
 /**
  * The small wrongnesses, and nothing else.
@@ -130,6 +130,11 @@ export function maybeSymptom(draft: Draft, events: NarrativeEvent[]): boolean {
   if (!f(draft, FLAGS.recitedProphecy)) return false;
 
   const where = draft.locationId;
+  // The hillside a century on, where there is enough sky to watch one happen.
+  if (!f(draft, FLAGS.sawFutureSymptom) && where === 'future.cave_path') {
+    discoverBird(draft, events);
+    return true;
+  }
   if (!f(draft, FLAGS.symptomMark) && (where === 'past.worksite' || where === 'past.deep_chamber')) {
     markSymptom(draft, events);
     return true;
@@ -139,4 +144,20 @@ export function maybeSymptom(draft: Draft, events: NarrativeEvent[]): boolean {
     return true;
   }
   return false;
+}
+
+/**
+ * The hillside one. Not fired as a set piece: it puts the thing in front of
+ * the hero and lets them look at it, because a bird that keeps crossing the
+ * same sky is only a wrongness once somebody has counted.
+ */
+function discoverBird(draft: Draft, events: NarrativeEvent[]): void {
+  discover(draft, ['futurepath.bird']);
+  events.push({
+    kind: 'narration',
+    text:
+      'Something crosses the sky from the ridge, north to south, four beats and a glide, and ' +
+      'goes out of sight behind the shoulder of the hill.\n\n' +
+      'Then something crosses the sky from the ridge.',
+  });
 }

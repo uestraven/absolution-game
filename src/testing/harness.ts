@@ -138,3 +138,89 @@ export const WORKSITE_TO_SQUARE = ['south', 'up', 'east', 'east'];
 
 /** Stand the lamp and go. From inside the workings. */
 export const GO_FORWARD = ['place lantern in high dish', 'light lantern', 'enter aperture'];
+
+/* ------------------------------------------------------------------ *
+ * Chapter 3: the ruined century, and the way back
+ * ------------------------------------------------------------------ */
+
+/** Out of the hill and down to the settlement, noticing the sky on the way. */
+export const FUTURE_TO_SQUARE = ['up', 'examine bird', 'east'];
+
+/** The four sources the inference needs. */
+export const GATHER_EVIDENCE = [
+  'talk to rue',
+  'what she is sitting against',
+  'the oldest thing she knows',
+  'leave',
+  'examine account',
+  'examine memorial',
+  'journal',
+];
+
+/** The shell where the workshop was, and what is still lying in it. */
+export const FIND_THE_TOOLS = ['examine shell'];
+
+/** The synthesis. A deliberate action, after the four sources are in. */
+export const ADD_IT_UP = ['reflect'];
+
+/** Up to the mouth, learn the course, brace it, and open it. */
+export const OPEN_THE_SEAL = [
+  'west',
+  'west',
+  'talk to sorrel',
+  'why the hill is walled up',
+  'whether the wall is as good as it looks',
+  'leave',
+  'use wedge on seal',
+  'break seal',
+  'break seal',
+];
+
+/** In, clear the fill, stand the lamp, and go. */
+export const GO_BACK = [
+  'west',
+  'examine fill',
+  'clear fill',
+  'place lantern in middle dish',
+  'enter aperture',
+];
+
+/**
+ * The rest of Chapter 3, played adaptively.
+ *
+ * A route list cannot be a constant here: whether the hero needs the maul and
+ * the oak block out of the goat shed depends on whether they still have the
+ * mallet and the wedge they could have picked up two centuries earlier, and
+ * naming a tool they are already holding is a refusal. So this takes what is
+ * missing and nothing else, which is what a player would do.
+ *
+ * Returns every line it issued, so a caller can assert that none of them was
+ * refused.
+ */
+export function finishChapterThree(state: GameState): { state: GameState; lines: string[] } {
+  const lines: string[] = [...FUTURE_TO_SQUARE, ...GATHER_EVIDENCE, ...FIND_THE_TOOLS];
+  let current = typeAll(state, lines);
+
+  if (!current.inventory.includes('mallet')) {
+    lines.push('take maul');
+    current = type(current, 'take maul').state;
+  }
+  if (!current.inventory.includes('wedge')) {
+    lines.push('take blocks');
+    current = type(current, 'take blocks').state;
+  }
+
+  const tail = [...ADD_IT_UP, ...OPEN_THE_SEAL, ...GO_BACK];
+  lines.push(...tail);
+  return { state: typeAll(current, tail), lines };
+}
+
+/** True when the hero is standing in the sealed chamber, on the way back. */
+export function hasReturned(state: GameState): boolean {
+  return (
+    state.locationId === 'present.sealed_chamber' &&
+    state.chapter === 'return' &&
+    state.era === 'present' &&
+    state.ended
+  );
+}

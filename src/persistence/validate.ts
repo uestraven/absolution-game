@@ -17,10 +17,10 @@ import { isLocationId, LOCATIONS } from '../content/locations';
 import { isItemId } from '../content/items';
 import { isCharacterId } from '../content/characters';
 import { ALL_FLAG_KEYS, FLAGS, FLAG_TYPES } from '../content/flags';
-import { CONTINUATION_NOTICE, OBJECTIVES } from '../content/text';
+import { CONTINUATION_FUTURE, CONTINUATION_NOTICE, OBJECTIVES } from '../content/text';
 import { OBJECTS } from '../content/objects';
 import { PEOPLE } from '../content/dialogue';
-import { chapterForEra, eraOf } from '../engine/reducer';
+import { chaptersForEra, eraOf } from '../engine/reducer';
 
 /** Hard ceiling on an imported save, well above anything this chapter produces. */
 export const MAX_SAVE_BYTES = 512 * 1024;
@@ -40,7 +40,13 @@ function isFlagValue(value: unknown): value is FlagValue {
 }
 
 function isChapter(value: unknown): value is Chapter {
-  return value === 'select' || value === 'rite' || value === 'crossing' || value === 'future';
+  return (
+    value === 'select' ||
+    value === 'rite' ||
+    value === 'crossing' ||
+    value === 'future' ||
+    value === 'return'
+  );
 }
 
 function isEra(value: unknown): value is Era {
@@ -178,6 +184,7 @@ function isJournalEntry(value: unknown): value is JournalEntry {
  *    so it cannot be appended twice.
  */
 const CONTINUATION_ENTRY_ID = 't.m3.continues';
+const CONTINUATION_FUTURE_ID = 't.m4.continues';
 
 function migrateV1toV2(data: Record<string, unknown>): Record<string, unknown> {
   const next = { ...data };
@@ -209,8 +216,67 @@ function migrateV1toV2(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
+ * Format 2 → 3.
+ *
+ * Same shape again. 3 only widens `chapter` by one value — `return`, which is
+ * the original era for the second time — and adds the flags and locations the
+ * ruined century needs. So this is a value fix-up with one thing to fix, and it
+ * is the same thing as last time one boundary further on: **a save that stopped
+ * where the previous build stopped.**
+ *
+ * That save is `ended: true` in `future.deep_chamber`, having just arrived.
+ * The chapter continues from there now, so it comes back as a game in progress
+ * with the objective the rest of the chapter answers.
+ *
+ * The version is the right hook for this precisely because the state shape did
+ * not change: `ended` at the future arrival is indistinguishable from a
+ * legitimate format-3 state by inspection alone, so the rule is "format 2 said
+ * the story stopped here, format 3 says it does not", and it runs exactly once
+ * per file on the way in.
+ *
+ * Same two properties as the 1 → 2 step:
+ *
+ *  - **Only eligible saves.** Conditioned on the location, on `ended`, and on
+ *    the crossing that is the only way to be standing there. Nothing else is
+ *    cleared, and a save marked complete anywhere the current content cannot
+ *    end is refused as an edited file rather than repaired.
+ *  - **Idempotent.** After the fix-up the save is not `ended`, so a second run
+ *    does nothing, and the notice is keyed on a fixed transcript id.
+ */
+function migrateV2toV3(data: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...data };
+  const wasFutureArrival =
+    next.ended === true &&
+    next.locationId === 'future.deep_chamber' &&
+    isPlainObject(next.flags) &&
+    next.flags[FLAGS.crossedForward] === true;
+
+  if (wasFutureArrival) {
+    next.ended = false;
+    next.objective = OBJECTIVES.future;
+
+    const transcript = Array.isArray(next.transcript) ? [...next.transcript] : [];
+    const alreadyTold = transcript.some(
+      (entry: unknown) => isPlainObject(entry) && entry.id === CONTINUATION_FUTURE_ID
+    );
+    if (!alreadyTold) {
+      transcript.push({
+        id: CONTINUATION_FUTURE_ID,
+        kind: 'system',
+        text: CONTINUATION_FUTURE,
+      });
+    }
+    next.transcript = transcript;
+  }
+
+  return next;
+}
+
+/**
  * Save-format migrations, oldest first, each one feeding the next.
  *
+ * A format-1 save that has never been opened since goes through both steps, in
+ * order, which is why they are written as fall-through rather than a switch.
  * No step is invented for a version that was never shipped.
  */
 function migrate(
@@ -223,6 +289,10 @@ function migrate(
   if (at === 1) {
     working = migrateV1toV2(working);
     at = 2;
+  }
+  if (at === 2) {
+    working = migrateV2toV3(working);
+    at = 3;
   }
 
   if (at === SCHEMA_VERSION) return { ok: true, data: working };
@@ -294,9 +364,15 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
     // Nothing is ever saved before a character is chosen.
     return { ok: false, error: 'That save was written before the story started.' };
   }
-  // Each crossing moves chapter and era together, so the two can only disagree
-  // in a file that has been edited. One chapter per era, checked both ways.
-  if (chapter !== chapterForEra(era)) {
+  /*
+   * Each crossing moves chapter and era together, so the two can only disagree
+   * in a file that has been edited.
+   *
+   * Not one chapter per era any more: the original era is both the opening and
+   * the return, so this checks membership of the legal pairs rather than
+   * equality against a single answer.
+   */
+  if (!chaptersForEra(era).includes(chapter)) {
     return {
       ok: false,
       error: 'That save is inconsistent: its chapter and its era disagree about the crossing.',
@@ -397,35 +473,72 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
   }
   /*
    * `ended` marks the boundary of the content that exists, which is now the
-   * arrival in the broken chamber. A format-1 save that was `ended` at
-   * `past.square` has already been un-ended by the migration above, so
-   * reaching here with `ended` set anywhere else means an edited file.
+   * return: the sealed chamber, at dusk, with two of them in it. Saves that
+   * were `ended` at either previous boundary have already been un-ended by the
+   * migrations above, so reaching here with `ended` set anywhere else means an
+   * edited file.
    */
-  if (ended && locationId !== 'future.deep_chamber') {
+  if (ended && !(locationId === 'present.sealed_chamber' && chapter === 'return')) {
     return {
       ok: false,
       error: 'That save is marked complete somewhere the current content cannot end.',
     };
   }
-  if (ended && flags[FLAGS.crossedForward] !== true) {
+  if (ended && flags[FLAGS.crossedBack] !== true) {
     return {
       ok: false,
       error: 'That save is marked complete without the crossing that gets there.',
     };
   }
-  // `crossed` latches on the first crossing and stays true afterwards, so it
-  // means "no longer in the opening era" rather than "in the past".
-  if (Boolean(flags[FLAGS.crossed]) !== (era !== 'present')) {
+  /*
+   * `crossed` latches on the first crossing and stays true afterwards, so it
+   * means "has been somewhere else" rather than "is somewhere else now" — and
+   * the original era is reachable both before any crossing and after all three
+   * of them, so the chapter is what distinguishes those.
+   */
+  const hasCrossed = era !== 'present' || chapter === 'return';
+  if (Boolean(flags[FLAGS.crossed]) !== hasCrossed) {
     return {
       ok: false,
       error: 'That save is inconsistent: its crossing flag and its era disagree.',
     };
   }
-  if (Boolean(flags[FLAGS.crossedForward]) !== (era === 'future')) {
+  /*
+   * `crossedForward` latches at the second crossing and stays set afterwards,
+   * so it means "has been to the ruined century" rather than "is there now".
+   * The chapter is what says where they are.
+   */
+  if (flags[FLAGS.crossedForward] !== true && (era === 'future' || chapter === 'return')) {
     return {
       ok: false,
       error: 'That save is inconsistent: its second crossing and its era disagree.',
     };
+  }
+  if (Boolean(flags[FLAGS.crossedBack]) !== (chapter === 'return')) {
+    return {
+      ok: false,
+      error: 'That save is inconsistent: its last crossing and its chapter disagree.',
+    };
+  }
+  /*
+   * An eye does not grow back and is not lost early. It happens once, at the
+   * seal, and the seal cannot be open without it — so a file claiming one
+   * without the other has been edited.
+   */
+  if (Boolean(flags[FLAGS.lostEye]) !== Boolean(flags[FLAGS.sealOpened])) {
+    return {
+      ok: false,
+      error: 'That save is inconsistent about the seal and the injury.',
+    };
+  }
+  if (chapter === 'return' && flags[FLAGS.lostEye] !== true) {
+    return { ok: false, error: 'That save returns without the injury that got it there.' };
+  }
+  if (chapter === 'return' && flags[FLAGS.knowsResponsibility] !== true) {
+    return { ok: false, error: 'That save returns without the reason for returning.' };
+  }
+  if (flags[FLAGS.sealOpened] === true && era === 'present' && chapter === 'rite') {
+    return { ok: false, error: 'That save is inconsistent: its era and its history disagree.' };
   }
   // Access latches, and the three ways of earning it are the only ways it can
   // be set, so a file claiming access with none of them has been edited.

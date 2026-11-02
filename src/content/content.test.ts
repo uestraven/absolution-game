@@ -25,8 +25,10 @@ const EXPECTED_CONNECTIONS: Array<[LocationId, LocationId]> = [
   ['past.entrance', 'past.cave_path'],
   ['past.cave_path', 'past.spring'],
   ['past.cave_path', 'past.square'],
-  // future.deep_chamber is deliberately connected to nothing: it is the
-  // arrival room and the end of the content that exists.
+  ['future.deep_chamber', 'future.cave_path'],
+  ['future.cave_path', 'future.entrance'],
+  ['future.cave_path', 'future.square'],
+  ['future.entrance', 'future.sealed_chamber'],
 ];
 
 function exitsFrom(id: LocationId) {
@@ -37,7 +39,11 @@ describe('the map', () => {
   it('has every location the brief lists, and no duplicates', () => {
     expect(ALL_LOCATION_IDS.sort()).toEqual(
       [
+        'future.cave_path',
         'future.deep_chamber',
+        'future.entrance',
+        'future.sealed_chamber',
+        'future.square',
         'past.cave_path',
         'past.deep_chamber',
         'past.entrance',
@@ -93,7 +99,7 @@ describe('the map', () => {
     }
   });
 
-  it('gates only the deep passage, and gates it on the puzzle', () => {
+  it('gates the ways on, and gates each on its own puzzle', () => {
     const gated: string[] = [];
     for (const id of ALL_LOCATION_IDS) {
       for (const exit of exitsFrom(id)) {
@@ -104,6 +110,11 @@ describe('the map', () => {
       [
         'past.deep_chamber:to_worksite',
         'present.sealed_chamber:to_deep',
+        // The return keeps the hero in the room: there is nowhere authored
+        // for a one-eyed stranger to go at dusk, and leaving would abandon
+        // the only thing they came back for.
+        'present.sealed_chamber:to_gallery',
+        'future.entrance:to_sealed',
       ].sort()
     );
 
@@ -147,6 +158,37 @@ describe('objects and people', () => {
       for (const [noun, owners] of counts) {
         if (owners.length > 1 && !deliberate.has(noun)) {
           throw new Error(`"${noun}" is shared in ${locationId} by ${owners.join(', ')}`);
+        }
+      }
+    }
+  });
+
+  /**
+   * An exit alias that is also an object's noun turns a plain EXAMINE into a
+   * "which one do you mean?" prompt, which has now happened four times — the
+   * spoil heap, the tear in the broken chamber, the view down from the past
+   * mouth, and the cut steps.
+   *
+   * Only objects that are unconditionally part of their room are checked.
+   * Anything with a `hiddenWhen` is conditional by design, and the cases that
+   * remain are ones where the object and the exit are the same physical thing:
+   * the opened passage is a slab you can look at and the way down, and sharing
+   * a word there is right rather than ambiguous.
+   */
+  it('never give an exit an alias that an object in the same room answers to', () => {
+    for (const id of ALL_LOCATION_IDS) {
+      const nouns = new Map<string, string>();
+      for (const def of OBJECTS_BY_LOCATION[id] ?? []) {
+        if (def.hiddenWhen) continue;
+        for (const noun of def.nouns) nouns.set(noun.toLowerCase(), def.id);
+      }
+      for (const exit of LOCATIONS[id].exits) {
+        for (const alias of [exit.direction, ...(exit.aliases ?? [])]) {
+          if (!alias) continue;
+          const owner = nouns.get(alias.toLowerCase());
+          if (owner) {
+            throw new Error(`${id}: "${alias}" is an alias of ${exit.id} and a noun of ${owner}`);
+          }
         }
       }
     }
@@ -273,13 +315,22 @@ describe('the naming convention', () => {
     'Saffra',
     'Fenn',
     'Lovage',
+    'Sorrel',
+    'Rue',
   ]);
+
+  /**
+   * The protagonist, met from the outside. Named by the player's choice at the
+   * start, so the cast list cannot name them and the convention does not apply.
+   */
+  const NOT_A_VILLAGER = new Set(['earlier_self']);
 
   /** Named in dialogue but never met. Same convention. */
   const OFFSTAGE = ['Hyssop', 'Nettle', 'Cress', 'Chervil', 'Borage', 'Mint', 'Caraway'];
 
   it('names every character on stage from the herb convention', () => {
     for (const person of Object.values(PEOPLE)) {
+      if (NOT_A_VILLAGER.has(person.id)) continue;
       expect(HERB_NAMES, `${person.id} is outside the naming convention`).toContain(person.name);
     }
   });
@@ -300,10 +351,16 @@ describe('the naming convention', () => {
     // New in this chapter, so its id is simply its name: there is no earlier
     // provisional name for a save to be holding.
     lovage: 'Lovage',
+    sorrel: 'Sorrel',
+    rue: 'Rue',
   };
 
   it('keeps internal ids stable while display names change', () => {
-    expect(Object.keys(PEOPLE).sort()).toEqual(Object.keys(ID_TO_NAME).sort());
+    expect(
+      Object.keys(PEOPLE)
+        .filter((id) => !NOT_A_VILLAGER.has(id))
+        .sort()
+    ).toEqual(Object.keys(ID_TO_NAME).sort());
     for (const [id, name] of Object.entries(ID_TO_NAME)) {
       expect(PEOPLE[id]?.name, id).toBe(name);
     }

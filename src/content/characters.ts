@@ -58,6 +58,8 @@ export function renderText(template: string, state: Pick<GameState, 'character'>
     their: p.possessive,
     theirs: p.possessivePronoun,
     themself: p.reflexive,
+    // Pronouns carries this already, for lines that need agreement.
+    is: p.isAre,
   };
   return template.replace(/\{([A-Za-z]+)\}/g, (match, rawKey: string) => {
     const key = rawKey.toLowerCase();

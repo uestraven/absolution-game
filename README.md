@@ -1,6 +1,6 @@
 # Absolution
 
-A short, text-led adventure. This build contains two complete, playable
+A short, text-led adventure. This build contains three complete, playable
 chapters.
 
 **Chapter 1** — character selection, a village to explore, contrasting accounts
@@ -12,10 +12,15 @@ out wrong, a building site with a foreman on the door, a question you are asked
 and have to answer, and the builders' three lamp positions — one of which you
 can light.
 
-Then it stops, on purpose, with a clear end-of-current-content message. **That
-is not the ending.** The chapters after it are designed and not built.
+**Chapter 3** — the same valley a hundred years the other way. Thirty people
+where there were two hundred, a hill somebody has walled up, a chest of records
+with a woman sitting against it, and four separate things that have to be put
+together before the way home is worth taking.
 
-First playthrough is roughly 45–60 minutes.
+Then it stops, on purpose, with a clear end-of-current-content message. **That
+is not the ending.** The last chapter is designed and not built.
+
+First playthrough is roughly 75–95 minutes.
 
 - **Working title.** Nothing here is a final name.
 - **No backend.** No accounts, database, API keys, paid services or runtime AI.
@@ -170,6 +175,9 @@ src/
       recitation.ts        the fixed scene in the square
       worksite.ts          the three lamp positions and the second crossing
       rupture.ts           the authored wrongnesses
+      evidence.ts          the four sources, and the hero's inference
+      futureSeal.ts        breaking back in, and the eye
+      futureReturn.ts      the middle position, and the way home
   content/      authored data: locations, objects, dialogue, items, flags,
                 hints, markup helpers, prose
   persistence/  localStorage slots, export/import, save validation
@@ -203,22 +211,36 @@ saves do not. Storage keys are unchanged from the first prototype
 
 | Format | Written by | Status |
 | --- | --- | --- |
-| 1 | the opening-chapter builds | **Loads.** Migrated on read, by every route in: autosave, backup, checkpoint and Import Save |
-| 2 | this build | Current |
+| 1 | the opening-chapter builds | **Loads.** Migrated on read |
+| 2 | the builds that ended at the ruined-future arrival | **Loads.** Migrated on read |
+| 3 | this build | Current |
 
-Format 2 widens what `era`, `chapter` and `locationId` may hold — it adds the
-later era — and adds the items and flags Chapter 2 introduces. No field was
-removed or retyped, so the 1 → 2 migration is a value fix-up with exactly one
-thing to fix: **a save that stopped where the prototype used to stop.** Such a
-save was marked complete in the past square. That position is playable now, so
-it comes back as a game in progress, with its objective updated and one line
-appended to the transcript saying the story continues — the historical
-end-of-prototype entry is left where it is rather than silently contradicted.
+Each step only *widens* what `era`, `chapter` and `locationId` may hold, and
+adds items and flags. No field has ever been removed or retyped, so both
+migrations are value fix-ups — and each has exactly one thing to fix: **a save
+that stopped where that build stopped.**
+
+| Step | The save it fixes | What it does |
+| --- | --- | --- |
+| 1 → 2 | marked complete in the past square | Un-ends it, sets the objective the rest of Chapter 2 answers |
+| 2 → 3 | marked complete at the arrival in the broken chamber | Un-ends it, sets the objective the rest of Chapter 3 answers |
+
+Either way the save comes back as a game in progress, with one line appended to
+the transcript saying the story continues past that point now. The historical
+end-of-content entry is left exactly where it is rather than silently
+contradicted, and a format-1 file that has not been opened since goes through
+both steps in order.
 
 Nothing else is touched. No other completion flag is cleared, no progress is
-reset, no items are added to an old inventory, and the migration is idempotent.
-A save marked complete anywhere the current content cannot end is refused as an
-edited file rather than quietly repaired.
+reset, no items are added to an old inventory, and both migrations are
+idempotent. A save marked complete anywhere the current content cannot end is
+refused as an edited file rather than quietly repaired.
+
+The version is the right hook for this precisely *because* the state shape did
+not change: `ended` at an old boundary is indistinguishable from a legitimate
+current state by inspection alone, so the rule is "the previous format said the
+story stopped here, this one says it does not", and it runs once per file on
+the way in.
 
 Internal person and topic ids were deliberately left alone when the cast was
 renamed, so a save from before that still loads too.

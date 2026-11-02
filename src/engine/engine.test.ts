@@ -90,6 +90,14 @@ describe('hidden things stay hidden', () => {
         'worksite.highdish',
         'worksite.lowdish',
         'worksite.outline',
+        // Found by looking at the sky long enough to count.
+        'futurepath.bird',
+        // Behind the fill, and behind Rue deciding to hand the roll over.
+        'futuresealed.middledish',
+        'futuresquare.account',
+        // In a goat shed, under a wall, where a basket used to be.
+        'futuresquare.chock',
+        'futuresquare.maul',
       ].sort()
     );
   });

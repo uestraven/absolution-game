@@ -69,6 +69,9 @@ const THRESHOLD_NOUNS = new Set([
   'half-cut aperture',
   'thinned panel',
   'worksite.aperture',
+  'gap in the panel',
+  'middle dish',
+  'futuresealed.middledish',
 ]);
 
 /** Nouns that mean "the prophecy" when the hero is being asked for it. */
@@ -144,6 +147,15 @@ const KNOWN_VERBS = new Set([
   'say',
   'tell',
   'wait',
+  'break',
+  'smash',
+  'hit',
+  'swing',
+  'clear',
+  'pull',
+  'think',
+  'reflect',
+  'consider',
 ]);
 
 export function normalizeInput(raw: string): string {
@@ -488,6 +500,31 @@ export function parse(raw: string, context: ParseContext = {}): GameAction {
       if (PROPHECY_NOUNS.has(body) || PROPHECY_NOUNS.has(rest)) return { type: 'RECITE' };
       return { type: 'UNPARSED', raw, reason: 'recite-what' };
     }
+
+    case 'break':
+    case 'smash':
+    case 'hit':
+    case 'swing': {
+      const body = words.slice(1).filter((w) => w !== 'at' && w !== 'into' && w !== 'down');
+      const split = splitOn(body, ['with', 'using']);
+      const target = split ? split.left : stripArticles(body).join(' ');
+      if (target.length === 0) return { type: 'UNPARSED', raw, reason: 'no-object' };
+      const action: GameAction = { type: 'BREAK', target };
+      return split && split.right.length > 0 ? { ...action, using: split.right } : action;
+    }
+
+    case 'clear':
+    case 'pull': {
+      const body = words.slice(1).filter((w) => w !== 'off' && w !== 'away' && w !== 'out');
+      const target = stripArticles(body).join(' ');
+      if (target.length === 0) return { type: 'UNPARSED', raw, reason: 'no-object' };
+      return { type: 'CLEAR', target };
+    }
+
+    case 'think':
+    case 'reflect':
+    case 'consider':
+      return { type: 'REFLECT' };
 
     case 'wait':
     case 'z':

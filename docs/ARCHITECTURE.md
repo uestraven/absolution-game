@@ -175,7 +175,10 @@ The puzzle-specific code has been lifted out of the reducer:
 | `engine/puzzles/water.ts` | Worksite access by carrying the crew their water, and the authored refusal once that route closes |
 | `engine/puzzles/recitation.ts` | The fixed scene in the square: when it can happen, what declining costs, and the one commit that lands it |
 | `engine/puzzles/worksite.ts` | The three lamp positions — including the destination table, which is the only place the mapping lives — and the second crossing |
-| `engine/puzzles/rupture.ts` | The three authored wrongnesses, their triggers, and nothing that explains any of them |
+| `engine/puzzles/rupture.ts` | The authored wrongnesses, their triggers, and nothing that explains any of them |
+| `engine/puzzles/evidence.ts` | The four sources, which are missing, and the hero's inference |
+| `engine/puzzles/futureSeal.ts` | Breaking back into the hill, and the one authored injury |
+| `engine/puzzles/futureReturn.ts` | The middle position, and the last crossing |
 | `engine/reducer.ts` | The action pipeline, noun resolution and the generic verbs |
 
 The destination table deserves a note, because it is the thing most likely to be
@@ -193,9 +196,10 @@ Adding to the game:
   discovers whatever is `initiallyVisible`.
 - **An era.** A new `LocationId` prefix, the matching `Era` value, and a case in
   `eraOf`. Validation already cross-checks `era` against the location prefix,
-  so a new era is covered by the existing coherence checks — and `chapterForEra`
+  so a new era is covered by the existing coherence checks — and `chaptersForEra`
   is the single place the chapter/era pairing is declared, so adding a case
-  there covers both directions of that check too. A save that could not have
+  there covers both directions of that check too. The pairing is **one era to
+  many chapters**: the original era is both the opening and the return. A save that could not have
   been written by the previous build needs `SCHEMA_VERSION` bumped and a
   migration step written and tested in the same pass, not deferred.
 - **A puzzle.** A new module beside `shutteredRelief.ts`, exporting handlers of
@@ -217,6 +221,32 @@ Adding to the game:
   `resolve`. `App.persist` writes a fresh checkpoint whenever `chapter` changes.
   Add the chapter to the `Chapter` union and to the chapter/era coherence rules
   in `persistence/validate.ts`.
+
+## Revisiting a room in a different chapter
+
+The sealed chamber is entered in two chapters, a hundred years apart in the
+fiction and twenty minutes apart in the hero's life. Four mechanisms make that
+work, and they are the pattern for any room that has to do it again:
+
+- **The room branches on `chapter`.** `present.sealed_chamber`'s description has
+  its own branch for `return`, because the opening's branch reads the player's
+  own `lanternInAlcove` / `lanternLit` flags and on the return that lamp is
+  somebody else's.
+- **Objects that describe player state are hidden.** The shutter, alcove, eye,
+  wall and passage carry `hiddenWhen: chapter === 'return'`, and the return has
+  its own object for the lamp. One object can serve both chapters where it is
+  genuinely the same thing — the seam does, with a second description.
+- **`getAffordances` will not offer to take something out of a hidden host.** A
+  fixture that is not currently part of the room is not a place to reach into,
+  which is what stops the return offering the earlier self's wedge.
+- **People have `available`.** `discovered` latches — once met, always met — so
+  presence has to be a separate question from acquaintance. `earlier_self` is
+  `available: chapter === 'return'`, which is why that room has nobody in it
+  during the opening.
+
+The other half of the rule is that the other person's belongings are **objects,
+not items.** There is one lantern record in the save and it is the hero's. A
+second inventory framework is not needed to put somebody in a room with a lamp.
 
 ## Dialogue
 

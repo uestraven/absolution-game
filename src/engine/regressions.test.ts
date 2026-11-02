@@ -14,6 +14,8 @@ import {
   WORKSITE_TO_SQUARE,
   act,
   begin,
+  finishChapterThree,
+  hasReturned,
   progressOf,
   type,
   typeAll,
@@ -206,9 +208,9 @@ describe('the crossing cannot strand anything the player still needs', () => {
     ...GO_FORWARD,
   ];
 
-  /** Reached the end of the built content, in the broken chamber. */
+  /** Reached the end of the built content, back in the sealed chamber. */
   function finished(state: ReturnType<typeof begin>): boolean {
-    return state.locationId === 'future.deep_chamber' && state.ended && state.chapter === 'future';
+    return hasReturned(state);
   }
 
   /** Every way the two items can be arranged at the moment of crossing. */
@@ -243,7 +245,7 @@ describe('the crossing cannot strand anything the player still needs', () => {
 
       const crossed = type(state, 'enter threshold');
       expect(crossed.accepted).toBe(true);
-      const end = typeAll(crossed.state, FINISH);
+      const end = finishChapterThree(typeAll(crossed.state, FINISH)).state;
       expect(finished(end), `could not finish with ${name}`).toBe(true);
     });
   }
@@ -284,11 +286,9 @@ describe('the crossing cannot strand anything the player still needs', () => {
     // Taking a lamp in hand must not leave the old room describing one in a dish.
     expect(borrowed.state.flags[FLAGS.lanternInAlcove]).toBe(false);
 
-    const end = typeAll(borrowed.state, [
-      ...WORKSITE_TO_SQUARE,
-      ...SQUARE_TO_WORKSITE,
-      ...GO_FORWARD,
-    ]);
+    const end = finishChapterThree(
+      typeAll(borrowed.state, [...WORKSITE_TO_SQUARE, ...SQUARE_TO_WORKSITE, ...GO_FORWARD])
+    ).state;
     expect(finished(end)).toBe(true);
   });
 

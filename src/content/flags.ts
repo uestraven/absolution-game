@@ -105,6 +105,60 @@ export const FLAGS = {
   symptomMark: 'symptom_mark',
   /** Weather that un-happened. */
   symptomWeather: 'symptom_weather',
+
+  /* ---- Chapter 2: the low position, tried on purpose --------------- */
+  /** The lantern is standing in the low dish. */
+  lanternInLowDish: 'lantern_in_low_dish',
+
+  /* ---- Chapter 3: out of the hill ---------------------------------- */
+  /** Climbed out through the subsidence tear onto the hillside. */
+  leftTheHill: 'left_the_hill',
+  /** Tried the old stair and found it closed. */
+  triedBlockedStair: 'tried_blocked_stair',
+
+  /* ---- Chapter 3: the evidence (P5) ------------------------------- */
+  /** Read the settlement's Account, with the canonical text inside it. */
+  readAccount: 'read_account',
+  /** Read the memorial stone and the year on it. */
+  readMemorial: 'read_memorial',
+  /** Heard the inherited story of the child who went up to the hill. */
+  heardMissingChild: 'heard_missing_child',
+  /** Went back through their own journal while standing in this century. */
+  checkedJournal: 'checked_journal',
+  /** Saw something here behave the way things behaved in the past. */
+  sawFutureSymptom: 'saw_future_symptom',
+  /** Put it together. The hero's inference, not a proof. */
+  knowsResponsibility: 'knows_responsibility',
+
+  /* ---- Chapter 3: the seal (P6) ----------------------------------- */
+  /** Sorrel has named the course that is loose. */
+  knowsLooseCourse: 'knows_loose_course',
+  /** Something is holding the course off the stone below it. */
+  coursePropped: 'course_propped',
+  /** Swung at the seal without bracing it first. A setback, nothing more. */
+  sealSettled: 'seal_settled',
+  /** One good blow has landed on a braced course. */
+  sealStruck: 'seal_struck',
+  /** The seal is down. Latches: it does not close again. */
+  sealOpened: 'seal_opened',
+  /** Asked Rue whether the hill may be opened. */
+  askedRue: 'asked_rue',
+  /** The left eye is gone. */
+  lostEye: 'lost_eye',
+  /** Somebody at the mouth put a name to what they were looking at. */
+  namedWanderer: 'named_wanderer',
+  /** Somebody cleaned and bound it. */
+  eyeTreated: 'eye_treated',
+
+  /* ---- Chapter 3: the way home ------------------------------------ */
+  /** The fill over the middle dish has been looked at closely. */
+  examinedFill: 'examined_fill',
+  /** The fill is off and the middle dish is reachable. */
+  fillCleared: 'fill_cleared',
+  /** The lantern is standing in the middle dish. */
+  lanternInMiddleDish: 'lantern_in_middle_dish',
+  /** The third crossing has been made. */
+  crossedBack: 'crossed_back',
   /** How many hints deep the player has gone in the current hint context. */
   hintStage: 'hint_stage',
   /** Which hint ladder the last hint came from, so a new context restarts it. */
@@ -168,6 +222,28 @@ export const FLAG_TYPES: Record<string, 'boolean' | 'number' | 'string'> = {
   [FLAGS.symptomSound]: 'boolean',
   [FLAGS.symptomMark]: 'boolean',
   [FLAGS.symptomWeather]: 'boolean',
+  [FLAGS.lanternInLowDish]: 'boolean',
+  [FLAGS.leftTheHill]: 'boolean',
+  [FLAGS.triedBlockedStair]: 'boolean',
+  [FLAGS.readAccount]: 'boolean',
+  [FLAGS.readMemorial]: 'boolean',
+  [FLAGS.heardMissingChild]: 'boolean',
+  [FLAGS.checkedJournal]: 'boolean',
+  [FLAGS.sawFutureSymptom]: 'boolean',
+  [FLAGS.knowsResponsibility]: 'boolean',
+  [FLAGS.knowsLooseCourse]: 'boolean',
+  [FLAGS.coursePropped]: 'boolean',
+  [FLAGS.sealSettled]: 'boolean',
+  [FLAGS.sealStruck]: 'boolean',
+  [FLAGS.sealOpened]: 'boolean',
+  [FLAGS.askedRue]: 'boolean',
+  [FLAGS.lostEye]: 'boolean',
+  [FLAGS.namedWanderer]: 'boolean',
+  [FLAGS.eyeTreated]: 'boolean',
+  [FLAGS.examinedFill]: 'boolean',
+  [FLAGS.fillCleared]: 'boolean',
+  [FLAGS.lanternInMiddleDish]: 'boolean',
+  [FLAGS.crossedBack]: 'boolean',
   [FLAGS.hintStage]: 'number',
   [FLAGS.hintContext]: 'string',
 };

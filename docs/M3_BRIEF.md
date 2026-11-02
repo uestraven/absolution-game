@@ -1,6 +1,7 @@
 # Milestone 3 — the past chapter, ending on arrival in the future
 
-**Status: delivered.** Built, tested and verified in the browser. See
+**Status: delivered.** Built, tested and verified in the browser. The chapter
+after it is delivered too — see `docs/WALKTHROUGH.md` for the current scope. See
 [`docs/WALKTHROUGH.md`](WALKTHROUGH.md) for the routes, puzzle states, save
 migration and verification results, and the final report in the commit that
 delivered it.

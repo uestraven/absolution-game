@@ -116,7 +116,10 @@ supersede earlier drafting. The reasoning and the detail live in
 | **A word-for-word recitation** | Built. One canonical text in `content/prophecy.ts`, used by both the plank and the recitation, because the plank's words come from the recitation. No wording variants, no selectable clauses, no flag recording what was said. The hero mentions it assuming common ground, is shocked that nobody knows it, is asked, and answers by a deliberate action the player takes |
 | **Nobody in the past knows the prophecy** | Built. Saffra turns the word over as one she has not been given before; Fenn asks whether it is a dog |
 | **The mechanism is never explained** | Built, and asserted by test. Three authored observations and no account of any of them: Lovage says outright he has no idea and would not believe a man who said he did. No inscription, narrator, builder or journal entry diagnoses anything |
-| **Singularity is never shown or stated** | Nothing in the built chapters touches it. It constrains Milestone 5, and the opening contains no future-self meeting for it to contradict |
+| **Singularity is never shown or stated** | Nothing in the built chapters touches it. It constrains the last chapter, and the opening contains no future-self meeting for it to contradict |
+| **No future-self encounter in the original journey** | Built, and asserted by test. Chapter 1 as played has nobody else in that room; the second temporal version appears for the first time on the return, which is a chapter the opening cannot know about. The settlement's oldest story is a child who went in and did not come out — an event that did happen — and there is no record anywhere of a one-eyed figure in year 0 |
+| **The hero becomes what the words describe** | Built. A stone off the hillside takes the left eye while the seal is being broken, in daylight, in front of witnesses, and a man with a bucket puts the word to it out of what he believes. The narration never certifies it, and Rue says in as many words that the words never promised a stranger to blame |
+| **A worldwide catastrophe, shown not asserted** | Built. A sky with no weather in it, a capped well drawn one bucket at a time, a settlement that only mends, and Rue's eleven written places of which nine simply stop. Nobody claims to know the state of everywhere: she has not known about the one other survivor for thirty-one years |
 
 ### Deliberately avoided, because not approved
 
@@ -252,7 +255,11 @@ things." Chosen to imply someone cares without asserting any family facts.
 - The village's name.
 - The protagonist's family details.
 - The ultimate rescue plan.
-- The cause and timing of the eye injury.
+- The cause and timing of the eye injury. *(**Now implemented**: a stone off the
+  hillside while the seal is being broken, outside, in front of witnesses, with
+  the fall it came out of beginning afterwards. Still proposed rather than
+  canon; the canon is only that a missing eye fulfils the description, and
+  nothing in the game explains the sequence.)*
 - The hero's subjective journey length and changing appearance.
 - The practical rules for crossings, destinations, object transport and the
   last return. *(Three **fixed** destinations — year −100, year 0, year +100 —
@@ -312,12 +319,16 @@ owner-approved fact about how this world works:
 | Worksite access by water, by Fenn's gap, or by Saffra's escort | Lovage, his crew, the split barrel and all three routes |
 | The three wrongnesses — a sound before its cause, a chalk line that has moved, weather that un-happens | Which symptoms, and when. The constraint they satisfy *is* canon: never explained |
 | The worked pillar in `present.sealed_chamber` and `past.worksite`, and Lovage's warning about it | The finale it foreshadows |
-| The arrival in a broken chamber with a dry basin, a fall-closed stair and a tear in the wall | Everything about the era beyond that one room |
+| The arrival in a broken chamber with a dry basin, a fall-closed stair and a tear in the wall | The geography of the ruined century |
+| Rue and Sorrel, the record chest, the Account, the memorial, the sealed mouth and its loose third course | All of it. Names, roles, the shape of the evidence and the practical puzzle |
+| The eye lost at the seal, from a stone that arrives before its rockfall | The timing, the staging and the witness. The *canon* is only that a missing eye fulfils the description |
+| The middle position reaching the original era, at the moment the younger self's lamp finds the seam | The destination rule, and which instant it lands on |
 
-What the built chapters deliberately still do **not** contain: the eye injury,
-the future settlement, Rue and Sorrel, breaking the seal, the return crossing,
-the confrontation, the killing, the sacrifice and the epilogue. Reaching the
-broken chamber is the end of the built content and is not an ending.
+What the built chapters deliberately still do **not** contain: the
+confrontation, the killing, the sacrifice, the destruction of the cave and the
+epilogue. Reaching the sealed chamber on the return is the end of the built
+content and is not an ending — the hero can look, read and say one thing, and
+everything after that is refused with a reason.
 
 ## Milestone 1 housekeeping
 

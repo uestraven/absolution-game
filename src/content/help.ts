@@ -21,6 +21,8 @@ Handling things
   PLACE <thing> IN <thing> (PUT, SET, STAND)
   FILL <thing>                where there is something to fill from
   GIVE <thing> TO <person> (HAND, OFFER)
+  BREAK <thing> (SMASH, HIT, SWING AT) — needs something to swing
+  CLEAR <thing> (PULL OFF)    shift what is loose off what is behind it
 
 People
   TALK TO <person> (SPEAK TO, ASK)
@@ -29,6 +31,7 @@ People
   RECITE PROPHECY             only where you have been asked for it
 
 Other
+  REFLECT (THINK, CONSIDER)   stop and put together what you have found
   WAIT (Z)                    let a moment pass. Nothing is on a clock
   JOURNAL                     what you have established so far
   HINT                        nudge, then more, then the answer

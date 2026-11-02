@@ -1081,6 +1081,380 @@ const PERSON_LIST: PersonDef[] = [
       },
     ],
   },
+  /* ================================================================ *
+   * The settlement
+   * ================================================================ */
+  {
+    id: 'sorrel',
+    name: 'Sorrel',
+    nouns: ['sorrel', 'girl', 'child'],
+    locationId: 'future.entrance',
+    listAs: c('Sorrel, sitting on the rubble below the seal'),
+    appearance: () =>
+      'Thirteen or so, in a coat cut down from an adult one, with her boots off and her feet ' +
+      'on the warm side of a rock. She has a tally stick and a knife and she is notching the ' +
+      'stick without looking at it.',
+    greeting: (state) =>
+      state.flags[FLAGS.lostEye]
+        ? 'She has not gone back down. She is sitting where she was sitting, a little further ' +
+          'away.\n\n' +
+          '"You can see out of the other one," she says. It is not a question.'
+        : 'She looks up at you coming down off the shale, and then past you at the tear you ' +
+          'came out of, and then back.\n\n' +
+          '"That\'s not a way," she says.',
+    topics: [
+      {
+        id: 'who_you_are',
+        label: 'where you have come from',
+        aliases: ['stranger', 'who i am', 'me', 'ford'],
+        response: () =>
+          'You say you came over the ridge. She looks at the tear again.\n\n' +
+          '"Nobody comes over the ridge."\n\n' +
+          'She goes back to the tally stick. "There\'s nobody over the ridge. Rue has the list ' +
+          'of what\'s over the ridge and it\'s all crossed out."\n\n' +
+          'A notch. "You can come down if you want. We\'ve got water but you only get the one."',
+        effects: {
+          journal: [
+            {
+              id: 'j.sorrel_ridge',
+              text:
+                'Sorrel: nobody comes over the ridge, and Rue keeps a list of what is over the ' +
+                'ridge with everything on it crossed out.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'the_seal',
+        label: 'why the hill is walled up',
+        aliases: ['seal', 'wall', 'mouth', 'why', 'closed'],
+        response: () =>
+          '"Because of the Account." She says it the way you would say *because of the rain*. ' +
+          '"It came out of the hill, so they shut the hill."\n\n' +
+          '"Rue\'s lot did it. Not Rue. Her lot, back." She waves the knife vaguely uphill and ' +
+          'backwards. "There\'s a rule about it and the rule is don\'t."',
+        effects: {
+          flags: { [FLAGS.heardKeeper]: true },
+          journal: [
+            {
+              id: 'j.sorrel_seal',
+              text:
+                'The settlement sealed the hill because the Account says what came, came out ' +
+                'of it. The rule is that it stays shut.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'loose_course',
+        label: 'whether the wall is as good as it looks',
+        aliases: ['loose', 'course', 'weak', 'gap', 'third course'],
+        available: (state) => state.discovered.includes('topic.sorrel.the_seal'),
+        response: () =>
+          'She stops notching.\n\n' +
+          '"Third one up. Left end." She does not point. "You can get two fingers under it. ' +
+          'I\'ve had my whole hand in."\n\n' +
+          'You ask why she has had her whole hand in.\n\n' +
+          '"Because it\'s there." A pause. "Don\'t tell Rue I told you. Put something under it ' +
+          'first or it\'ll just sit down again, Bramble\'s dad did that with the lintel."',
+        effects: {
+          flags: { [FLAGS.knowsLooseCourse]: true },
+          journal: [
+            {
+              id: 'j.loose_course',
+              text:
+                'Sorrel: the third course up, left-hand end, is loose enough to get two ' +
+                'fingers under. Put something under it first or it will settle back down.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'the_world',
+        label: 'what is left anywhere else',
+        aliases: ['world', 'outside', 'towns', 'sea', 'elsewhere'],
+        response: () =>
+          '"I\'ve been to the water and the burnt place and that\'s it." She holds the tally ' +
+          'stick up and squints along it. "Ask Rue. Rue\'s got writing from other places."\n\n' +
+          '"They stop, though." She says it without any weight on it. "The writing. They all ' +
+          'stop."',
+        effects: {
+          journal: [
+            {
+              id: 'j.sorrel_world',
+              text:
+                'Sorrel has been as far as the water and a burnt place. Rue has writing from ' +
+                'other settlements, and Sorrel says all of it stops.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'after',
+        label: 'what she saw',
+        aliases: ['the stone', 'my face', 'eye', 'what happened'],
+        available: (state) => f(state, FLAGS.lostEye),
+        response: () =>
+          '"The stone came first."\n\n' +
+          'She has clearly been going over it. "It hit you and *then* it started. The rattle. I ' +
+          'heard it start after."\n\n' +
+          'She looks at the hillside above the mouth, where the fall came down, and then at ' +
+          'her own hands.\n\n' +
+          '"Things do that here. Not often." A notch, hard, in the wrong place on the stick. ' +
+          '"Hamm says don\'t talk about it because talking about it is how you end up like ' +
+          'Rue\'s mother."',
+        effects: {
+          journal: [
+            {
+              id: 'j.sorrel_after',
+              text:
+                'Sorrel saw it too: the stone hit me and the rockfall started afterwards. She ' +
+                'says things do that here, and that people are told not to talk about it.',
+            },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: 'rue',
+    name: 'Rue',
+    nouns: ['rue', 'woman', 'keeper', 'woman at the chest'],
+    locationId: 'future.square',
+    listAs: c('Rue, sitting against the chest'),
+    appearance: () =>
+      'Fifty, perhaps sixty; it is hard to tell here. Grey, cropped, with a blanket over her ' +
+      'knees and a slate and a nail on top of the blanket. She is sitting against the chest ' +
+      'rather than beside it.',
+    greeting: (state) =>
+      f(state, FLAGS.lostEye)
+        ? 'She does not get up and she does not look away.\n\n' +
+          '"Sit down," says Rue. "You are bleeding on my square and I have questions."'
+        : 'She watches you cross the whole square before she says anything.\n\n' +
+          '"You came down off the hill," says Rue. "Not up the valley. Down off the hill."',
+    topics: [
+      {
+        id: 'the_chest',
+        label: 'what she is sitting against',
+        aliases: ['chest', 'records', 'account', 'what she keeps'],
+        response: () =>
+          '"Everything anybody wrote down." She shifts the blanket. "Boards, slates, a hide, ' +
+          'the winters. It is not much and it is all of it."\n\n' +
+          'You ask whether you can see.\n\n' +
+          'She looks at you for a while. Then she reaches behind herself, without getting up, ' +
+          'and comes out with a roll of hide backed onto linen, and holds it out, and does not ' +
+          'let go of her end.',
+        effects: {
+          reveals: ['futuresquare.account'],
+          journal: [
+            {
+              id: 'j.rue_chest',
+              text:
+                'Rue keeps the settlement\'s records: boards, slates, a hide roll and a tally ' +
+                'of winters. She let me read the Account without letting go of it.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'the_child',
+        label: 'the oldest thing she knows',
+        aliases: ['child', 'story', 'oldest', 'inherited', 'the night'],
+        available: (state) => state.discovered.includes('topic.rue.the_chest'),
+        response: () =>
+          '"It is not in the chest, if that is what you are asking. It is not written." She ' +
+          'puts the slate down. "My mother had it off hers."\n\n' +
+          '"The night it started, there was a child of this village up at that hill doing the ' +
+          'rite. Sixteen. They went in and they did not come out, and nobody went in after ' +
+          'them, and in the morning the water had turned."\n\n' +
+          '"Three versions. One says it was a boy, one says a girl. One says there were two of ' +
+          'them, which there was not." She almost smiles, and it is not a nice one. "What they ' +
+          'all say is that nobody went in."\n\n' +
+          'A beat. "There was a name. My mother did not have it and neither do I."',
+        effects: {
+          flags: { [FLAGS.heardMissingChild]: true },
+          journal: [
+            {
+              id: 'j.rue_child',
+              text:
+                'Rue, unwritten, from her mother: on the night it started a sixteen-year-old ' +
+                'of this village went up to do the rite, went in, and did not come out. Nobody ' +
+                'went in after them. By morning the water had turned. The name is lost.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'what_came',
+        label: 'what she thinks came',
+        aliases: ['wanderer', 'cyclops', 'monster', 'what came', 'why'],
+        available: (state) => f(state, FLAGS.readAccount),
+        response: () =>
+          '"I think the words are old and somebody wrote them down and then it happened." She ' +
+          'taps the roll. "That is the whole of what I think. Everything else on there is ' +
+          'somebody arguing."\n\n' +
+          'You ask whether she believes the thing in it came out of the hill.\n\n' +
+          '"That is in the commentary, not the words. Fourth hand down." Flat. "Somebody read ' +
+          '*the hill will open* and decided it meant something came out of it, and three ' +
+          'generations have read that instead of the line."\n\n' +
+          '"Nobody saw anything come out of anywhere. If anybody had, it would be in the ' +
+          'chest."',
+        effects: {
+          journal: [
+            {
+              id: 'j.rue_interpretation',
+              text:
+                'Rue: the Account\'s claim that it came out of the hill is commentary, not the ' +
+                'words — somebody\'s reading of "the hill will open". No witness to anything ' +
+                'coming out of anywhere was ever written down.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'how_it_works',
+        label: 'how any of it works',
+        aliases: ['why', 'cause', 'mechanism', 'explain', 'how'],
+        available: (state) => f(state, FLAGS.readAccount),
+        response: () =>
+          '"I have no idea."\n\n' +
+          'She lets that sit long enough for you to understand that it is the complete answer.\n\n' +
+          '"I have four hands on that roll telling me why. One says a judgement, one says a ' +
+          'machine under the hill, one says the words did it by being said, and one is my ' +
+          'great-grandfather and he says it was a comet."\n\n' +
+          'She looks up at the sky, briefly. "They cannot all be right and they can all be ' +
+          'wrong."\n\n' +
+          '"I keep what was written. I do not add to it."',
+        effects: {
+          journal: [
+            {
+              id: 'j.rue_nobody_knows',
+              text:
+                'Four explanations are written on the Account and Rue believes none of them. ' +
+                'She says she keeps what was written and does not add to it.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'elsewhere',
+        label: 'the writing from other places',
+        aliases: ['other places', 'world', 'ridge', 'list', 'elsewhere'],
+        response: () =>
+          '"Eleven." She says the number before you have finished asking. "Eleven places wrote ' +
+          'to us or were written down by somebody who walked here. The sea came up. The sea ' +
+          'went down and came up again further. There was a city and it burned and then there ' +
+          'was nobody to say whether it stopped burning."\n\n' +
+          '"Nine of the eleven stop. They do not say goodbye, they stop." She picks the nail ' +
+          'up off the slate. "One of the two that did not stop was us. I do not know about the ' +
+          'other and I have not known for thirty-one years."\n\n' +
+          '"So. Not just the valley, if that is what you were working out."',
+        effects: {
+          journal: [
+            {
+              id: 'j.rue_elsewhere',
+              text:
+                'Rue has writing from eleven other places. The sea rose, a city burned, and ' +
+                'nine of the eleven simply stop. One of the two that did not was here. It is ' +
+                'not local.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'permission',
+        label: 'asking to open the hill',
+        aliases: ['permission', 'open', 'seal', 'let me in', 'hill'],
+        response: () =>
+          '"No."\n\n' +
+          'She does not move the blanket. "You are the fourth person in my life to ask and the ' +
+          'answer has not improved."\n\n' +
+          '"My lot shut it and the rule is that it stays shut, and the rule is the only thing ' +
+          'we have ever all agreed about." The nail goes back on the slate. "I am not going to ' +
+          'stop you. I am an old woman against a chest. I am telling you the answer is no, and ' +
+          'that you will have been told."',
+        effects: {
+          flags: { [FLAGS.askedRue]: true },
+          journal: [
+            {
+              id: 'j.rue_refuses',
+              text:
+                'Rue will not give permission to open the hill. She also says she will not ' +
+                'stop me, and that I will have been told.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'the_eye',
+        label: 'what she is looking at',
+        aliases: ['eye', 'my face', 'cyclops', 'wanderer', 'me'],
+        available: (state) => f(state, FLAGS.lostEye),
+        response: () =>
+          'She has the roll out on her knees, and she is not reading it.\n\n' +
+          '"Hamm put a word to you on the track," says Rue. "I heard him from here."\n\n' +
+          '"One eye. Came out of the hill. Opened it." She counts them off on three fingers and ' +
+          'then folds the fingers down. "That is the words and that is the commentary and that ' +
+          'is what forty people watched you do this afternoon, and I have kept this chest for ' +
+          'thirty-one years and I cannot tell you it does not fit."\n\n' +
+          '"What I can tell you is that it did not say *a stranger will come and be blamed*, ' +
+          'and that is what I have in front of me."\n\n' +
+          'She rolls the hide up. "Go and do whatever you came down off that hill to do."',
+        effects: {
+          flags: { [FLAGS.namedWanderer]: true },
+          journal: [
+            {
+              id: 'j.rue_eye',
+              text:
+                'Rue: one eye, came out of the hill, opened it. She says she cannot tell me it ' +
+                'does not fit the words. She also says the words did not promise a stranger to ' +
+                'blame.',
+            },
+          ],
+        },
+      },
+    ],
+  },
+
+  /* ================================================================ *
+   * The sealed chamber, on the return
+   * ================================================================ */
+  {
+    id: 'earlier_self',
+    name: 'the one with the lantern',
+    nouns: ['them', 'self', 'earlier self', 'younger self', 'child', 'figure', 'sixteen', 'the one with the lantern'],
+    locationId: 'present.sealed_chamber',
+    available: (state) => state.chapter === 'return',
+    listAs: c('somebody kneeling at the patterned wall'),
+    appearance: () =>
+      'Sixteen. Lime dust on one shoulder. A wedge-shaped bulge in one pocket and both knees ' +
+      'grey from the gallery floor, and a face you have seen every day of your life in the ' +
+      'bottom of a water bucket and have never once seen from the outside.\n\n' +
+      'Two eyes.\n\n' +
+      'They are on their knees with one hand half-raised towards the wall, and they have ' +
+      'turned their head to look at you, and they have not moved anything else.\n\n' +
+      '{They} {is} not frightened yet. {They} {is} working out what {they} {is} looking at, ' +
+      'the way you would work out a shape in a cave, and you can watch it happening.',
+    greeting: () =>
+      'Nothing happens for a moment that you could put a length on.\n\n' +
+      'Then they say, "Who is that?" — and their voice is wrong, high and young and absolutely ' +
+      'their own, and it goes through you like cold water.\n\n' +
+      'You do not have an answer prepared. You have had three days and a hundred years and you ' +
+      'do not have an answer prepared.',
+    topics: [
+      {
+        id: 'nothing_yet',
+        label: 'say nothing',
+        aliases: ['nothing', 'wait', 'say nothing', 'silence'],
+        response: () =>
+          'You do not say anything.\n\n' +
+          'They get up off their knees, slowly, keeping the pillar between you, and their hand ' +
+          'goes to the pocket with the wedge in it, which is the only thing in the pocket.\n\n' +
+          'Behind them, in the fan of light, the seam is exactly where it is.\n\n' +
+          'Neither of you says anything. The lamp in the alcove goes on burning.',
+      },
+    ],
+  },
 ];
 
 export const PEOPLE: Record<string, PersonDef> = Object.fromEntries(

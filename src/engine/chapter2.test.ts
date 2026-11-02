@@ -245,7 +245,7 @@ describe('the workings can be opened three ways and closed by none', () => {
     });
   }
 
-  it('completes in the worksite-first order as well', () => {
+  it('completes the second crossing in the worksite-first order as well', () => {
     const readFirst = typeAll(inTheSquare(), [...WATER_ROUTE, ...READ_PANEL]);
     expect(readFirst.flags[FLAGS.knowsSettings]).toBe(true);
     expect(readFirst.flags[FLAGS.recitedProphecy]).toBeUndefined();
@@ -262,7 +262,8 @@ describe('the workings can be opened three ways and closed by none', () => {
       ...GO_FORWARD,
     ]);
     expect(end.locationId).toBe('future.deep_chamber');
-    expect(end.ended).toBe(true);
+    expect(end.era).toBe('future');
+    expect(end.chapter).toBe('future');
   });
 
   it('never revokes access once it has been earned', () => {
@@ -328,7 +329,14 @@ describe('the three lamp positions are places, not distances', () => {
 
   it('sends the low position back to the era it came from, and nowhere', () => {
     const state = atThePanel();
-    const low = type(state, 'place lantern in low dish');
+    const stood = type(state, 'place lantern in low dish');
+    expect(stood.accepted).toBe(true);
+    // Standing the lamp moves nobody. Going through is its own decision.
+    expect(stood.state.locationId).toBe('past.worksite');
+    expect(stood.state.flags[FLAGS.lanternInLowDish]).toBe(true);
+    expect(stood.state.flags[FLAGS.triedLowDish]).toBeUndefined();
+
+    const low = type(stood.state, 'enter aperture');
     expect(low.accepted).toBe(true);
     // It answers, and it leads to this same chamber in this same season: it is
     // the position the hero arrived by, from year 0, and from here it is here.
@@ -336,7 +344,7 @@ describe('the three lamp positions are places, not distances', () => {
     expect(low.state.era).toBe('past');
     expect(low.state.flags[FLAGS.triedLowDish]).toBe(true);
     expect(low.state.flags[FLAGS.crossedForward]).toBeUndefined();
-    // The lamp is still in the hero's hand afterwards; nothing is consumed.
+    // The lamp is back in the hero's hand afterwards; nothing is consumed.
     expect(low.state.inventory).toContain('lantern');
   });
 
@@ -649,7 +657,7 @@ describe('the wrongnesses are observations, fired once each', () => {
  * 6. The arrival, and the boundary of what is built
  * ================================================================ */
 
-describe('the future arrival is an arrival and nothing more', () => {
+describe('the second crossing arrives, and the chapter carries on', () => {
   function arrived(): GameState {
     return typeAll(inTheSquare(), [
       'leave',
@@ -660,7 +668,7 @@ describe('the future arrival is an arrival and nothing more', () => {
     ]);
   }
 
-  it('commits era, chapter, place, objective and marker in one step', () => {
+  it('commits era, chapter, place and objective in one step', () => {
     const before = typeAll(inTheSquare(), [
       'leave',
       ...RECITE,
@@ -676,7 +684,8 @@ describe('the future arrival is an arrival and nothing more', () => {
     expect(after.chapter).toBe('future');
     expect(after.locationId).toBe('future.deep_chamber');
     expect(after.objective).toBe(OBJECTIVES.future);
-    expect(after.ended).toBe(true);
+    // Not the end of anything any more: the chapter continues from here.
+    expect(after.ended).toBe(false);
     expect(after.flags[FLAGS.crossed]).toBe(true);
     expect(after.flags[FLAGS.crossedForward]).toBe(true);
     // The lamp comes with them, out of the dish and into their hands.
@@ -700,27 +709,16 @@ describe('the future arrival is an arrival and nothing more', () => {
     expect(again.locationId).toBe('future.deep_chamber');
   });
 
-  it('is the end of the built content, and says so without calling it an ending', () => {
+  it('arrives with no injury, no identity reveal and no way home yet', () => {
     const state = arrived();
-    const marker = state.transcript.filter((e) => e.kind === 'system').map((e) => e.text).join('\n');
-    expect(marker).toContain('End of the current content');
-    expect(marker).toContain('This is not the ending');
-    expect(state.objective).not.toContain('End of');
-  });
-
-  it('has no exploration, no injury, no identity reveal and no way back', () => {
-    const state = arrived();
-    // M4's rooms do not exist yet, and the arrival room goes nowhere.
-    expect(getAffordances(state).exits).toEqual([]);
-    for (const direction of ['up', 'out', 'north', 'south', 'east', 'west', 'down', 'in']) {
-      expect(type(state, direction).accepted, direction).toBe(false);
-    }
-    // No eye injury, and no flag for one.
     const readable = state.transcript.map((e) => stripMarkup(e.text)).join('\n');
     for (const pattern of [/your eye/i, /lost an eye/i, /you are the wanderer/i, /cyclops/i]) {
       expect(readable, `arrival text matches ${pattern}`).not.toMatch(pattern);
     }
-    // And no active return: the middle position does not exist to be used here.
+    expect(state.flags[FLAGS.lostEye]).toBeUndefined();
+    expect(state.flags[FLAGS.knowsResponsibility]).toBeUndefined();
+    // The only thing in this room that goes anywhere is the tear.
+    expect(getAffordances(state).exits.map((e) => e.key)).toEqual(['exit-to_path']);
     expect(getAffordances(state).objects.map((o) => o.id).sort()).toEqual([
       'futuredeep.basin',
       'futuredeep.stair',
@@ -728,7 +726,17 @@ describe('the future arrival is an arrival and nothing more', () => {
     ]);
   });
 
-  it('writes a chapter checkpoint the player can be returned to', () => {
+  it('cannot be bypassed back up the stair the hero came down twice', () => {
+    const state = arrived();
+    const stair = type(state, 'clear stair');
+    expect(stair.accepted).toBe(false);
+    expect(stair.state.flags[FLAGS.triedBlockedStair]).toBe(true);
+    expect(stair.state.locationId).toBe('future.deep_chamber');
+    // And it is not an exit, in either mode.
+    expect(getAffordances(state).exits.some((e) => /sealed|stair/.test(e.key))).toBe(false);
+  });
+
+  it('writes a chapter checkpoint at the crossing', () => {
     const before = typeAll(inTheSquare(), [
       'leave',
       ...RECITE,
@@ -825,9 +833,10 @@ describe('the opening chapter is unchanged by any of this', () => {
     expect(hintContext(asked)).toBe('recite');
     const inside = typeAll(asked, ['recite prophecy', ...FENN_ROUTE]);
     expect(hintContext(inside)).toBe('worksite');
-    const done = typeAll(inside, [...READ_PANEL, ...GO_FORWARD]);
-    expect(hintContext(done)).toBe('done');
-    // The last ladder is honest about what it is: not an ending.
-    expect(nextHint(done).text).toContain('not the ending');
+    // Across the second crossing, the ladder points at getting out of the hill
+    // rather than at an ending, because this is no longer one.
+    const future = typeAll(inside, [...READ_PANEL, ...GO_FORWARD]);
+    expect(hintContext(future)).toBe('future_out');
+    expect(nextHint(future).text).not.toContain('not the ending');
   });
 });

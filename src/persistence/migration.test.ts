@@ -10,6 +10,8 @@ import {
   SOLVE_RELIEF,
   TO_SEALED,
   begin,
+  finishChapterThree,
+  hasReturned,
   type,
   typeAll,
 } from '../testing/harness';
@@ -114,7 +116,7 @@ describe('a mid-opening format-1 save keeps every bit of its progress', () => {
       ...GO_FORWARD,
     ]);
     expect(end.locationId).toBe('future.deep_chamber');
-    expect(end.ended).toBe(true);
+    expect(hasReturned(finishChapterThree(end).state)).toBe(true);
   });
 
   it('does not add new item records to an old inventory', () => {
@@ -202,8 +204,8 @@ describe('a save that stopped at the old prototype marker becomes playable', () 
       ...GO_FORWARD,
     ]);
     expect(end.locationId).toBe('future.deep_chamber');
-    expect(end.ended).toBe(true);
     expect(end.chapter).toBe('future');
+    expect(hasReturned(finishChapterThree(end).state)).toBe(true);
   });
 
   it('is idempotent: migrating the result again changes nothing', () => {

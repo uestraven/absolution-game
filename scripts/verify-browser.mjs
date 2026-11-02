@@ -253,6 +253,14 @@ async function newPage(viewport) {
     'west','west','down','north',
     'examine drawing','examine slate','examine dishes',
     'place lantern in high dish','enter aperture',
+    // Chapter 3: out of the hill, the settlement, the evidence, the seal, home.
+    'up','examine bird','east',
+    'talk to rue','what she is sitting against','the oldest thing she knows','leave',
+    'examine account','examine memorial','journal','examine shell','take maul','reflect',
+    'west','west','talk to sorrel','why the hill is walled up',
+    'whether the wall is as good as it looks','leave',
+    'use wedge on seal','break seal','break seal',
+    'west','examine fill','clear fill','place lantern in middle dish','enter aperture',
   ];
   for (const line of script) {
     await field.fill(line);
@@ -261,9 +269,13 @@ async function newPage(viewport) {
 
   const whole = await page.locator('.transcript').innerText();
   const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  place === 'the broken chamber'
-    ? ok('keyboard only: both chapters completed to the future arrival')
-    : bad('keyboard only: both chapters completed to the future arrival', place);
+  place === 'the sealed chamber'
+    ? ok('keyboard only: all three chapters completed to the return')
+    : bad('keyboard only: all three chapters completed to the return', place);
+
+  whole.includes('They turn round')
+    ? ok('keyboard only: the return lands on the earlier self')
+    : bad('keyboard only: the return lands on the earlier self');
 
   // The canonical prophecy, spoken in the square a century before the plank.
   whole.includes('One who braves the Cave of Absolution will have the power to turn it aside')
@@ -283,15 +295,23 @@ async function newPage(viewport) {
     await page.locator('.topbar-toggle').click();
   }
   const objective = await page.getByLabel('Current objective').innerText();
-  objective.includes('what happened here') ? ok('end state: objective updated')
-                                           : bad('end state: objective updated', objective);
+  objective.includes('Stop yourself') ? ok('end state: objective updated')
+                                      : bad('end state: objective updated', objective);
 
   // The player can keep looking around after the end.
-  await field.fill('examine tear');
+  await field.fill('examine them');
   await page.keyboard.press('Enter');
   const stillPlayable = await page.locator('.transcript').innerText();
-  stillPlayable.includes('daylight in it') ? ok('end state: inspection still possible')
-                                           : bad('end state: inspection still possible');
+  stillPlayable.includes('Two eyes') ? ok('end state: inspection still possible')
+                                     : bad('end state: inspection still possible');
+
+  // And the confrontation is refused truthfully rather than silently.
+  await field.fill('break them');
+  await page.keyboard.press('Enter');
+  const refused = await page.locator('.transcript').innerText();
+  refused.includes('not written yet')
+    ? ok('end state: the confrontation is blocked, and says why')
+    : bad('end state: the confrontation is blocked, and says why');
 
   if ((await page.locator('.status').count()) === 0) {
     await page.locator('.topbar-toggle').click();
@@ -399,7 +419,7 @@ async function newPage(viewport) {
   await page.getByRole('button', { name: 'Continue' }).click();
   const after = (await page.locator('.topbar-place').innerText()).toLowerCase();
   const endAfter = await page.locator('.entry-system', { hasText: 'End of the current content' }).count();
-  after === 'the broken chamber' && endAfter > 0
+  after === 'the sealed chamber' && endAfter > 0
     ? ok('reload: Continue restores place and transcript')
     : bad('reload: Continue restores place and transcript', `${after} / entries ${endAfter}`);
 
@@ -416,7 +436,7 @@ async function newPage(viewport) {
   const place2 = (await page.locator('.topbar-place').innerText()).toLowerCase();
   const hasButtons = await page.getByRole('region', { name: 'Actions' }).getByRole('button').count();
   const endingStillShown = await page.locator('.entry-narration', { hasText: 'You are a long way from home' }).count();
-  storedAfter === storedBefore && place2 === 'the broken chamber' && hasButtons > 0 && endingStillShown > 0
+  storedAfter === storedBefore && place2 === 'the sealed chamber' && hasButtons > 0 && endingStillShown > 0
     ? ok('mode switch: state and transcript preserved, buttons appear', `${storedAfter} entries kept`)
     : bad('mode switch', `${storedBefore}->${storedAfter} at ${place2}, ${hasButtons} buttons, ending ${endingStillShown}`);
 
@@ -430,8 +450,10 @@ async function newPage(viewport) {
     : bad('export: downloads adventure-save.json', file.suggestedFilename());
   const exported = JSON.parse(await readFile(await file.path(), 'utf8'));
   exported.ended === true &&
-  exported.locationId === 'future.deep_chamber' &&
-  exported.schemaVersion === 2
+  exported.locationId === 'present.sealed_chamber' &&
+  exported.chapter === 'return' &&
+  exported.flags['lost_eye'] === true &&
+  exported.schemaVersion === 3
     ? ok('export: file contains the current state, in the current format')
     : bad('export: file contents', JSON.stringify(exported).slice(0, 140));
 
@@ -439,9 +461,9 @@ async function newPage(viewport) {
   page.once('dialog', (d) => d.accept());
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Restart from checkpoint' }).click();
   const place3 = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  // The chapter advanced at each crossing, so the checkpoint is the arrival in
-  // the broken chamber rather than the bedroom or the basin.
-  place3 === 'the broken chamber'
+  // The chapter advanced at each crossing, so the checkpoint is the return
+  // rather than the bedroom, the basin or the broken chamber.
+  place3 === 'the sealed chamber'
     ? ok('checkpoint restart: back at the start of the current chapter', place3)
     : bad('checkpoint restart: back at the start of the current chapter', place3);
 
@@ -491,7 +513,7 @@ async function newPage(viewport) {
   await page.waitForTimeout(150);
   const placeImported = (await page.locator('.topbar-place').innerText()).toLowerCase();
   const endedImported = await page.locator('.entry-system', { hasText: 'End of the current content' }).count();
-  placeImported === 'the broken chamber' && endedImported > 0
+  placeImported === 'the sealed chamber' && endedImported > 0
     ? ok('import: the exported save is restored')
     : bad('import: the exported save is restored', `${placeImported} / entries ${endedImported}`);
 
@@ -505,7 +527,7 @@ async function newPage(viewport) {
   await page.waitForTimeout(150);
   const toast = await page.locator('.toast').innerText().catch(() => '');
   const placeAfterBad = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  /Import refused/.test(toast) && placeAfterBad === 'the broken chamber'
+  /Import refused/.test(toast) && placeAfterBad === 'the sealed chamber'
     ? ok('import: a malformed file is refused and the game is untouched', toast.split('\n')[0].slice(0, 60))
     : bad('import: a malformed file is refused', `${toast} / ${placeAfterBad}`);
   await (await import('node:fs/promises')).rm(badFile, { force: true });
@@ -517,7 +539,7 @@ async function newPage(viewport) {
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'New Game' }).click();
   await page.waitForTimeout(100);
   const placeAfterCancel = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  /overwrite your saved progress/.test(asked) && placeAfterCancel === 'the broken chamber'
+  /overwrite your saved progress/.test(asked) && placeAfterCancel === 'the sealed chamber'
     ? ok('new game: confirms before overwriting, and cancelling keeps progress')
     : bad('new game: confirms before overwriting', `${asked} / ${placeAfterCancel}`);
   await context.close();
@@ -655,10 +677,21 @@ async function newPage(viewport) {
     if ((await chip.getAttribute('aria-expanded')) !== 'true') await chip.click();
   };
   const go = async (label) => { await category('Go'); await tap(label); };
+  /**
+   * Open a thing's chip and click one of its verbs.
+   *
+   * The chip is a toggle, so it is only clicked when it is not already the
+   * open one — the chip carries aria-expanded, which is what the panel uses to
+   * render its action row, so that is the honest thing to read.
+   */
   const thing = async (name, verb) => {
     await category('Things');
-    await tap(name);
-    await tap(verb, true);
+    const chip = panel.getByRole('button', { name }).first();
+    if ((await chip.getAttribute('aria-expanded')) !== 'true') await chip.click();
+    await panel
+      .getByRole('button', verb instanceof RegExp ? { name: verb } : { name: verb, exact: true })
+      .first()
+      .click();
   };
   const talkTo = async (who) => { await category('People'); await tap(`Talk to ${who}`); };
 
@@ -732,16 +765,161 @@ async function newPage(viewport) {
 
   const arrived = (await page.locator('.topbar-place').innerText()).toLowerCase();
   arrived === 'the broken chamber'
-    ? ok('selectable mode: both chapters completed with no typing at all')
-    : bad('selectable mode: both chapters completed with no typing at all', arrived);
+    ? ok('selectable mode: the second crossing works by clicking')
+    : bad('selectable mode: the second crossing works by clicking', arrived);
+
+  /* ---- Chapter 3, still without typing ---- */
+  await go(/tear in the wall/);
+  await thing('bird', 'Examine');
+  await go(/village below/);
+
+  await talkTo('Rue');
+  await panel.getByRole('button', { name: /what she is sitting against/ }).click();
+  await panel.getByRole('button', { name: /the oldest thing she knows/ }).click();
+  await panel.getByRole('button', { name: 'Leave the conversation' }).click();
+  await thing('Account', 'Examine');
+  await thing(/memorial/, 'Examine');
+  // Journal lives in the header nav, not the actions panel.
+  await page.getByRole('navigation', { name: 'Game information' })
+    .getByRole('button', { name: 'journal' })
+    .click();
+  await thing(/roofless shell/, 'Examine');
+  await thing('maul', 'Take');
+
+  const reflect = panel.getByRole('button', { name: 'add it up' });
+  (await reflect.count()) > 0
+    ? ok('selectable mode: the synthesis is offered once the pieces are in')
+    : bad('selectable mode: the synthesis is offered once the pieces are in');
+  await reflect.click();
+
+  await go(/the hill/);
+  await go(/sealed mouth/);
+  await talkTo('Sorrel');
+  await panel.getByRole('button', { name: /why the hill is walled up/ }).click();
+  await panel.getByRole('button', { name: /whether the wall is as good as it looks/ }).click();
+  await panel.getByRole('button', { name: 'Leave the conversation' }).click();
+
+  await category('Things');
+  await panel.getByRole('button', { name: /wooden wedge/ }).first().click();
+  await panel.getByRole('button', { name: 'Use on...' }).click();
+  await panel.getByRole('button', { name: /^seal/ }).click();
+  await thing(/^seal/, 'Break it open');
+  await thing(/^seal/, 'Break it open');
+
+  const injured = await page.locator('.transcript').innerText();
+  injured.includes('The fall it came out of starts afterwards')
+    ? ok('selectable mode: the seal opens and the stone arrives first')
+    : bad('selectable mode: the seal opens and the stone arrives first');
+
+  await go(/opened mouth/);
+  await thing(/cracked fill/, 'Examine');
+  await thing(/cracked fill/, 'Clear it away');
+  await category('Things');
+  await panel.getByRole('button', { name: /hooded lantern/ }).first().click();
+  await panel.getByRole('button', { name: 'Put in...' }).click();
+  await panel.getByRole('button', { name: 'middle dish', exact: true }).click();
+  await thing(/gap in the panel/, 'Step into it');
+
+  const returned = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  returned === 'the sealed chamber'
+    ? ok('selectable mode: all three chapters completed with no typing at all')
+    : bad('selectable mode: all three chapters completed with no typing at all', returned);
 
   const noExits = await panel.getByRole('button', { name: /^Go/ }).count();
   noExits === 0
-    ? ok('arrival room offers no way on, because there is not one yet')
-    : bad('arrival room offers no way on, because there is not one yet', String(noExits));
+    ? ok('the return offers no way out of the room, which is the point')
+    : bad('the return offers no way out of the room, which is the point', String(noExits));
 
-  errors.length === 0 ? ok('selectable mode: no console errors across both chapters')
+  await category('People');
+  const onlyPerson = await panel.getByRole('button', { name: /^Talk to/ }).count();
+  onlyPerson === 1
+    ? ok('the only person in the room is the one with the lantern')
+    : bad('the only person in the room is the one with the lantern', String(onlyPerson));
+
+  errors.length === 0 ? ok('selectable mode: no console errors across all three chapters')
                       : bad('selectable mode: console errors', errors.join(' | ').slice(0, 200));
+  await context.close();
+}
+
+/* ---------- 12. A save from the previous build, at the future arrival ---------- */
+{
+  const { context, page } = await newPage({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('radio', { name: /Type-only/ }).click();
+  await page.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  const field = page.getByLabel('What do you do?');
+  for (const line of [
+    'take lantern','down','east','take wedge','west','west','west','in','east',
+    'use wedge on shutter','place lantern in alcove','light lantern','open seam',
+    'take lantern','take wedge','down','enter threshold','up','east','east',
+    'talk to saffra','the cave on the hill','whether anything is coming',
+    'why you asked','recite prophecy',
+    'talk to fenn','how a boy gets past the foreman','leave',
+    'west','west','down','north',
+    'examine drawing','examine slate','examine dishes',
+    'place lantern in high dish','enter aperture',
+  ]) {
+    await field.fill(line);
+    await page.keyboard.press('Enter');
+  }
+  const atArrival = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  if (atArrival !== 'the broken chamber') bad('m3 endpoint save: setup', atArrival);
+
+  /*
+   * Rewrite it as the format-2 file the previous build left: ended, with its
+   * objective, and the old marker still at the bottom of the transcript.
+   */
+  const KEY2 = 'cave-of-absolution:save';
+  await page.evaluate((key) => {
+    const save = JSON.parse(localStorage.getItem(key));
+    save.schemaVersion = 2;
+    save.ended = true;
+    save.objective = 'Find out what happened here.';
+    save.transcript.push({
+      id: 'tLEGACY2',
+      kind: 'system',
+      text: '— End of the current content —\n\nThis is as far as the story is built.',
+    });
+    localStorage.setItem(key, JSON.stringify(save));
+    localStorage.removeItem('cave-of-absolution:backup');
+    localStorage.removeItem('cave-of-absolution:checkpoint');
+  }, KEY2);
+
+  await page.reload();
+  await page.getByRole('button', { name: /^Continue/ }).click();
+
+  const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  place === 'the broken chamber'
+    ? ok('m3 endpoint save: resumes in place, without replaying two chapters')
+    : bad('m3 endpoint save: resumes in place', place);
+
+  const shown = await page.locator('.transcript').innerText();
+  shown.includes('This is as far as the story is built')
+    ? ok('m3 endpoint save: the transcript the player read is still there')
+    : bad('m3 endpoint save: the transcript the player read is still there');
+  shown.includes('The story continues past this point now')
+    ? ok('m3 endpoint save: and it is corrected rather than contradicted')
+    : bad('m3 endpoint save: and it is corrected rather than contradicted');
+
+  if ((await page.locator('.status').count()) === 0) await page.locator('.topbar-toggle').click();
+  const objective = await page.getByLabel('Current objective').innerText();
+  /out of this hill/.test(objective)
+    ? ok('m3 endpoint save: the objective is what the hero needs next')
+    : bad('m3 endpoint save: the objective is what the hero needs next', objective);
+
+  const field2 = page.getByLabel('What do you do?');
+  for (const line of ['up', 'east']) {
+    await field2.fill(line);
+    await page.keyboard.press('Enter');
+  }
+  const walked = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  walked === 'the settlement'
+    ? ok('m3 endpoint save: plays on into content that did not exist when it was written')
+    : bad('m3 endpoint save: plays on', walked);
+
+  const version = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).schemaVersion, KEY2);
+  version === 3 ? ok('m3 endpoint save: written back out in the current format')
+                : bad('m3 endpoint save: written back out in the current format', String(version));
   await context.close();
 }
 
@@ -889,7 +1067,7 @@ async function newPage(viewport) {
     : bad('legacy save: plays on into the new chapter');
 
   const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).schemaVersion, KEY);
-  stored === 2 ? ok('legacy save: written back out in the current format')
+  stored === 3 ? ok('legacy save: written back out in the current format')
                : bad('legacy save: written back out in the current format', String(stored));
   await context.close();
 }
@@ -911,7 +1089,17 @@ async function newPage(viewport) {
     'west','west','down','north',
     'examine drawing','examine slate','examine dishes',
     'place lantern in high dish','enter aperture',
-    'examine basin','examine tear',
+    'up','examine bird','east',
+    'talk to rue','what she is sitting against','the oldest thing she knows','leave',
+    'examine account','examine memorial','journal',
+    // This route left the wedge under the shutter a century ago, so both tools
+    // come out of the goat shed where the workshop used to be.
+    'examine shell','take maul','take blocks','reflect',
+    'west','west','talk to sorrel','why the hill is walled up',
+    'whether the wall is as good as it looks','leave',
+    'use wedge on seal','break seal','break seal',
+    'west','examine fill','clear fill','place lantern in middle dish','enter aperture',
+    'examine them','journal','inventory',
   ]) {
     await field.fill(line);
     await page.keyboard.press('Enter');
@@ -921,9 +1109,150 @@ async function newPage(viewport) {
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Restart from checkpoint' }).click();
   await page.waitForTimeout(150);
   const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  place === 'the broken chamber'
-    ? ok('checkpoint restart after the second crossing: back at the arrival')
-    : bad('checkpoint restart after the second crossing', place);
+  place === 'the sealed chamber'
+    ? ok('checkpoint restart after the last crossing: back at the return')
+    : bad('checkpoint restart after the last crossing', place);
+  // Suitable for continuing from: the eye and the reason are both still there.
+  const resumed = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  resumed.chapter === 'return' &&
+  resumed.flags['lost_eye'] === true &&
+  resumed.flags['knows_responsibility'] === true
+    ? ok('the checkpoint is a state the last chapter could continue from')
+    : bad('the checkpoint is continuable', JSON.stringify(resumed.flags).slice(0, 120));
+  await context.close();
+}
+
+/* ---------- 13. Reloads at each stage, and 360px with one eye ---------- */
+{
+  const { context, page, errors } = await newPage({ width: 360, height: 740 });
+  await page.getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('radio', { name: /Type-only/ }).click();
+  await page.getByRole('button', { name: 'Play as Basilia' }).click();
+  const field = () => page.getByLabel('What do you do?');
+  const run = async (lines) => {
+    for (const line of lines) {
+      await field().fill(line);
+      await page.keyboard.press('Enter');
+    }
+  };
+  /** Reload, Continue, and report where we ended up. */
+  const reloadAndContinue = async () => {
+    await page.reload();
+    await page.getByRole('button', { name: /^Continue/ }).click();
+    return (await page.locator('.topbar-place').innerText()).toLowerCase();
+  };
+
+  await run([
+    'take lantern','down','east','take wedge','west','west','west','in','east',
+    'use wedge on shutter','place lantern in alcove','light lantern','open seam',
+    'take lantern','take wedge','down','enter threshold','up','east','east',
+    'talk to saffra','the cave on the hill','whether anything is coming',
+    'why you asked','recite prophecy',
+    'talk to fenn','how a boy gets past the foreman','leave',
+    'west','west','down','north',
+    'examine drawing','examine slate','examine dishes',
+    'place lantern in high dish','enter aperture',
+    'up','examine bird','east',
+    'talk to rue','what she is sitting against','the oldest thing she knows','leave',
+    'examine account',
+  ]);
+
+  // Mid-investigation.
+  const midway = await reloadAndContinue();
+  const midFlags = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')).flags);
+  midway === 'the settlement' && midFlags['read_account'] === true &&
+  midFlags['heard_missing_child'] === true && midFlags['knows_responsibility'] === undefined
+    ? ok('reload mid-investigation: evidence kept, conclusion not jumped to')
+    : bad('reload mid-investigation', `${midway} / ${JSON.stringify(midFlags).slice(0, 120)}`);
+
+  await run(['examine memorial','journal','examine shell','take maul','reflect']);
+  const concluded = await page.locator('.transcript').innerText();
+  concluded.includes('I know it was me') || concluded.includes('the shape is this')
+    ? ok('the inference is the hero putting it together, not a lecture')
+    : bad('the inference reads as the hero');
+
+  await run([
+    'west','west','talk to sorrel','why the hill is walled up',
+    'whether the wall is as good as it looks','leave',
+    'use wedge on seal','break seal','break seal',
+  ]);
+
+  // After the injury.
+  const afterInjury = await reloadAndContinue();
+  const injuredFlags = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')).flags);
+  afterInjury === 'the sealed mouth' && injuredFlags['lost_eye'] === true &&
+  injuredFlags['seal_opened'] === true
+    ? ok('reload after the injury: it persists, and is not replayed')
+    : bad('reload after the injury', `${afterInjury} / ${JSON.stringify(injuredFlags).slice(0, 120)}`);
+
+  const beforeCount = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save'))
+      .journal.filter((e) => e.id === 'j.lost_eye').length);
+  await run(['break seal', 'look']);
+  const afterCount = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save'))
+      .journal.filter((e) => e.id === 'j.lost_eye').length);
+  beforeCount === 1 && afterCount === 1
+    ? ok('swinging again after the seal is open does not take a second eye')
+    : bad('the injury is once only', `${beforeCount} -> ${afterCount}`);
+
+  // No interface penalty: the whole screen is still there and still usable.
+  const chrome = await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    const cs = getComputedStyle(document.body);
+    return {
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      transcriptVisible: t.clientHeight > 0,
+      filters: [...document.querySelectorAll('body *')].some(
+        (el) => getComputedStyle(el).filter !== 'none'
+      ),
+      /*
+       * Visually-hidden helpers legitimately clip themselves to a point; that
+       * is how a screen-reader-only label works. Anything else clipping or
+       * masking would be a monocular effect, which this game does not have.
+       */
+      clipped: [...document.querySelectorAll('body *')]
+        .filter((el) => !el.classList.contains('sr-only'))
+        .map((el) => {
+          const s = getComputedStyle(el);
+          return s.clipPath !== 'none' || s.mask !== 'none'
+            ? `${el.tagName}.${el.className}`
+            : null;
+        })
+        .filter(Boolean),
+      opacity: cs.opacity,
+    };
+  });
+  chrome.overflow <= 0 && chrome.transcriptVisible && !chrome.filters &&
+  chrome.clipped.length === 0 && chrome.opacity === '1'
+    ? ok('360px after the injury: no filter, no mask, no accessibility penalty')
+    : bad('360px after the injury', JSON.stringify(chrome));
+
+  await run([
+    'west','examine fill','clear fill','place lantern in middle dish','enter aperture',
+  ]);
+
+  // At the return.
+  const atReturn = await reloadAndContinue();
+  const returnState = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  atReturn === 'the sealed chamber' && returnState.chapter === 'return' &&
+  returnState.era === 'present' && returnState.ended === true
+    ? ok('reload at the return: chapter, era and place all survive')
+    : bad('reload at the return', `${atReturn} / ${returnState.chapter}/${returnState.era}`);
+
+  // One lantern record, and it is the hero's.
+  JSON.stringify(returnState.placements) === '{"lantern":{"kind":"carried"},"wedge":{"kind":"room","locationId":"future.entrance"}}' ||
+  returnState.placements.lantern.kind === 'carried'
+    ? ok("the earlier self's belongings are not in the hero's inventory")
+    : bad('item records at the return', JSON.stringify(returnState.placements).slice(0, 140));
+
+  errors.length === 0
+    ? ok('no console errors across three chapters and four reloads')
+    : bad('console errors', errors.join(' | ').slice(0, 200));
   await context.close();
 }
 

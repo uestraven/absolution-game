@@ -29,7 +29,7 @@ turn passes, no flag moves, no item changes hands.
 | `UP` `DOWN` `IN` `OUT` | `U` `D`, `INSIDE`, `OUTSIDE` |
 | `BACK` | Where a room authors it as a way back |
 | `ENTER THRESHOLD` | Only where there is one. `CROSS`, `STEP INTO`, `STEP THROUGH`, `GO INTO THE THRESHOLD` |
-| `ENTER APERTURE` | The same verbs, for the other crossing. `CROSS APERTURE`, `STEP THROUGH THE APERTURE` |
+| `ENTER APERTURE` | The same verbs, for the other crossings. `CROSS APERTURE`, `STEP THROUGH THE APERTURE`. Standing a light somewhere never moves you; crossing is always its own command |
 
 Named exits work too: `GO WORKSHOP`, `GO TO THE GALLERY`, `ENTER THE CAVE`.
 Every room's ways out are listed in its description and by `EXITS`.
@@ -50,6 +50,8 @@ Every room's ways out are listed in its description and by `EXITS`.
 | `WEDGE <thing>` | Shorthand for using the wedge on it. `PROP`, and a trailing `OPEN`/`UP` is ignored |
 | `FILL <thing>` | Where there is something to fill from. `FILL SKINS`, `FILL SKINS AT THE SPRING` |
 | `GIVE <thing> TO <person>` | `HAND`, `OFFER` |
+| `BREAK <thing>` | `SMASH`, `HIT`, `SWING AT`. Also `BREAK <thing> WITH <thing>`. You need something heavy in hand |
+| `CLEAR <thing>` | `PULL`, `PULL OFF`. Shifts what is loose off whatever is behind it |
 
 The lantern has a striker fixed to its base, so `LIGHT LANTERN` needs nothing
 else. Anything you put down or set into something can always be taken back.
@@ -69,9 +71,9 @@ mid-conversation and ends it. An unrecognised topic number says so and changes
 nothing.
 
 People answer to their name — `TALK TO SAGE`, `TALK TO OREG`, `TALK TO DILLY`,
-`TALK TO TYME`, `TALK TO SAFFRA`, `TALK TO FENN`, `TALK TO LOVAGE`. A few also
-answer to a description, such as `TALK TO BAKER`, `TALK TO JOINER` or
-`TALK TO FOREMAN`.
+`TALK TO TYME`, `TALK TO SAFFRA`, `TALK TO FENN`, `TALK TO LOVAGE`,
+`TALK TO RUE`, `TALK TO SORREL`. A few also answer to a description, such as
+`TALK TO BAKER`, `TALK TO JOINER`, `TALK TO FOREMAN` or `TALK TO KEEPER`.
 
 ## When the game asks "which one do you mean?"
 
@@ -85,6 +87,7 @@ a different complete command instead replaces the question. `CANCEL`
 | --- | --- |
 | `JOURNAL` | `LOG`, `NOTES`. Observations you have established — never an unexplored solution. |
 | `HINT` | Nudge, then more, then the full answer. Three steps, identical in both input modes. Ask again to go deeper; the ladder restarts when you move on to the next problem. Hints are free and repeatable, and asking for one never uses anything up. |
+| `REFLECT` | `THINK`, `CONSIDER`. Stop and put together what you have found. Offered as an action once there is something to put together, and it says what is still missing if there is not. |
 | `WAIT` | `Z`. Lets a moment pass. Nothing in this story is on a clock, so waiting never costs anything and never closes a way forward. |
 | `HELP` | `COMMANDS`. This list, in-game. |
 

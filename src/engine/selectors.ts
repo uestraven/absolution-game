@@ -36,9 +36,17 @@ export function undiscoveredObjects(state: GameState): WorldObjectDef[] {
   return here.filter((def) => !state.discovered.includes(def.id));
 }
 
+/**
+ * People at the current location the player has noticed and who are here now.
+ *
+ * `available` matters because a room can be revisited in a different chapter
+ * with different people in it, and `discovered` latches: once the hero has met
+ * somebody they stay met, so presence has to be a separate question from
+ * acquaintance.
+ */
 export function peopleHere(state: GameState): PersonDef[] {
-  return (PEOPLE_BY_LOCATION[state.locationId] ?? []).filter((p) =>
-    state.discovered.includes(p.id)
+  return (PEOPLE_BY_LOCATION[state.locationId] ?? []).filter(
+    (p) => state.discovered.includes(p.id) && (p.available?.(state) ?? true)
   );
 }
 

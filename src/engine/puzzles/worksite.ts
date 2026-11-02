@@ -1,7 +1,7 @@
 import type { GameState, NarrativeEvent, ResolveResult } from '../types';
 import { FLAGS } from '../../content/flags';
 import { m } from '../../content/markup';
-import { CROSSING_FORWARD, END_OF_CONTENT, FUTURE_ARRIVAL, OBJECTIVES } from '../../content/text';
+import { CROSSING_FORWARD, FUTURE_ARRIVAL, OBJECTIVES } from '../../content/text';
 import {
   addJournal,
   commit,
@@ -156,33 +156,26 @@ export function placeLanternInDish(
   }
 
   if (dish === 'low') {
-    draft.flags[FLAGS.triedLowDish] = true;
+    /*
+     * A real placement, like the other two: the lamp leaves the hero's hands,
+     * and the panel only answers if it is actually lit. Going through is a
+     * separate explicit action — standing a light somewhere has never moved
+     * anybody in this game and does not start here.
+     */
+    removeFromInventory(draft, 'lantern');
+    draft.placements['lantern'] = { kind: 'fixture', fixtureId: 'worksite.lowdish' };
+    draft.flags[FLAGS.lanternInLowDish] = true;
     events.push({
-      kind: 'narration',
+      kind: 'success',
       text:
         'You crouch and set the lantern into the low dish, and it seats itself with the small ' +
-        'rock you have felt once before in your life, in a chamber a hundred years from here.\n\n' +
-        'The panel answers. It is unmistakable and it is exactly what it was: pressure in the ' +
-        'back of your teeth, the hinges of your jaw, a held note you cannot hear.\n\n' +
-        'You put your head and shoulder into the half-cut aperture.\n\n' +
-        'On the far side is this chamber. The basket of cold chisels, the trestle, the drawing ' +
-        'on the wall with four iron nails in it. The same unfinished third wall. You are ' +
-        'looking at the room you are standing in, from a thumb inside its own wall, and the ' +
-        'longer you look the more certain you are that it is not a reflection.\n\n' +
-        'Caraway came out of the hole he went in by. Of course he did.\n\n' +
-        'You take the lantern back out.',
+        'rock you have felt once before in your life, in a chamber a hundred years from here.' +
+        (f(draft, FLAGS.lanternLit)
+          ? '\n\nThe panel answers. It is unmistakable and it is exactly what it was: pressure ' +
+            'in the back of your teeth, the hinges of your jaw, a held note you cannot hear.'
+          : '\n\nThe wick is cold. The panel is a panel, and a dark lamp in a dish does what a ' +
+            'dark lamp in an alcove did, which is nothing.'),
     });
-    journalEvents(
-      addJournal(draft, [
-        {
-          id: 'j.low_dish',
-          text:
-            'Used the low dish. It answers, and it comes out in this same chamber, in this same ' +
-            'season. Exactly what the crew wrote down. It is not a way home.',
-        },
-      ]),
-      events
-    );
     return commit(draft, events, true);
   }
 
@@ -222,6 +215,45 @@ export function placeLanternInDish(
 /* ------------------------------------------------------------------ *
  * Going
  * ------------------------------------------------------------------ */
+
+/**
+ * The harmless round trip.
+ *
+ * The low position reaches year −100, and from year −100 that is this chamber,
+ * in this season — which is exactly what the crew wrote down about it, and the
+ * hero's best evidence that the heights are places rather than distances.
+ *
+ * Costs nothing, confirms nothing anybody has to take on trust, and puts the
+ * lamp back in the hero's hands.
+ */
+export function stepThroughLowDish(draft: Draft, events: NarrativeEvent[]): ResolveResult {
+  draft.flags[FLAGS.triedLowDish] = true;
+  draft.flags[FLAGS.lanternInLowDish] = false;
+  giveItem(draft, 'lantern');
+  events.push({
+    kind: 'narration',
+    text:
+      'You put your head and shoulder into the half-cut aperture.\n\n' +
+      'On the far side is this chamber. The basket of cold chisels, the trestle, the drawing on ' +
+      'the wall with four iron nails in it. The same unfinished third wall. You are looking at ' +
+      'the room you are standing in, from a thumb inside its own wall, and the longer you look ' +
+      'the more certain you are that it is not a reflection.\n\n' +
+      'Caraway came out of the hole he went in by. Of course he did.\n\n' +
+      'You take the lantern back out of the dish.',
+  });
+  journalEvents(
+    addJournal(draft, [
+      {
+        id: 'j.low_dish',
+        text:
+          'Used the low dish. It answers, and it comes out in this same chamber in this same ' +
+          'season. Exactly what the crew wrote down. It is not a way home.',
+      },
+    ]),
+    events
+  );
+  return commit(draft, events, true);
+}
 
 /**
  * Why the aperture will not take the hero yet, or null when it will.
@@ -313,6 +345,20 @@ export function apertureRefusal(state: GameState): string | null {
  * and no reload can fire the arrival twice.
  */
 export function enterAperture(draft: Draft, events: NarrativeEvent[]): ResolveResult {
+  // The low position goes somewhere, and that somewhere is here. Handled
+  // before the refusals, because taking it is a success and not a mistake.
+  if (f(draft, FLAGS.lanternInLowDish) && f(draft, FLAGS.lanternLit)) {
+    return stepThroughLowDish(draft, events);
+  }
+  if (f(draft, FLAGS.lanternInLowDish)) {
+    events.push({
+      kind: 'failure',
+      text:
+        'The lamp is in the low dish and the wick is dark, and the aperture is a hole with a ' +
+        'thumb of hill behind it.',
+    });
+    return commit(draft, events, false);
+  }
   const refusal = apertureRefusal(draft);
   if (refusal !== null) {
     events.push({ kind: 'failure', text: refusal });
@@ -349,8 +395,12 @@ export function enterAperture(draft: Draft, events: NarrativeEvent[]): ResolveRe
     events
   );
 
+  /*
+   * No end-of-content marker here any more. This used to be where the build
+   * stopped; the chapter carries on, so the arrival sets the objective the
+   * hero actually has — get out of this hill and find out where you are — and
+   * nothing else.
+   */
   setObjective(draft, OBJECTIVES.future, events);
-  draft.ended = true;
-  events.push({ kind: 'system', text: END_OF_CONTENT });
   return commit(draft, events, true);
 }
