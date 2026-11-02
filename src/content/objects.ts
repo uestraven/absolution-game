@@ -1012,16 +1012,39 @@ const OBJECT_LIST: WorldObjectDef[] = [
       state.chapter === 'return' && f(state, FLAGS.earlierSelfDead)
         ? ['examine', 'break']
         : ['examine'],
-    description: () =>
-      'A square-dressed pillar of the same stone as the walls, standing where the middle of ' +
-      'the room would be if anybody wanted a pillar in the middle of a room. It was not built ' +
-      'here. It was left here: the chamber was cut away from around it, and this is the part ' +
-      'they did not cut.\n\n' +
-      'At the foot of it the stone has opened in a crack about the length of your forearm, and ' +
-      'there is a small grey fan of grit on the floor underneath, the way there is under ' +
-      'anything that has been taking a load for longer than it meant to.\n\n' +
-      'It is holding the roof up. Everything in here that is not holding the roof up has had a ' +
-      'pattern cut into it.',
+    description: (state) => {
+      const struck = Number(state.flags[FLAGS.pillarStruck] ?? 0);
+      if (struck >= 1) {
+        /*
+         * After a blow the description is a report on the way out, because that
+         * is the decision in front of the player and it has to be inspectable
+         * before the next swing rather than explained after it.
+         */
+        return (
+          'Standing on less than it had. The crack at the foot has opened from a hair to a ' +
+          'finger-width and there is a heap of its own grit round it, and the whole thing is ' +
+          'carrying the roof on the part that has not split yet.\n\n' +
+          (struck >= 2
+            ? 'The roof came down a hand on the last one and the squeeze west is shut. There ' +
+              'is no way out of this room, and the crack is on the face that looks into it, ' +
+              'so the next blow is struck from in here with you in here.'
+            : 'The squeeze west is narrower than it was when you came through it. That is the ' +
+              'roof, and the roof is what this is holding, and it will come down further ' +
+              'before it comes down for good. Hit it again and the way out closes.')
+        );
+      }
+      return (
+        'A square-dressed pillar of the same stone as the walls, standing where the middle of ' +
+        'the room would be if anybody wanted a pillar in the middle of a room. It was not built ' +
+        'here. It was left here: the chamber was cut away from around it, and this is the part ' +
+        'they did not cut.\n\n' +
+        'At the foot of it the stone has opened in a crack about the length of your forearm, and ' +
+        'there is a small grey fan of grit on the floor underneath, the way there is under ' +
+        'anything that has been taking a load for longer than it meant to.\n\n' +
+        'It is holding the roof up. Everything in here that is not holding the roof up has had a ' +
+        'pattern cut into it.'
+      );
+    },
     onExamine: {
       flags: { [FLAGS.sawPillar]: true },
       journal: [

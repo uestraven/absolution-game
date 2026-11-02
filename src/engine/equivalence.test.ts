@@ -69,9 +69,11 @@ const leave = () => (a: Affordances) =>
     ? undefined
     : { key: 'leave', label: 'Leave the conversation', action: { type: 'END_CONVERSATION' } as GameAction };
 
-describe('the two input modes are the same game', () => {
-  it('reaches identical progress from identical intent, step for step', () => {
-    const steps: Array<{ typed: string; chosen: (a: Affordances) => Affordance | undefined }> = [
+/**
+ * The whole game, written once as intents: what a player types, and the
+ * control a player clicks for the same thing. Both tests below walk it.
+ */
+const WHOLE_GAME: Array<{ typed: string; chosen: (a: Affordances) => Affordance | undefined }> = [
       { typed: 'take lantern', chosen: objectVerb('home.lantern', 'take') },
       { typed: 'go down', chosen: exit('to_square') },
       { typed: 'examine plank', chosen: objectVerb('square.plank', 'examine') },
@@ -167,9 +169,12 @@ describe('the two input modes are the same game', () => {
       { typed: 'break pillar', chosen: objectVerb('sealed.pillar', 'break') },
       { typed: 'break pillar', chosen: objectVerb('sealed.pillar', 'break') },
       { typed: 'break pillar', chosen: objectVerb('sealed.pillar', 'break') },
-      { typed: 'swing', chosen: clarification('Swing') },
-    ];
+  { typed: 'swing', chosen: clarification('Swing') },
+];
 
+describe('the two input modes are the same game', () => {
+  it('reaches identical progress from identical intent, step for step', () => {
+    const steps = WHOLE_GAME;
     let typed = begin('basilia');
     let selected = begin('basilia');
 
@@ -181,6 +186,24 @@ describe('the two input modes are the same game', () => {
 
     expect(hasFinished(typed)).toBe(true);
     expect(hasFinished(selected)).toBe(true);
+  });
+
+  /*
+   * The same intents again, as the other protagonist, and this time with no
+   * typing at all. The test above proves the two interfaces agree step for
+   * step; this one proves the clicking half reaches the ending on its own, for
+   * the character the other full-route tests do not use it for.
+   */
+  it('completes the whole game as the other protagonist, by clicking only', () => {
+    let state = begin('basil');
+    for (const step of WHOLE_GAME) {
+      state = click(state, step.chosen);
+    }
+    expect(state.character).toBe('basil');
+    expect(hasFinished(state)).toBe(true);
+    expect(state.flags[FLAGS.earlierSelfDead]).toBe(true);
+    expect(state.flags[FLAGS.heroDead]).toBe(true);
+    expect(state.flags[FLAGS.caveDestroyed]).toBe(true);
   });
 });
 

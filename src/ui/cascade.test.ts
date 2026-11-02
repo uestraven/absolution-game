@@ -1,5 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { TOP_GAP_PX, responseStart, responseTarget } from './cascade';
+import {
+  TOP_GAP_PX,
+  lastResponseStart,
+  responseStart,
+  responseTarget,
+  type EntryRef,
+} from './cascade';
+
+/** Shorthand: `'c:take lantern'` is a command echo, anything else is prose. */
+function refs(...spec: string[]): EntryRef[] {
+  return spec.map((id) =>
+    id.startsWith('c:') ? { id: id.slice(2), kind: 'command' } : { id, kind: 'narration' }
+  );
+}
+
+function ids(...spec: string[]): string[] {
+  return spec.map((id) => (id.startsWith('c:') ? id.slice(2) : id));
+}
 
 /**
  * The positioning rule, on its own.
@@ -13,46 +30,80 @@ import { TOP_GAP_PX, responseStart, responseTarget } from './cascade';
 
 describe('finding the start of a response', () => {
   it('treats everything as the response when nothing came before', () => {
-    expect(responseStart(['a', 'b'], ['a', 'b'], null)).toBe(0);
+    expect(responseStart(refs('a', 'b'), ids('a', 'b'), null)).toBe(0);
   });
 
   it('starts at the first entry added since the mark', () => {
-    const all = ['a', 'b', 'c', 'd'];
-    expect(responseStart(all, all, 'b')).toBe(2);
+    expect(responseStart(refs('a', 'b', 'c', 'd'), ids('a', 'b', 'c', 'd'), 'b')).toBe(2);
+  });
+
+  it('skips the echo of the player\'s own command', () => {
+    // They typed it. Putting it at the top of the screen pushes the first real
+    // line of the answer down for nothing.
+    const rendered = refs('a', 'c:take lantern', 'b');
+    expect(responseStart(rendered, ids('a', 'c:take lantern', 'b'), 'a')).toBe(2);
+  });
+
+  it('uses the echo when it is the only new thing on screen', () => {
+    const rendered = refs('a', 'c:look');
+    expect(responseStart(rendered, ids('a', 'c:look'), 'a')).toBe(1);
   });
 
   it('finds the start even when the mark names an entry that is not rendered', () => {
     // 'opts' is an option list: written out in type-only mode, drawn as
     // buttons in selectable mode, so it can be the last entry and still be
     // absent from the screen.
-    const all = ['a', 'opts', 'c', 'd'];
-    const rendered = ['a', 'c', 'd'];
-    expect(responseStart(rendered, all, 'opts')).toBe(1);
+    expect(responseStart(refs('a', 'c', 'd'), ids('a', 'opts', 'c', 'd'), 'opts')).toBe(1);
   });
 
   it('skips over hidden entries inside the response', () => {
-    const all = ['a', 'b', 'opts', 'c'];
-    const rendered = ['a', 'b', 'c'];
     // The response is ['opts', 'c']; only 'c' is on screen.
-    expect(responseStart(rendered, all, 'b')).toBe(2);
+    expect(responseStart(refs('a', 'b', 'c'), ids('a', 'b', 'opts', 'c'), 'b')).toBe(2);
   });
 
-  it('reports no rendered start when the action added nothing visible', () => {
-    const all = ['a', 'b', 'opts'];
-    const rendered = ['a', 'b'];
-    expect(responseStart(rendered, all, 'b')).toBe(rendered.length);
+  it('reports nothing identifiable when the action added nothing visible', () => {
+    expect(responseStart(refs('a', 'b'), ids('a', 'b', 'opts'), 'b')).toBeNull();
   });
 
-  it('reports no rendered start when the action added nothing at all', () => {
-    const all = ['a', 'b'];
-    expect(responseStart(all, all, 'b')).toBe(all.length);
+  it('reports nothing identifiable when the action added nothing at all', () => {
+    expect(responseStart(refs('a', 'b'), ids('a', 'b'), 'b')).toBeNull();
   });
 
-  it('falls back to the end rather than the top when the mark has aged out', () => {
-    // The cap drops entries from the front. Answering 0 here would fling the
-    // reader to the very beginning of the history.
-    const all = ['c', 'd'];
-    expect(responseStart(all, all, 'gone')).toBe(all.length);
+  it('reports nothing identifiable when the history was replaced', () => {
+    /*
+     * An import or a checkpoint restart swaps the whole transcript, so the
+     * mark names an entry that is simply gone. Answering 0 would fling the
+     * reader to the top of a history they did not ask to re-read; answering
+     * with the end would drop them at the bottom of it. The caller handles it.
+     */
+    expect(responseStart(refs('c', 'd'), ids('c', 'd'), 'gone')).toBeNull();
+  });
+});
+
+describe('opening a transcript nobody watched arrive', () => {
+  it('starts at the response after the last command echo', () => {
+    expect(lastResponseStart(refs('a', 'c:look', 'b', 'c'))).toBe(2);
+  });
+
+  it('uses the echo itself when the response is only the echo', () => {
+    expect(lastResponseStart(refs('a', 'b', 'c:look'))).toBe(2);
+  });
+
+  it('reads the whole thing from the top when no command was ever echoed', () => {
+    // The opening of a new game, restored before the first action.
+    expect(lastResponseStart(refs('a', 'b'))).toBe(0);
+    expect(lastResponseStart([])).toBe(0);
+  });
+
+  it('is never the end of the transcript', () => {
+    /*
+     * The point of the fallback: a player who closed the tab on an unread
+     * epilogue must not resume at the bottom of it.
+     */
+    const restored = refs('earlier', 'c:swing', 'sacrifice', 'cave', 'journal', 'epilogue', 'end');
+    const start = lastResponseStart(restored);
+    expect(start).toBe(2);
+    expect(start).toBeLessThan(restored.length - 1);
   });
 });
 

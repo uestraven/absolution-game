@@ -23,6 +23,12 @@ export const KEYS = {
   checkpoint: `${NS}:checkpoint`,
   quarantine: `${NS}:quarantine`,
   prefs: `${NS}:prefs`,
+  /**
+   * Where the reader had got to. A UI preference, not story progress: it is
+   * never written to a save, never exported, and losing it costs a scroll
+   * position and nothing else.
+   */
+  reading: `${NS}:reading`,
 } as const;
 
 export type StorageSlot = 'save' | 'backup' | 'checkpoint';
@@ -257,6 +263,9 @@ export function clearProgress(): void {
   removeRaw(KEYS.save);
   removeRaw(KEYS.backup);
   removeRaw(KEYS.checkpoint);
+  // A reading position into a transcript that no longer exists is worse than
+  // none: it would resolve against whatever entry happens to reuse the id.
+  removeRaw(KEYS.reading);
 }
 
 /* ------------------------------------------------------------------ *
@@ -305,6 +314,52 @@ export function readPrefs(): Prefs {
 
 export function writePrefs(prefs: Prefs): void {
   writeRaw(KEYS.prefs, JSON.stringify(prefs));
+}
+
+/* ------------------------------------------------------------------ *
+ * Reading position
+ *
+ * Kept beside preferences rather than in the save, because it describes the
+ * window and not the world. A save stays byte-identical whether the reader
+ * scrolled or not, exports do not carry it, and a stale or missing mark
+ * degrades to "the start of the last response" instead of breaking anything.
+ * ------------------------------------------------------------------ */
+
+export interface ReadingMark {
+  /** Transcript entry id the reader was looking at. */
+  id: string;
+  /** Its offset from the top of the viewport, in CSS pixels. Usually <= 0. */
+  offset: number;
+}
+
+export function readReadingMark(): ReadingMark | null {
+  const raw = readRaw(KEYS.reading);
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const record = parsed as Record<string, unknown>;
+    if (typeof record.id !== 'string' || record.id === '') return null;
+    if (typeof record.offset !== 'number' || !Number.isFinite(record.offset)) return null;
+    return { id: record.id, offset: record.offset };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stores the reading position, failing silently.
+ *
+ * A browser that will not take this write is not worth a warning banner: the
+ * reader loses a scroll position on reload, and the save has its own honest
+ * reporting for the thing that actually matters.
+ */
+export function writeReadingMark(mark: ReadingMark): void {
+  writeRaw(KEYS.reading, JSON.stringify(mark));
+}
+
+export function clearReadingMark(): void {
+  removeRaw(KEYS.reading);
 }
 
 /* ------------------------------------------------------------------ *

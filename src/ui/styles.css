@@ -464,25 +464,6 @@ em {
   overflow: visible;
 }
 
-/*
- * The anchored input is nudged when a heavy block lands above it: a short
- * settle, not a spring. Neutralised by the reduced-motion rule below.
- */
-@keyframes anchor-nudge {
-  0% {
-    transform: translateY(0);
-  }
-  35% {
-    transform: translateY(3px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-.controls-nudge {
-  animation: anchor-nudge 180ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
 .type-input {
   /* Lines up with the reading column, so the prompt sits under the text. */
   max-width: var(--measure);

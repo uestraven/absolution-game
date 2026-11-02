@@ -305,7 +305,9 @@ export function getAffordances(state: GameState): Affordances {
     if (
       stage === 'rush' &&
       state.inventory.includes('mallet') &&
-      state.flags[FLAGS.triedToStopThem] === true
+      state.flags[FLAGS.triedToStopThem] === true &&
+      typeof state.flags[FLAGS.theirReach] === 'number' &&
+      (state.flags[FLAGS.theirReach] as number) >= 1
     ) {
       meta.push({
         key: 'kill',

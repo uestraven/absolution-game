@@ -143,7 +143,19 @@ async function newPage(viewport) {
   const probeResponse = (n) => {
     const t = document.querySelector('.transcript');
     const tr = t.getBoundingClientRect();
-    const first = t.children[n];
+    /*
+     * The first *substantive* entry of the response, which is what the
+     * positioning rule targets: the echo of the player's own command is
+     * skipped deliberately, so the probe has to skip it too.
+     */
+    let first = null;
+    for (let i = n; i < t.children.length; i++) {
+      if (!t.children[i].classList.contains('entry-command')) {
+        first = t.children[i];
+        break;
+      }
+    }
+    first ??= t.children[n];
     const last = t.lastElementChild;
     if (!first || !last) return { missing: true };
     const fr = first.getBoundingClientRect();
@@ -173,6 +185,41 @@ async function newPage(viewport) {
   overflow2 <= 0 ? ok('360px: still no horizontal scrolling mid-play')
                  : bad('360px: still no horizontal scrolling mid-play', `${overflow2}px`);
 
+  /*
+   * Larger text, on the narrowest supported screen: the one combination most
+   * likely to break a layout. Checked for overflow, for the text actually
+   * getting bigger, and for the controls staying tappable.
+   */
+  await openSettings(page);
+  await page.getByRole('dialog', { name: 'Settings' })
+    .getByRole('checkbox', { name: 'Larger text' }).check();
+  await page.getByRole('dialog', { name: 'Settings' })
+    .getByRole('button', { name: /Close|Done/ }).first().click();
+  await page.waitForTimeout(200);
+  const big = await page.evaluate(() => {
+    const para = document.querySelector('.transcript .para');
+    const tap = [...document.querySelectorAll('button')]
+      .filter((el) => el.offsetParent !== null && !el.classList.contains('sr-only'))
+      .map((el) => Math.round(el.getBoundingClientRect().height));
+    return {
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      fontSize: parseFloat(getComputedStyle(para).fontSize),
+      smallest: Math.min(...tap),
+      clipped: [...document.querySelectorAll('.transcript .para')].some(
+        (el) => el.scrollWidth > el.clientWidth + 1
+      ),
+    };
+  });
+  big.overflow <= 0 && big.fontSize >= 18 && big.smallest >= 40 && !big.clipped
+    ? ok('360px with larger text: no overflow, no clipping, targets still 40px', `${big.fontSize}px body`)
+    : bad('360px with larger text', JSON.stringify(big));
+  await openSettings(page);
+  await page.getByRole('dialog', { name: 'Settings' })
+    .getByRole('checkbox', { name: 'Larger text' }).uncheck();
+  await page.getByRole('dialog', { name: 'Settings' })
+    .getByRole('button', { name: /Close|Done/ }).first().click();
+  await page.waitForTimeout(150);
+
   // Let any earlier glide finish, or it will overwrite the reset below and the
   // samples will describe a one-pixel nudge instead of real motion.
   await page.waitForTimeout(1200);
@@ -197,7 +244,15 @@ async function newPage(viewport) {
     });
     await new Promise((r) => setTimeout(r, 1200));
     const tr = t.getBoundingClientRect();
-    const first = t.children[before];
+    // Same skip as probeResponse: the command echo is not the target.
+    let first = null;
+    for (let i = before; i < t.children.length; i++) {
+      if (!t.children[i].classList.contains('entry-command')) {
+        first = t.children[i];
+        break;
+      }
+    }
+    first ??= t.children[before];
     const last = t.lastElementChild;
     const fr = first.getBoundingClientRect();
     const lr = last.getBoundingClientRect();
@@ -622,18 +677,35 @@ async function newPage(viewport) {
     ? ok('reload: Continue restores place and transcript')
     : bad('reload: Continue restores place and transcript', `${after} / entries ${endAfter}`);
 
-  // Resuming is not reading a new response: it opens on the last thing that
-  // happened, not at the top of a history the reader has already been through.
+  /*
+   * Resuming opens where the reader was, or at the start of the last thing
+   * that happened — never at the bottom of a passage nobody read. This save
+   * was written by a run that finished the story, so the last response is the
+   * sacrifice and the epilogue: landing at its end would hide all of it.
+   */
   const resumedAt = await page.evaluate(() => {
     const t = document.querySelector('.transcript');
+    const tr = t.getBoundingClientRect();
+    const visible = [...t.children].filter((c) => {
+      const r = c.getBoundingClientRect();
+      return r.bottom > tr.top && r.top < tr.bottom;
+    });
     return {
       overflows: t.scrollHeight > t.clientHeight + 1,
       fromBottom: +(t.scrollHeight - t.scrollTop - t.clientHeight).toFixed(2),
+      topVisible: visible[0]?.textContent.replace(/\s+/g, ' ').slice(0, 44) ?? '',
+      // Is the first line of what is on screen flush with the viewport top?
+      topAligned: visible[0]
+        ? Math.abs(visible[0].getBoundingClientRect().top - tr.top) <= 24
+        : false,
     };
   });
-  resumedAt.overflows && resumedAt.fromBottom < 2
-    ? ok('Continue opens a restored transcript at its end', `${resumedAt.fromBottom}px from the end`)
-    : bad('Continue did not open at the end of the transcript', JSON.stringify(resumedAt));
+  resumedAt.overflows && resumedAt.fromBottom > 2
+    ? ok(
+        'Continue does not open at the end of an unread passage',
+        `${resumedAt.fromBottom}px of text still below, from "${resumedAt.topVisible}…"`
+      )
+    : bad('Continue opened at the end of the transcript', JSON.stringify(resumedAt));
 
   /* ---------- 4. Mode switch preserves state and transcript ---------- */
   // Compare the stored transcript, not the rendered one: selectable mode hides
@@ -876,6 +948,43 @@ async function newPage(viewport) {
   await context.close();
 }
 
+/* ---------- 7b. A desktop window at 200% browser zoom ---------- */
+{
+  /*
+   * Browser zoom shrinks the CSS viewport rather than scaling pixels, so 200%
+   * zoom on a 1280x1080 window is a 640x540 layout viewport: medium width and
+   * an unusually short height, which is where a column-plus-anchored-input
+   * layout tends to come apart.
+   */
+  const { context, page, errors } = await newPage({ width: 640, height: 540 });
+  await page.getByRole('button', { name: 'New Game' }).click();
+  await page.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  await page.waitForTimeout(300);
+  const zoomed = await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    const controls = document.querySelector('.controls');
+    return {
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      docScrolls:
+        document.documentElement.scrollHeight > document.documentElement.clientHeight + 1,
+      transcriptLines: Math.floor(t.clientHeight / 28),
+      controlsVisible: controls.getBoundingClientRect().bottom <= window.innerHeight + 1,
+      openedAtTop: Math.round(t.scrollTop) === 0,
+    };
+  });
+  zoomed.overflow <= 0 &&
+  !zoomed.docScrolls &&
+  zoomed.transcriptLines >= 6 &&
+  zoomed.controlsVisible &&
+  zoomed.openedAtTop
+    ? ok('200% zoom: the layout holds and the controls stay on screen', `${zoomed.transcriptLines} lines of story`)
+    : bad('200% zoom broke the layout', JSON.stringify(zoomed));
+  errors.length === 0
+    ? ok('200% zoom: no console errors')
+    : bad('200% zoom: console errors', errors.slice(0, 2).join(' | '));
+  await context.close();
+}
+
 /* ---------- 8. Selectable mode plays both chapters, no typing ---------- */
 {
   const { context, page, errors } = await newPage({ width: 390, height: 844 });
@@ -1103,6 +1212,57 @@ async function newPage(viewport) {
     ? ok('selectable mode: the epilogue is shown')
     : bad('selectable mode: the epilogue is shown');
 
+  /*
+   * The last action emits the sacrifice, the hill coming down, a journal
+   * entry, the epilogue and the end marker in one response. The requirement
+   * is that the player meets it at the first of those, not the last: nobody
+   * should have to scroll backwards to find out that they swung.
+   */
+  await page.waitForTimeout(1200);
+  const lastResponse = await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    const tr = t.getBoundingClientRect();
+    const visible = [...t.children].filter((c) => {
+      const r = c.getBoundingClientRect();
+      return r.bottom > tr.top + 2 && r.top < tr.bottom;
+    });
+    const first = visible[0];
+    return {
+      firstOnScreen: (first?.innerText ?? '').replace(/\s+/g, ' ').slice(0, 60),
+      offset: first ? +(first.getBoundingClientRect().top - tr.top).toFixed(1) : null,
+      // Nothing of the response is above the top of the window.
+      nothingAbove: first ? first.getBoundingClientRect().top >= tr.top - 24 : false,
+      stillBelow: +(t.scrollHeight - t.scrollTop - t.clientHeight).toFixed(1),
+    };
+  });
+  lastResponse.firstOnScreen.includes('take your time over the last one') &&
+  lastResponse.nothingAbove &&
+  lastResponse.stillBelow > 2
+    ? ok(
+        'the ending opens on the first line of the sacrifice, not the end of the epilogue',
+        `"${lastResponse.firstOnScreen}…" at ${lastResponse.offset}px, ${lastResponse.stillBelow}px still to read`
+      )
+    : bad('the ending response was badly placed', JSON.stringify(lastResponse));
+
+  /*
+   * The transcript is a log for navigating to on purpose, and the shell has a
+   * separate announcer for new output. Both being live regions means a screen
+   * reader reads every response twice.
+   */
+  const announcing = await page.evaluate(() => {
+    const log = document.querySelector('[role=log]');
+    const live = [...document.querySelectorAll('[aria-live]')].map((el) => ({
+      live: el.getAttribute('aria-live'),
+      isLog: el.getAttribute('role') === 'log',
+      chars: (el.textContent ?? '').length,
+    }));
+    return { logLive: log?.getAttribute('aria-live'), live };
+  });
+  const announcers = announcing.live.filter((l) => l.live !== 'off');
+  announcing.logLive === 'off' && announcers.length === 1 && !announcers[0].isLog
+    ? ok('one live region announces new output, and the history does not repeat it')
+    : bad('output is announced more than once', JSON.stringify(announcing));
+
   errors.length === 0 ? ok('selectable mode: no console errors across the whole story')
                       : bad('selectable mode: console errors', errors.join(' | ').slice(0, 200));
   await context.close();
@@ -1250,11 +1410,46 @@ async function newPage(viewport) {
     ? ok('switching to typing mid-conversation keeps the topic list readable')
     : bad('switching to typing mid-conversation keeps the topic list readable');
 
-  await run(['the cave on the hill', 'whether anything is coming', 'why you asked', 'recite prophecy']);
+  await run(['the cave on the hill', 'whether anything is coming', 'why you asked']);
+  const beforeRecitation = await page.evaluate(() =>
+    document.querySelectorAll('.transcript .entry').length);
+  await run(['recite prophecy']);
+  await page.waitForTimeout(1200);
   const said = await page.locator('.transcript').innerText();
   said.includes('What stands will not stand')
     ? ok('a conversation started by clicking can be finished by typing')
     : bad('a conversation started by clicking can be finished by typing');
+
+  /*
+   * The recitation is the longest single response in the middle of the game
+   * and the one whose first line matters most — the player has to see
+   * themselves start saying it, not arrive at the village's reaction to it.
+   */
+  const recitationPlaced = await page.evaluate((n) => {
+    const t = document.querySelector('.transcript');
+    const tr = t.getBoundingClientRect();
+    let first = null;
+    for (let i = n; i < t.children.length; i++) {
+      if (!t.children[i].classList.contains('entry-command')) {
+        first = t.children[i];
+        break;
+      }
+    }
+    if (!first) return { missing: true };
+    const fr = first.getBoundingClientRect();
+    return {
+      offset: +(fr.top - tr.top).toFixed(1),
+      onScreen: fr.top >= tr.top - 24 && fr.top < tr.bottom,
+      opening: (first.innerText ?? '').replace(/\s+/g, ' ').slice(0, 50),
+      stillBelow: +(t.scrollHeight - t.scrollTop - t.clientHeight).toFixed(1),
+    };
+  }, beforeRecitation);
+  recitationPlaced.onScreen && recitationPlaced.offset <= 24
+    ? ok(
+        'the recitation opens at its first line',
+        `"${recitationPlaced.opening}…" at ${recitationPlaced.offset}px`
+      )
+    : bad('the recitation was badly placed', JSON.stringify(recitationPlaced));
   await context.close();
 }
 
@@ -1443,8 +1638,42 @@ async function newPage(viewport) {
   await run([
     'west','west','talk to sorrel','why the hill is walled up',
     'whether the wall is as good as it looks','leave',
-    'use wedge on seal','break seal','break seal',
+    'use wedge on seal','break seal',
   ]);
+  const beforeInjury = await page.evaluate(() =>
+    document.querySelectorAll('.transcript .entry').length);
+  await run(['break seal']);
+  await page.waitForTimeout(1200);
+
+  /*
+   * The blow that takes the eye produces the longest response in the chapter.
+   * Opening it at the end would show the reader the bandage before the blow.
+   */
+  const injuryPlaced = await page.evaluate((n) => {
+    const t = document.querySelector('.transcript');
+    const tr = t.getBoundingClientRect();
+    let first = null;
+    for (let i = n; i < t.children.length; i++) {
+      if (!t.children[i].classList.contains('entry-command')) {
+        first = t.children[i];
+        break;
+      }
+    }
+    if (!first) return { missing: true };
+    const fr = first.getBoundingClientRect();
+    return {
+      offset: +(fr.top - tr.top).toFixed(1),
+      onScreen: fr.top >= tr.top - 24 && fr.top < tr.bottom,
+      opening: (first.innerText ?? '').replace(/\s+/g, ' ').slice(0, 50),
+      stillBelow: +(t.scrollHeight - t.scrollTop - t.clientHeight).toFixed(1),
+    };
+  }, beforeInjury);
+  injuryPlaced.onScreen && injuryPlaced.offset <= 24 && injuryPlaced.stillBelow > 2
+    ? ok(
+        'the injury opens at the blow, not at the bandage',
+        `"${injuryPlaced.opening}…" at ${injuryPlaced.offset}px, ${injuryPlaced.stillBelow}px below`
+      )
+    : bad('the injury response was badly placed', JSON.stringify(injuryPlaced));
 
   // After the injury.
   const afterInjury = await reloadAndContinue();

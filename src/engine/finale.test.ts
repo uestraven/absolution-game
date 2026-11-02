@@ -428,6 +428,65 @@ describe('the killing requires the moment, and happens once', () => {
     expect(text).toMatch(/get hold of them/i);
   });
 
+  it('leaves an old confrontation save viable without fabricating anything', () => {
+    /*
+     * A save written before the attempt was required sits at `rush` with no
+     * `tried_to_stop_them`. The right answer is neither to migrate a failure
+     * the player never made nor to strand them: every intervention is still
+     * available in that room, so one of them unlocks it exactly as it would in
+     * a new game. No schema change, no invented history.
+     */
+    const legacy = { ...moving() };
+    delete legacy.flags[FLAGS.triedToStopThem];
+    delete legacy.flags[FLAGS.theirReach];
+
+    const stuck = type(legacy, 'kill them');
+    expect(stuck.accepted).toBe(false);
+
+    const unstuck = typeAll(legacy, ['block wall']);
+    expect(unstuck.flags[FLAGS.triedToStopThem]).toBe(true);
+    const killed = type(unstuck, 'kill them');
+    expect(killed.accepted).toBe(true);
+    expect(hasFinished(typeAll(killed.state, ['break pillar', 'break pillar', 'break pillar', 'swing']))).toBe(true);
+  });
+
+  it('never reopens a death that a save already committed', () => {
+    // The gate is a prerequisite for killing, not a condition for staying dead.
+    const dead = { ...afterTheKilling() };
+    delete dead.flags[FLAGS.triedToStopThem];
+    expect(dead.flags[FLAGS.earlierSelfDead]).toBe(true);
+    expect(getAffordances(dead).people).toEqual([]);
+    expect(type(dead, 'kill them').accepted).toBe(false);
+    expect(hasFinished(typeAll(dead, ['break pillar', 'break pillar', 'break pillar', 'swing']))).toBe(
+      true
+    );
+  });
+
+  it('does not accept an attempt made before they had decided anything', () => {
+    /*
+     * Grabbing them or lifting their lamp out of the dish during the argument
+     * failed at nothing that matters: they were not going anywhere yet. The
+     * refusal says so rather than pretending nothing was tried, and the kill
+     * stays shut until they are moving and an attempt has visibly failed.
+     */
+    for (const early of ['hold them', 'take their lantern']) {
+      const before = typeAll(arrived(), ['talk to them', 'show lantern', early]);
+      expect(before.flags[FLAGS.triedToStopThem], early).toBeUndefined();
+
+      const nowMoving = typeAll(before, ['tell them about the prophecy']);
+      expect(nowMoving.flags[FLAGS.finaleStage], early).toBe('rush');
+      const refused = type(nowMoving, 'kill them');
+      expect(refused.accepted, early).toBe(false);
+      expect(stripMarkup(lastText(refused))).toContain('before they had decided anything');
+      expect(getAffordances(nowMoving).meta.some((m) => m.key === 'kill'), early).toBe(false);
+
+      // Doing it again, now that it means something, opens it.
+      const again = typeAll(nowMoving, [early]);
+      expect(again.flags[FLAGS.triedToStopThem], early).toBe(true);
+      expect(type(again, 'kill them').accepted, early).toBe(true);
+    }
+  });
+
   it('is unlocked by any one of the three, and does not require all of them', () => {
     for (const attempt of ['hold them', 'take their lantern', 'block wall']) {
       const after = typeAll(moving(), [attempt]);
@@ -554,23 +613,48 @@ describe('the destruction is paid for and deliberate', () => {
     }
   });
 
-  it('escalates, and closes the way out physically before the commitment', () => {
+  it('warns that the way out is closing before the blow that closes it', () => {
     const dead = afterTheKilling();
     const one = type(dead, 'break pillar');
     expect(one.accepted).toBe(true);
     expect(one.state.flags[FLAGS.pillarStruck]).toBe(1);
     expect(one.state.flags[FLAGS.escapeClosed]).toBeUndefined();
-    expect(stripMarkup(lastText(one))).toContain('the hill speaks');
-    // Still a way out at this point.
-    expect(type(one.state, 'west').accepted).toBe(false);
-    expect(lastText(type(one.state, 'west'))).toContain('does not take that plank down');
+
+    /*
+     * The risk has to be legible before it is taken, not explained once it is
+     * irreversible. Three places say it after the first blow and before the
+     * second: the blow's own narration, the exit itself, and the pillar.
+     */
+    const blow = stripMarkup(lastText(one));
+    expect(blow).toContain('the hill speaks');
+    expect(blow).toContain('the squeeze is narrower than it was');
+    expect(blow).toMatch(/one more of these and you will not be walking out/i);
+
+    const west = type(one.state, 'west');
+    expect(west.accepted).toBe(false);
+    const exit = stripMarkup(lastText(west));
+    expect(exit).toContain('It is narrower');
+    expect(exit).toMatch(/if you swing again you will not be able to/i);
+
+    const looked = stripMarkup(lastText(type(one.state, 'examine pillar')));
+    expect(looked).toMatch(/hit it again and the way out closes/i);
+
+    // The journal carries it too, for a player who comes back to this later.
+    expect(
+      one.state.journal.some((e) => /squeeze west is narrower/.test(e.text)),
+      'the first blow is journalled with the cost'
+    ).toBe(true);
+  });
+
+  it('escalates, and closes the way out physically before the commitment', () => {
+    const one = type(afterTheKilling(), 'break pillar');
 
     const two = type(one.state, 'break pillar');
     expect(two.state.flags[FLAGS.pillarStruck]).toBe(2);
     expect(two.state.flags[FLAGS.escapeClosed]).toBe(true);
     const text = stripMarkup(lastText(two));
-    // The cost is stated before the commitment, in the hero's own arithmetic.
-    expect(text).toContain('no way out of this room');
+    // The cost is stated plainly before the commitment, as physical facts.
+    expect(text).toContain('the squeeze is shut');
     expect(text).toContain('Including you');
     expect(two.state.objective).toBe(OBJECTIVES.finish);
 
@@ -578,6 +662,11 @@ describe('the destruction is paid for and deliberate', () => {
     const shut = type(two.state, 'west');
     expect(shut.accepted).toBe(false);
     expect(lastText(shut)).toContain("hand's width of air");
+
+    // The pillar agrees with the room.
+    expect(stripMarkup(lastText(type(two.state, 'examine pillar')))).toContain(
+      'no way out of this room'
+    );
   });
 
   it('asks before the last one, in both modes, and takes no for an answer', () => {
@@ -944,6 +1033,30 @@ describe('both protagonists reach the same ending', () => {
     const girl = finishTheStory(arrived('basilia'));
     expect(boy.flags).toEqual(girl.flags);
     expect(boy.journal.map((e) => e.id)).toEqual(girl.journal.map((e) => e.id));
+  });
+
+  it('substitutes every authored placeholder, for either of them', () => {
+    /*
+     * An NPC line written with {they} or {name} and never passed through
+     * `renderText` would print the braces at the player. Scanning a whole
+     * playthrough is the only check that covers every topic in every room.
+     */
+    for (const who of ['basil', 'basilia'] as const) {
+      const text = finishTheStory(arrived(who))
+        .transcript.map((e) => [e.text, e.heading ?? '', e.subheading ?? ''].join('\n'))
+        .join('\n');
+      const leftovers = text.match(/\{[A-Za-z]+\}/g) ?? [];
+      expect(leftovers, `${who} has unsubstituted placeholders`).toEqual([]);
+    }
+  });
+
+  it('never calls either of them by the other one\'s name', () => {
+    const boy = finishTheStory(arrived('basil'));
+    const girl = finishTheStory(arrived('basilia'));
+    const textOf = (s: typeof boy) => stripMarkup(s.transcript.map((e) => e.text).join('\n'));
+    expect(textOf(girl)).not.toMatch(/\bBasil\b/);
+    // Basil's own run may of course say Basil; Basilia must never appear in it.
+    expect(textOf(boy)).not.toMatch(/\bBasilia\b/);
   });
 
   it('never calls the hero a man', () => {

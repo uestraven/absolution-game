@@ -271,12 +271,14 @@ export function blockWall(draft: Draft, events: NarrativeEvent[]): ResolveResult
 export function takeTheirLamp(draft: Draft, events: NarrativeEvent[]): ResolveResult {
   openTheArgument(draft);
   if (f(draft, FLAGS.tookTheirLamp)) {
+    // Doing it again while they are moving is still a real attempt that fails.
+    if (stageOf(draft) === 'rush') draft.flags[FLAGS.triedToStopThem] = true;
     events.push({ kind: 'narration', text: T.LAMP_TAKEN_AGAIN });
     closeIn(draft, events);
     return commit(draft, events, true);
   }
   draft.flags[FLAGS.tookTheirLamp] = true;
-  draft.flags[FLAGS.triedToStopThem] = true;
+  if (stageOf(draft) === 'rush') draft.flags[FLAGS.triedToStopThem] = true;
   events.push({ kind: 'narration', text: T.LAMP_TAKEN });
   journalEvents(
     addJournal(draft, [
@@ -304,7 +306,7 @@ export function restrainThem(draft: Draft, events: NarrativeEvent[]): ResolveRes
   openTheArgument(draft);
   const first = !f(draft, FLAGS.restrainedThem);
   draft.flags[FLAGS.restrainedThem] = true;
-  draft.flags[FLAGS.triedToStopThem] = true;
+  if (stageOf(draft) === 'rush') draft.flags[FLAGS.triedToStopThem] = true;
   events.push({ kind: 'narration', text: first ? T.RESTRAIN_FIRST : T.RESTRAIN_AGAIN });
   closeIn(draft, events);
   return commit(draft, events, true);
@@ -317,12 +319,22 @@ export function tryToLeave(draft: Draft, events: NarrativeEvent[]): ResolveResul
     return commit(draft, events, false);
   }
   const stage = stageOf(draft);
+  /*
+   * One blow in, the way out is measurably worse and the player can go and
+   * check it. That is the whole point of this branch: the cost of the next
+   * swing is inspectable before it is paid, not explained afterwards.
+   */
+  const struck = typeof draft.flags[FLAGS.pillarStruck] === 'number'
+    ? (draft.flags[FLAGS.pillarStruck] as number)
+    : 0;
   const text =
-    stage === 'dead' || stage === 'pillar'
-      ? T.LEAVE_AFTER
-      : stage === 'rush'
-        ? T.LEAVE_RUSH
-        : T.LEAVE_EARLY;
+    struck >= 1
+      ? T.LEAVE_NARROWED
+      : stage === 'dead' || stage === 'pillar'
+        ? T.LEAVE_AFTER
+        : stage === 'rush'
+          ? T.LEAVE_RUSH
+          : T.LEAVE_EARLY;
   events.push({ kind: 'failure', text });
   return commit(draft, events, false);
 }
@@ -370,8 +382,22 @@ export function killRefusal(state: GameState): string | null {
        * them with their hands and could not. Any one of the three is enough —
        * each fails on its own terms, and the hero is not required to exhaust
        * them.
+       *
+       * It has to be an attempt made *while they are going for the wall*. A
+       * grab during the argument, before they have decided anything, failed at
+       * nothing that matters and cannot stand in for the moment this scene is
+       * about — see `restrainThem` and `takeTheirLamp`, which only latch the
+       * flag in `rush`. And it has to have visibly failed, which is what the
+       * reach is: every attempt moves them nearer the passage, and the refusal
+       * below holds until one has.
        */
-      if (!f(state, FLAGS.triedToStopThem)) return T.KILL_UNTRIED;
+      if (!f(state, FLAGS.triedToStopThem) || reachOf(state) < 1) {
+        // Something was tried, but during the argument, when nothing was at
+        // stake. The refusal says that rather than claiming it never happened.
+        return f(state, FLAGS.restrainedThem) || f(state, FLAGS.tookTheirLamp)
+          ? T.KILL_TRIED_TOO_EARLY
+          : T.KILL_UNTRIED;
+      }
       return state.inventory.includes('mallet') ? null : T.KILL_NO_TOOL;
   }
 }

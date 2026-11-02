@@ -11,7 +11,7 @@ import { prophecyBlock } from './prophecy';
  */
 
 export const TITLE = 'Absolution';
-export const SUBTITLE = 'The opening chapters';
+export const SUBTITLE = 'Sixteen years old, and allowed in at last';
 
 export const SELECT_PROMPT = `Somebody in this village turns sixteen today.
 
@@ -180,7 +180,7 @@ You are not in your own village. You know that before you have got your feet und
  */
 export const CONTINUATION_NOTICE = `— The story continues past this point now —
 
-Your saved game ended where the prototype used to stop. The chapter carries on from here: everything above is still yours, and nothing has been reset.
+Your saved game ended where an earlier build stopped. The chapter carries on from here: everything above is still yours, and nothing has been reset.
 
 You are in the square, a hundred years before the one you grew up in, and you need to get home.`;
 
@@ -240,7 +240,7 @@ The cloth comes away and she looks at it and puts it back and says, to Sorrel ra
 
 What you understand, over the next little while, is that the eye is gone. Not damaged. Gone, and the socket cleaned and packed and bound with a strip of linen that goes round your head twice, and the woman's hands are steady and quick and she says *sorry* once, quietly, when you make a sound.
 
-Nobody asks you what you were doing. That is the thing you notice through all of it. They have watched a stranger break open the hill they sealed, and nobody has asked.`;
+Nobody asks you what you were doing. They have watched a stranger break open the hill they sealed, and nobody has asked.`;
 
 export const WANDERER_NAMED = `You get up, eventually, with a hand on the stone.
 

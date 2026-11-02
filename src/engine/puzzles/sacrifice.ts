@@ -140,7 +140,8 @@ export function strikePillar(
           id: 'j.first_blow',
           text:
             'First blow at the foot of the pillar, where the crack is. It opened to a ' +
-            'finger-width and the hill settled overhead.',
+            'finger-width and the hill settled overhead, and the squeeze west is narrower ' +
+            'than it was. Another one and that gap is shut with me inside it.',
         },
       ]),
       events

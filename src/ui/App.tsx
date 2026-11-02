@@ -49,7 +49,6 @@ export function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [announcement, setAnnouncement] = useState('');
-  const [feedNudge, setFeedNudge] = useState(false);
   /** Bumped once per player action, so the transcript positions on its output. */
   const [actionCount, setActionCount] = useState(0);
   /**
@@ -165,18 +164,6 @@ export function App() {
     },
     [persist]
   );
-
-  /**
-   * The anchored command line gets a short nudge when a heavy block lands
-   * above it, so it reads as being pushed down by the text. Reduced-motion is
-   * handled in CSS, where the keyframe is neutralised.
-   */
-  const onHeavyFeed = useCallback(() => {
-    setFeedNudge(false);
-    // Two frames, so the class is genuinely removed and re-added and the
-    // keyframe restarts even on consecutive heavy blocks.
-    requestAnimationFrame(() => requestAnimationFrame(() => setFeedNudge(true)));
-  }, []);
 
   const topics = useMemo(() => (state ? activeTopics(state) : []), [state]);
 
@@ -423,7 +410,6 @@ export function App() {
           showOptionLists={prefs.inputMode === 'type'}
           actionCount={actionCount}
           resumed={resumed}
-          onHeavyFeed={onHeavyFeed}
         />
       </main>
 
@@ -431,15 +417,18 @@ export function App() {
         {announcement}
       </div>
 
+      {/*
+        * The command line does not move. It used to bounce 3px when a heavy
+        * block landed, on the idea that the text was pushing it down — which
+        * was true while every action scrolled to the bottom. Now that a
+        * response is opened at its top, the text arrives nowhere near the
+        * input, and a widget twitching for no visible reason competes with the
+        * one piece of motion that means something.
+        */}
       <section
-        className={[
-          'controls',
-          prefs.inputMode === 'type' ? 'controls-type' : '',
-          feedNudge ? 'controls-nudge' : '',
-        ]
+        className={['controls', prefs.inputMode === 'type' ? 'controls-type' : '']
           .filter(Boolean)
           .join(' ')}
-        onAnimationEnd={() => setFeedNudge(false)}
         id="main-controls"
         aria-label="Actions"
       >

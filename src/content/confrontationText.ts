@@ -55,7 +55,7 @@ Then they wipe their face with the back of their wrist.
 
 export const NO_LANTERN_TO_SHOW = `You go to hold your lantern up and you are not holding it.
 
-You put it down somewhere in this room, which was a reasonable thing to do with both hands full and is not a reasonable thing to have done now.`;
+You put it down somewhere in this room. That was a reasonable thing to do with both hands full. It is not a reasonable thing to have done now.`;
 
 export const LANTERN_AGAIN = `You hold it up again. They do not look at it.
 
@@ -223,6 +223,14 @@ Walking down this hill does not take that plank down.
 
 You go back in.`;
 
+export const LEAVE_NARROWED = `You go and put your hand in the squeeze.
+
+It is narrower. You came through it this evening without turning your shoulders and you would turn them now, and the rock that has come down to make it narrower is the roof. The roof is what the pillar is holding.
+
+You can still get out. If you swing again you will not be able to, and you will not get a second look at it: the roof does not come down a little at a time to be polite.
+
+You take your hand out of the squeeze and go back in.`;
+
 export const LEAVE_CLOSED = `The squeeze is a hand's width of air with a hill sitting on it.
 
 That stopped being a way out two blows ago, and you knew it when you swung.`;
@@ -258,6 +266,12 @@ export const KILL_UNTRIED = `You get the mallet up behind them and your arm does
 Not yet. Not when you have not laid a hand on them. You are standing in a four-pace room with both arms working and their lamp in a dish an arm's length away, and you have not so much as tried.
 
 Try to stop them. Get hold of them, or get the light off that wall, or put yourself in front of it. Then see what you have got left.`;
+
+export const KILL_TRIED_TOO_EARLY = `You have had hold of them once this evening, and it was before they had decided anything. They were still arguing with you. You let go because there was still something to say.
+
+There is not any more, and they are moving.
+
+Try to stop them now, while it means something. Then see what you have got left.`;
 
 export const KILL_NO_TOOL = `Your hands are empty.
 
@@ -301,6 +315,10 @@ The mallet goes in square and the sound is not a sound, it is a thing that happe
 Then the hill speaks.
 
 It is not loud. It is a long settling somewhere above the ceiling, moving from one side of the room to the other, like somebody turning over in a bed upstairs. Dust comes down off the roof in three or four places and hangs in the fan of light.
+
+Then you look west, because west is the way out, and the squeeze is narrower than it was. Not shut. Narrower — whatever the hill did just now, it did to the roof, and the roof is the top of that gap.
+
+One more of these and you will not be walking out of here.
 
 The lamp in the alcove goes on burning.`,
 
@@ -381,7 +399,7 @@ There is a name. There is a house with a window that somebody put a lantern on t
 
 They do not get a body. They do not get an account. What the village has is the eleventh day of the vigil, and a sixteen-year-old who went up that hill at dusk with a lantern because they were allowed to, and a hill that came down on them.
 
-Parsie, who is eleven, stops orbiting. He is not thrilled about anything for a long while, and when he is eleven and a bit he asks Sage whether the plank was about it, and she tells him the truth, which is that she does not know.
+Parsie, who is eleven, stops orbiting. He is not thrilled about anything for a long while, and when he is eleven and a bit he asks Sage whether the plank was about it, and she tells him the truth: she does not know.
 
 ---
 

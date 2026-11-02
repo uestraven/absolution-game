@@ -308,7 +308,7 @@ describe('accessibility affordances', () => {
     }
   });
 
-  it('opens a resumed transcript at its end', async () => {
+  it('does not resume at the end of a transcript nobody has read', async () => {
     // A save mid-play, as Continue would find it.
     const first = await startPlaying('select');
     await first.click(
@@ -321,9 +321,14 @@ describe('accessibility affordances', () => {
       const user = (await import('@testing-library/user-event')).default.setup();
       render(<App />);
       await user.click(screen.getByRole('button', { name: 'Continue' }));
-      // Not the top: the reader has read this already and wants the end of it.
-      // `snapToBottom` asks for the whole content height; a browser clamps it.
-      expect(writes[0]).toBe(5000);
+      /*
+       * Where exactly it lands needs a layout engine and is measured in the
+       * browser pass. What is testable here is that it is not the bottom:
+       * `snapToBottom` asked for the whole content height, and resuming at the
+       * end of an unread passage is the thing the rule exists to prevent.
+       */
+      expect(writes.length).toBeGreaterThan(0);
+      expect(writes[0]).not.toBe(5000);
     } finally {
       restore();
     }

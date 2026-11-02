@@ -76,9 +76,6 @@ const MAX_TRAVEL_SCREENS = 0.75;
  */
 export const TOP_GAP_PX = 16;
 
-/** Past this much new content, the input gets a nudge as well. */
-export const BOUNCE_THRESHOLD_PX = 120;
-
 /** Treated as "the reader is at the bottom" when deciding what to preserve. */
 export const AT_BOTTOM_PX = 80;
 
@@ -102,8 +99,15 @@ function easeOutCubic(t: number): number {
  * Finding the response
  * ================================================================ */
 
+/** What the positioning logic needs to know about one transcript entry. */
+export interface EntryRef {
+  id: string;
+  /** `'command'` is the echo of what the player typed or chose. */
+  kind: string;
+}
+
 /**
- * Index of the first rendered entry belonging to the newest response.
+ * Index of the first *substantive* rendered entry of the newest response.
  *
  * `mark` is the id of the last entry that existed *before* the action, taken
  * from the unfiltered list; `all` is the unfiltered list now; `rendered` is
@@ -112,25 +116,63 @@ function easeOutCubic(t: number): number {
  * of those new ids in `rendered` is what keeps the two in step — a mark that
  * happens to name a hidden entry still locates the response.
  *
- * Returns `rendered.length` to mean "no rendered start": either the action
- * added nothing visible, or the mark has aged out of the capped transcript. The
- * caller reads that as "use the bottom", which is the old behaviour and is
- * always safe; pointing at index 0 instead would fling the reader to the top of
- * the entire history.
+ * The echo of the player's own command is skipped: they typed it, they do not
+ * need it put at the top of the screen, and anchoring on it pushes the first
+ * real line of the answer down by a line for no reason. If the echo is the only
+ * new thing on screen it is used anyway, because it is still better than
+ * nothing.
+ *
+ * Returns `null` for "not identifiable here": the action added nothing visible,
+ * or the mark is not in `all` because the whole history was replaced (import,
+ * checkpoint restart). Callers handle those separately rather than being handed
+ * a misleading index — pointing at 0 would fling the reader to the top of the
+ * entire history.
  */
 export function responseStart(
-  rendered: readonly string[],
+  rendered: readonly EntryRef[],
   all: readonly string[],
   mark: string | null
-): number {
+): number | null {
   // No mark: nothing preceded this response, so all of it is the response.
-  if (mark === null) return 0;
+  if (mark === null) return rendered.length === 0 ? null : 0;
   const i = all.indexOf(mark);
-  if (i === -1) return rendered.length;
+  if (i === -1) return null;
   const fresh = new Set(all.slice(i + 1));
-  if (fresh.size === 0) return rendered.length;
-  const at = rendered.findIndex((id) => fresh.has(id));
-  return at === -1 ? rendered.length : at;
+  if (fresh.size === 0) return null;
+  let firstFresh: number | null = null;
+  for (let at = 0; at < rendered.length; at++) {
+    const entry = rendered[at]!;
+    if (!fresh.has(entry.id)) continue;
+    if (firstFresh === null) firstFresh = at;
+    if (entry.kind !== 'command') return at;
+  }
+  return firstFresh;
+}
+
+/**
+ * Index of the start of the last response in a transcript nobody watched
+ * arrive — a restored save, an import, a checkpoint.
+ *
+ * The echo of the player's last command is the boundary: it is written for
+ * every action in both input modes, so the entries after the last one of them
+ * are the last response. Without one, the whole transcript is treated as the
+ * response and read from the top.
+ *
+ * This is the fallback the reader gets when there is no stored reading
+ * position, and it is deliberately not the bottom: resuming at the end of a
+ * long passage that was never read is the thing this whole module exists to
+ * stop.
+ */
+export function lastResponseStart(rendered: readonly EntryRef[]): number {
+  for (let at = rendered.length - 1; at >= 0; at--) {
+    if (rendered[at]!.kind !== 'command') continue;
+    // The first substantive entry after the echo, or the echo if it is last.
+    for (let next = at + 1; next < rendered.length; next++) {
+      if (rendered[next]!.kind !== 'command') return next;
+    }
+    return at;
+  }
+  return 0;
 }
 
 /**
@@ -205,17 +247,17 @@ export interface ReadingAnchor {
  * option lists throughout the history — can put the same words back under the
  * same eye instead of leaving `scrollTop` pointing at different text.
  */
-export function sampleAnchor(el: HTMLElement, ids: readonly string[]): ReadingAnchor | null {
+export function sampleAnchor(el: HTMLElement, ids: readonly EntryRef[]): ReadingAnchor | null {
   if (typeof el.getBoundingClientRect !== 'function') return null;
   const top = el.getBoundingClientRect().top;
   const atBottom = isAtBottom(el);
   for (let i = 0; i < el.children.length; i++) {
     const child = el.children.item(i);
     if (!(child instanceof HTMLElement)) continue;
-    const id = ids[i];
-    if (id === undefined) break;
+    const entry = ids[i];
+    if (entry === undefined) break;
     const rect = child.getBoundingClientRect();
-    if (rect.bottom - top > 0) return { id, offset: rect.top - top, atBottom };
+    if (rect.bottom - top > 0) return { id: entry.id, offset: rect.top - top, atBottom };
   }
   return null;
 }
@@ -230,7 +272,7 @@ export function sampleAnchor(el: HTMLElement, ids: readonly string[]): ReadingAn
  */
 export function restoreAnchor(
   el: HTMLElement,
-  ids: readonly string[],
+  ids: readonly EntryRef[],
   anchor: ReadingAnchor | null
 ): void {
   if (anchor === null) return;
@@ -238,7 +280,7 @@ export function restoreAnchor(
     el.scrollTop = el.scrollHeight;
     return;
   }
-  const index = ids.indexOf(anchor.id);
+  const index = ids.findIndex((entry) => entry.id === anchor.id);
   if (index === -1) return;
   const now = contentTopOf(el, index);
   if (now === null) return;
