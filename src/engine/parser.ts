@@ -156,6 +156,15 @@ const KNOWN_VERBS = new Set([
   'think',
   'reflect',
   'consider',
+  'show',
+  'tell',
+  'hold',
+  'grab',
+  'restrain',
+  'block',
+  'stand',
+  'kill',
+  'review',
 ]);
 
 export function normalizeInput(raw: string): string {
@@ -404,6 +413,10 @@ export function parse(raw: string, context: ParseContext = {}): GameAction {
     case 'set':
     case 'stand': {
       const body = words.slice(1);
+      // "stand between them and the wall" / "stand in front of the wall"
+      if (verb === 'stand' && (body[0] === 'between' || body[0] === 'in')) {
+        return { type: 'BLOCK', target: joinRest(words, 2).replace(/^front of /, '') };
+      }
       if (body[0] === 'down' && verb === 'put') {
         const target = joinRest(words, 2);
         if (target.length === 0) return { type: 'UNPARSED', raw, reason: 'no-object' };
@@ -494,10 +507,16 @@ export function parse(raw: string, context: ParseContext = {}): GameAction {
 
     case 'say':
     case 'tell': {
-      // Only "say the prophecy" is a command. Everything else is conversation,
-      // which goes through topics.
-      const body = rest.replace(/^(them|her|him|it|us|saffra|fenn) /, '');
+      // "say the prophecy" is the recitation. "tell them about X" is showing
+      // them something in the confrontation. Everything else is conversation.
+      const body = rest.replace(/^(them|her|him|it|us|myself|saffra|fenn) /, '');
       if (PROPHECY_NOUNS.has(body) || PROPHECY_NOUNS.has(rest)) return { type: 'RECITE' };
+      if (verb === 'tell') {
+        const subject = body.replace(/^about /, '');
+        if (subject.length > 0 && subject !== rest.trim()) {
+          return { type: 'SHOW', subject };
+        }
+      }
       return { type: 'UNPARSED', raw, reason: 'recite-what' };
     }
 
@@ -525,6 +544,40 @@ export function parse(raw: string, context: ParseContext = {}): GameAction {
     case 'reflect':
     case 'consider':
       return { type: 'REFLECT' };
+
+    case 'show': {
+      const body = words.slice(1);
+      const split = splitOn(body, ['to']);
+      const subject = stripArticles(split ? split.left.split(' ') : body).join(' ');
+      if (subject.length === 0) return { type: 'UNPARSED', raw, reason: 'show-what' };
+      const action: GameAction = { type: 'SHOW', subject };
+      return split && split.right.length > 0 ? { ...action, target: split.right } : action;
+    }
+
+    case 'restrain':
+    case 'hold': {
+      const body = words.slice(1).filter((w) => w !== 'on' && w !== 'onto' && w !== 'back');
+      const target = stripArticles(body).join(' ');
+      if (target.length === 0) return { type: 'UNPARSED', raw, reason: 'no-person' };
+      return { type: 'RESTRAIN', target };
+    }
+
+    case 'block': {
+      const body = words.slice(1);
+      return { type: 'BLOCK', target: stripArticles(body).join(' ') };
+    }
+
+    case 'kill': {
+      const body = words.slice(1);
+      const split = splitOn(body, ['with', 'using']);
+      const target = stripArticles(split ? split.left.split(' ') : body).join(' ');
+      if (target.length === 0) return { type: 'UNPARSED', raw, reason: 'no-person' };
+      const action: GameAction = { type: 'KILL', target };
+      return split && split.right.length > 0 ? { ...action, using: split.right } : action;
+    }
+
+    case 'review':
+      return { type: 'REVIEW' };
 
     case 'wait':
     case 'z':
@@ -577,6 +630,8 @@ export function unparsedMessage(reason: string, raw: string): string {
       return 'Say who you are giving it to, as in GIVE SKINS TO LOVAGE.';
     case 'recite-what':
       return 'RECITE PROPHECY is the only thing you can recite.';
+    case 'show-what':
+      return 'Say what you are showing them, as in SHOW LANTERN or SHOW JOURNAL.';
     case 'unknown-verb':
     default:
       return `You cannot do that here. HELP lists everything this story understands.`;

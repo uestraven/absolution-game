@@ -159,6 +159,53 @@ export const FLAGS = {
   lanternInMiddleDish: 'lantern_in_middle_dish',
   /** The third crossing has been made. */
   crossedBack: 'crossed_back',
+
+  /* ---- Chapter 4: the confrontation -------------------------------- *
+   * The stage is the finale's only state machine. Everything else here is
+   * a fact about the room or about what has been said, and the stage is
+   * derived from none of them — it moves only where the table in
+   * engine/puzzles/confrontation.ts says it moves.
+   * ------------------------------------------------------------------ */
+  /** Which beat of the confrontation is running. See FINALE_STAGES. */
+  finaleStage: 'finale_stage',
+  /** How close the earlier self has got to the wall. 0–3, and it caps. */
+  theirReach: 'their_reach',
+
+  /* ---- what has been said, and what it achieved -------------------- */
+  /** The hero has said who they are. */
+  claimedIdentity: 'claimed_identity',
+  /** The two lanterns have been held side by side. */
+  showedLantern: 'showed_lantern',
+  /** They have accepted that the stranger is another version of them. */
+  identityAccepted: 'identity_accepted',
+  /** The journal has been held open in front of them. */
+  showedJournal: 'showed_journal',
+  /** The hero has described the ruined century. */
+  describedFuture: 'described_future',
+  /** The hero has told them where the prophecy came from. */
+  toldOrigin: 'told_origin',
+
+  /* ---- what has been tried with hands ------------------------------ */
+  /** The hero is standing between them and the patterned wall. */
+  blockingWall: 'blocking_wall',
+  /** Their lamp has been taken out of the alcove at least once. */
+  tookTheirLamp: 'took_their_lamp',
+  /** The hero has had hold of them. */
+  restrainedThem: 'restrained_them',
+
+  /* ---- Chapter 4: the terminal facts ------------------------------- */
+  /** The earlier self is dead. Latches, once, for ever. */
+  earlierSelfDead: 'earlier_self_dead',
+  /** How many blows the pillar has taken. 0–3. */
+  pillarStruck: 'pillar_struck',
+  /** The squeeze west is closed by the roof coming down a hair. */
+  escapeClosed: 'escape_closed',
+  /** The chamber is down and the fold is under it. */
+  caveDestroyed: 'cave_destroyed',
+  /** The returning hero is dead. */
+  heroDead: 'hero_dead',
+  /** The epilogue has been shown, and the story is over. */
+  storyComplete: 'story_complete',
   /** How many hints deep the player has gone in the current hint context. */
   hintStage: 'hint_stage',
   /** Which hint ladder the last hint came from, so a new context restarts it. */
@@ -244,6 +291,23 @@ export const FLAG_TYPES: Record<string, 'boolean' | 'number' | 'string'> = {
   [FLAGS.fillCleared]: 'boolean',
   [FLAGS.lanternInMiddleDish]: 'boolean',
   [FLAGS.crossedBack]: 'boolean',
+  [FLAGS.finaleStage]: 'string',
+  [FLAGS.theirReach]: 'number',
+  [FLAGS.claimedIdentity]: 'boolean',
+  [FLAGS.showedLantern]: 'boolean',
+  [FLAGS.identityAccepted]: 'boolean',
+  [FLAGS.showedJournal]: 'boolean',
+  [FLAGS.describedFuture]: 'boolean',
+  [FLAGS.toldOrigin]: 'boolean',
+  [FLAGS.blockingWall]: 'boolean',
+  [FLAGS.tookTheirLamp]: 'boolean',
+  [FLAGS.restrainedThem]: 'boolean',
+  [FLAGS.earlierSelfDead]: 'boolean',
+  [FLAGS.pillarStruck]: 'number',
+  [FLAGS.escapeClosed]: 'boolean',
+  [FLAGS.caveDestroyed]: 'boolean',
+  [FLAGS.heroDead]: 'boolean',
+  [FLAGS.storyComplete]: 'boolean',
   [FLAGS.hintStage]: 'number',
   [FLAGS.hintContext]: 'string',
 };

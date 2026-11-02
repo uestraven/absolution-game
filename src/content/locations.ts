@@ -343,8 +343,11 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
             'cut.'
         );
         parts.push(
-          'Your own lantern is in your hand, and it is the same lantern, and you are not going ' +
-            'to think about that now.'
+          state.inventory.includes('lantern')
+            ? 'Your own lantern is in your hand, and it is the same lantern, and you are not ' +
+                'going to think about that now.'
+            : 'Your own lantern is wherever you put it down, and it is the same lantern, and ' +
+                'you are not going to think about that now.'
         );
         parts.push('The pivoted wall is not open. It is about to be.');
         return parts.join('\n\n');
@@ -414,7 +417,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
          * authored out there for a one-eyed stranger at dusk, and walking out
          * would abandon the only thing they came back to do.
          */
-        requires: (state) => state.chapter !== 'return',
+        requires: (state) => state.chapter !== 'return' && state.chapter !== 'ending',
       },
       {
         id: 'to_deep',
@@ -422,7 +425,8 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         to: 'present.deep_chamber',
         direction: 'down',
         aliases: ['passage', 'opening', 'seam', 'in', 'through', 'deeper'],
-        requires: (state) => state.chapter !== 'return' && f(state, FLAGS.passageOpen),
+        requires: (state) =>
+          state.chapter !== 'return' && state.chapter !== 'ending' && f(state, FLAGS.passageOpen),
       },
     ],
   },

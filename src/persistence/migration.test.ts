@@ -11,6 +11,8 @@ import {
   TO_SEALED,
   begin,
   finishChapterThree,
+  finishTheStory,
+  hasFinished,
   hasReturned,
   type,
   typeAll,
@@ -242,7 +244,7 @@ describe('a save that stopped at the old prototype marker becomes playable', () 
     const result = validateSave(elsewhere);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/marked complete somewhere the current content cannot end/);
+    expect(result.error).toMatch(/disagrees with itself about whether the story is over/);
   });
 });
 
@@ -371,5 +373,266 @@ describe('a save from the new chapter round-trips', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toMatch(/second crossing and its era disagree/);
+  });
+});
+
+/* ================================================================ *
+ * Format 3 → 4: a save that stopped at the return
+ * ================================================================ */
+
+describe('a save that stopped at the return becomes the last chapter', () => {
+  /** The format-3 file the previous build left at its boundary. */
+  function returnEndpointV3(options: { mallet: 'carried' | 'dropped' | 'absent' }): Record<string, unknown> {
+    const real = finishChapterThree(
+      typeAll(begin(), [
+        ...TO_SEALED,
+        ...SOLVE_RELIEF,
+        ...CROSS_FIRST,
+        ...PAST_TO_SQUARE,
+        ...SAFFRA_REALISATION,
+        'leave',
+        ...RECITE,
+        ...FENN_ROUTE,
+        ...READ_PANEL,
+        ...GO_FORWARD,
+      ])
+    ).state;
+    const file = { ...JSON.parse(serialize(real)), schemaVersion: 3 } as Record<string, unknown>;
+
+    // The previous build's boundary.
+    file.ended = true;
+    file.objective = 'Stop yourself going through.';
+    delete (file.flags as Record<string, unknown>)['finale_stage'];
+    delete (file.flags as Record<string, unknown>)['their_reach'];
+    (file.transcript as Array<Record<string, unknown>>).push({
+      id: 'tLEGACY3',
+      kind: 'system',
+      text: '— End of the current content —\n\nThis is as far as the story is built.',
+    });
+
+    if (options.mallet !== 'carried') {
+      file.inventory = (file.inventory as string[]).filter((i) => i !== 'mallet');
+      const placements = file.placements as Record<string, unknown>;
+      if (options.mallet === 'dropped') {
+        placements['mallet'] = { kind: 'room', locationId: 'future.square' };
+      } else {
+        delete placements['mallet'];
+      }
+    }
+    return file;
+  }
+
+  it('comes back as a game in progress, at the start of the confrontation', () => {
+    const result = validateSave(returnEndpointV3({ mallet: 'carried' }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(result.state.ended).toBe(false);
+    expect(result.state.chapter).toBe('return');
+    expect(hasReturned(result.state)).toBe(true);
+    expect(result.state.objective).toBe(OBJECTIVES.returned);
+  });
+
+  it('keeps the transcript it had, and corrects it', () => {
+    const result = validateSave(returnEndpointV3({ mallet: 'carried' }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const text = result.state.transcript.map((e) => e.text).join('\n');
+    expect(text).toContain('This is as far as the story is built');
+    expect(text).toContain('The story continues past this point now');
+  });
+
+  it('keeps every bit of the journey: the eye, the knowledge, the history', () => {
+    const file = returnEndpointV3({ mallet: 'carried' });
+    const result = validateSave(file);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.flags[FLAGS.lostEye]).toBe(true);
+    expect(result.state.flags[FLAGS.knowsResponsibility]).toBe(true);
+    expect(result.state.flags[FLAGS.crossedBack]).toBe(true);
+    expect(result.state.discovered).toEqual(file.discovered);
+    expect(result.state.journal.map((e) => e.id)).toEqual(
+      (file.journal as Array<{ id: string }>).map((e) => e.id)
+    );
+    expect(result.state.visited).toEqual(file.visited);
+  });
+
+  it('plays straight on to the ending', () => {
+    const result = validateSave(returnEndpointV3({ mallet: 'carried' }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(hasFinished(finishTheStory(result.state))).toBe(true);
+  });
+
+  describe('the mallet the previous build let you leave behind', () => {
+    it('moves a dropped one into the hero\'s hands, without duplicating it', () => {
+      const file = returnEndpointV3({ mallet: 'dropped' });
+      const result = validateSave(file);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.state.inventory.filter((i) => i === 'mallet')).toHaveLength(1);
+      expect(result.state.placements['mallet']).toEqual({ kind: 'carried' });
+      expect(result.state.transcript.map((e) => e.text).join('\n')).toContain(
+        'A note about your save'
+      );
+      expect(hasFinished(finishTheStory(result.state))).toBe(true);
+    });
+
+    it('gives one to a save that never had a record for it', () => {
+      const result = validateSave(returnEndpointV3({ mallet: 'absent' }));
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.state.inventory.filter((i) => i === 'mallet')).toHaveLength(1);
+      expect(hasFinished(finishTheStory(result.state))).toBe(true);
+    });
+
+    it('leaves a save that already has it alone', () => {
+      const file = returnEndpointV3({ mallet: 'carried' });
+      const result = validateSave(file);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.state.inventory).toEqual(file.inventory);
+      expect(result.state.transcript.map((e) => e.text).join('\n')).not.toContain(
+        'A note about your save'
+      );
+    });
+
+    it('is idempotent, and does not accumulate mallets or notices', () => {
+      const once = validateSave(returnEndpointV3({ mallet: 'absent' }));
+      expect(once.ok).toBe(true);
+      if (!once.ok) return;
+
+      const asOldAgain = { ...JSON.parse(serialize(once.state)), schemaVersion: 3 };
+      const twice = validateSave(asOldAgain);
+      expect(twice.ok).toBe(true);
+      if (!twice.ok) return;
+      expect(twice.state.inventory.filter((i) => i === 'mallet')).toHaveLength(1);
+      expect(
+        twice.state.transcript.filter((e) => e.id === 't.m5.mallet')
+      ).toHaveLength(1);
+      expect(twice.state).toEqual(once.state);
+    });
+
+    it('does not touch a current game that put the mallet down on purpose', () => {
+      // A format-4 save, mid-finale, with the mallet on the floor. Nothing
+      // rewrites it: the player can pick it back up.
+      const finale = finishChapterThree(
+        typeAll(begin(), [
+          ...TO_SEALED,
+          ...SOLVE_RELIEF,
+          ...CROSS_FIRST,
+          ...PAST_TO_SQUARE,
+          ...SAFFRA_REALISATION,
+          'leave',
+          ...RECITE,
+          ...FENN_ROUTE,
+          ...READ_PANEL,
+          ...GO_FORWARD,
+        ])
+      ).state;
+      const dropped = typeAll(finale, ['drop mallet']);
+      expect(dropped.inventory).not.toContain('mallet');
+
+      const result = validateSave(JSON.parse(serialize(dropped)));
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.state.inventory).not.toContain('mallet');
+      expect(result.state.placements['mallet']).toEqual({
+        kind: 'room',
+        locationId: 'present.sealed_chamber',
+      });
+      // And it is recoverable.
+      expect(typeAll(result.state, ['take mallet']).inventory).toContain('mallet');
+    });
+
+    it('does not fire for a save that is not at the return', () => {
+      const midFuture = typeAll(begin(), [
+        ...TO_SEALED,
+        ...SOLVE_RELIEF,
+        ...CROSS_FIRST,
+        ...PAST_TO_SQUARE,
+        ...SAFFRA_REALISATION,
+        'leave',
+        ...RECITE,
+        ...FENN_ROUTE,
+        ...READ_PANEL,
+        ...GO_FORWARD,
+      ]);
+      const file = { ...JSON.parse(serialize(midFuture)), schemaVersion: 3 };
+      const result = validateSave(file);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.state.inventory).not.toContain('mallet');
+      expect(result.state.transcript.map((e) => e.text).join('\n')).not.toContain(
+        'A note about your save'
+      );
+    });
+  });
+
+  it('runs through every route in: autosave, backup, checkpoint and import', () => {
+    const file = JSON.stringify(returnEndpointV3({ mallet: 'absent' }));
+
+    localStorage.clear();
+    localStorage.setItem(KEYS.save, file);
+    const auto = loadBest();
+    expect(auto.slot).toBe('save');
+    expect(auto.state!.inventory).toContain('mallet');
+    expect(auto.state!.ended).toBe(false);
+
+    localStorage.clear();
+    localStorage.setItem(KEYS.save, '{ not json');
+    localStorage.setItem(KEYS.backup, file);
+    const backup = loadBest();
+    expect(backup.slot).toBe('backup');
+    expect(backup.state!.inventory).toContain('mallet');
+
+    localStorage.clear();
+    localStorage.setItem(KEYS.checkpoint, file);
+    const checkpoint = loadBest();
+    expect(checkpoint.slot).toBe('checkpoint');
+    expect(checkpoint.state!.inventory).toContain('mallet');
+
+    const imported = importFromText(file);
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    expect(imported.state.inventory).toContain('mallet');
+  });
+
+  it('still refuses a format from the future, by name', () => {
+    const ahead = { ...returnEndpointV3({ mallet: 'carried' }), schemaVersion: SCHEMA_VERSION + 1 };
+    const result = validateSave(ahead);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/newer version of the game/);
+  });
+
+  it('carries a format-1 file all the way through every step', () => {
+    const opening = typeAll(begin('basilia'), [...TO_SEALED, 'use wedge on shutter']);
+    const ancient = { ...JSON.parse(serialize(opening)), schemaVersion: 1 };
+    const result = validateSave(ancient);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(result.state.character).toBe('basilia');
+    expect(result.state.flags[FLAGS.shutterHeld]).toBe(true);
+    // And it still plays, from there, to the end.
+    const end = finishTheStory(
+      finishChapterThree(
+        typeAll(result.state, [
+          'place lantern in alcove',
+          'light lantern',
+          'open seam',
+          ...CROSS_FIRST,
+          ...PAST_TO_SQUARE,
+          ...SAFFRA_REALISATION,
+          'leave',
+          ...RECITE,
+          ...FENN_ROUTE,
+          ...READ_PANEL,
+          ...GO_FORWARD,
+        ])
+      ).state
+    );
+    expect(hasFinished(end)).toBe(true);
   });
 });

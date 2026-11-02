@@ -1,6 +1,6 @@
 # Walkthrough and verification notes
 
-**Not for players.** This spoils everything that is built.
+**Not for players.** This spoils the whole story, including the ending.
 
 ## The map
 
@@ -44,8 +44,13 @@ prefixes; the player never sees any of them used as an era label.
                                                  ¦  ENTER APERTURE
                                                  v
                                             present.sealed_chamber
-                                            (chapter: return — two of them in it,
-                                             and the end of the built content)
+                                            (chapter: return — two of them in it)
+                                                 ¦
+                                                 ¦  the confrontation, and three
+                                                 ¦  blows on the pillar
+                                                 v
+                                            present.sealed_chamber
+                                            (chapter: ending — terminal)
 ```
 
 ### The ruined century is two spaces, and the seal is the obstacle
@@ -56,15 +61,16 @@ prefixes; the player never sees any of them used as an era label.
 | **The upper half** | `future.entrance` → `future.sealed_chamber` and the middle dish | Nine courses of dry-laid stone with the village's mark on it. **The only way to the dish**, and the reason the seal has to come down |
 | **Between the two** | the old worked stair | Closed by a fall that set solid a century ago. `CLEAR STAIR` is answered on its own terms and gets nowhere |
 
-### The original era, twice
+### The original era, three times
 
-`present.*` is reached in two chapters. `rite` is the opening; `return` is the
-same rooms at dusk with a one-eyed hero in them. `chaptersForEra` in
-`engine/reducer.ts` is the single declaration of the legal pairs, and the
-sealed chamber has its own description, its own objects and its own exits for
-the return — the opening's shutter, alcove, eye and wall are **hidden**, because
-the lamp in that alcove and the wedge under that shutter belong to somebody
-else now and the opening's descriptions read the player's own placement flags.
+`present.*` is reached in three chapters. `rite` is the opening; `return` is the
+same rooms at dusk with a one-eyed hero in them; `ending` is the terminal state
+after both of them are dead. `chaptersForEra` in `engine/reducer.ts` is the
+single declaration of the legal pairs, and the sealed chamber has its own
+description, objects and exits for the return — the opening's shutter, alcove,
+eye and wall are **hidden**, because the lamp in that alcove and the wedge under
+that shutter belong to somebody else now and the opening's descriptions read the
+player's own placement flags.
 
 Every exit has a reverse route; `src/content/content.test.ts` asserts that, and
 that the connection set matches exactly the pairs the tests declare. Two exits
@@ -77,9 +83,10 @@ way out and is not an exit, because the hillside beyond it is Milestone 4.
 
 ## Shortest completion
 
-Sixty-four commands, from the character screen. This is the recitation-first
-order, which is the shorter of the two through Chapter 2: it never needs the
-water, so both of the recovery routes into the workings are load-bearing.
+Seventy-two commands, from the character screen to the last line. This is the
+recitation-first order, which is the shorter of the two through Chapter 2: it
+never needs the water, so both of the recovery routes into the workings are
+load-bearing.
 
 ```
 take lantern              ·  1
@@ -146,7 +153,19 @@ examine fill              · 61
 clear fill                · 62
 place lantern in middle dish · 63
 enter aperture            · 64   ← crossing 3
+talk to them              · 65
+show lantern              · 66   ← settles who, and nothing else
+tell them about the prophecy · 67   ← and now they are moving
+kill them                 · 68
+break pillar              · 69
+break pillar              · 70   ← the roof drops; the squeeze shuts
+break pillar              · 71   ← asks
+swing                     · 72   ← the end
 ```
+
+That is the shortest route, not the intended one: it skips the journal, the
+ruined valley, and every attempt to stop them with hands rather than a mallet.
+A player who tries all of those reaches the same ending having earned it.
 
 Run verbatim as a test in `src/engine/equivalence.test.ts`, so this list cannot
 drift away from the game.
@@ -553,17 +572,114 @@ room has nobody in it during the opening and somebody very specific in it now.
 Their lantern is an object, not an item: there is one lantern record in the
 save and it is the hero's, carried.
 
-**Blocked, truthfully:** violence (*what happens next is the last chapter of
-this story, and it is not written yet*), leaving the room, and reopening the
-portal. The marker is specific about which it is: the ending is decided and
-written down in the design, and the chapter that gets there is not implemented,
-so the build stops in front of it rather than guessing.
+**Blocked, with reasons:** attacking them before anybody has spoken, leaving
+the room, and reopening the portal. Each is answered in the hero's own voice
+rather than refused by the rules.
 
 Allowed: `LOOK`, `EXAMINE`, `JOURNAL`, `INVENTORY`, settings, export, checkpoint
-restart, and one exchange with the person in front of them.
+restart, and talking.
 
-The checkpoint holds the return with the eye, the reason and the mallet intact,
-which is what the last chapter would continue from.
+## Chapter 4, state by state
+
+### The transition table
+
+`flags.finale_stage` is the finale's only state machine. It is never derived
+from the transcript, from a count of questions, or from how long the player has
+taken. The authoritative copy of this table is the docstring on
+`engine/puzzles/confrontation.ts`.
+
+| Stage | What is happening | Moves on | To |
+| --- | --- | --- | --- |
+| `arrival` | They are on their feet with the pillar between you, and neither of you has said anything | the hero addresses them at all | `talking` |
+| `talking` | The argument. Each thing shown does something different | they have accepted the identity **and** been told either where the words came from or what the century looks like | `rush` |
+| `rush` | They have decided and are going for the wall. Hands work here; so does the mallet | the hero kills them | `dead` |
+| `dead` | Their lamp still burning, the seam still on the wall, the prophecy still on a plank | the first blow on the pillar | `pillar` |
+| `pillar` | Three blows, the last taken through an explicit confirmation | the third blow | *chapter* `ending` |
+
+**Nothing advances on a clock.** There is no timer anywhere in the finale.
+Examining, reading, the journal, hints, help, settings and mode switching change
+nothing; `their_reach` moves only on the hero's own physical interventions, and
+it caps at 3. They never cross: at full reach they have both hands on the panel
+and the moment holds, because the hero is the one who has to end it. `WAIT` says
+so — *you have as much time as you want, and not one second of it helps*.
+
+### What each attempt achieves
+
+| Attempt | Result |
+| --- | --- |
+| `SHOW SELF` | Doubted, reasonably — *anybody could have been told that*. Sets `claimed_identity` |
+| `SHOW LANTERN` | Settles identity outright: same dent, same striker, same winter. Sets `identity_accepted`, and makes them **more** certain, not less — *then the cave works* |
+| `SHOW JOURNAL` | They read the date and find the flaw: *you went forward. I am not going forward.* The best argument either of them makes |
+| `TELL THEM ABOUT THE FUTURE` | Thirty out of two hundred and eleven. They ask the one question that matters — *how* — the hero cannot answer it, and they hear that |
+| `TELL THEM ABOUT THE PROPHECY` | Lands hardest, and aims them: if the words are the hero's, the last line is theirs, and it promises the power to whoever braves the cave |
+| `BLOCK WALL` | Works, and is gone round. Advances reach |
+| `TAKE THEIR LANTERN` | Works **completely** — no light, no fan, no seam — and is undone, because the striker is bolted to the base of the lamp |
+| `HOLD THEM` | Works for a moment and is lost, for a stated reason: same height, three days and one eye apart |
+| `BREAK PILLAR` | Refused while they are alive, because they would be under it. There is no route to the destruction that reverses the order of the deaths |
+| `WEST` | Answered per stage, and never ends the scene |
+| `KILL THEM` on arrival | Refused: *you have not said a word to them* |
+| `KILL THEM` while talking | Refused: *not while they are talking to you* |
+
+The lethal act opens as soon as they have decided and are moving — **not** after
+every option has been exhausted. The necessity comes from the threat to the
+threshold and from each attempt having been answered, not from a checklist.
+
+In selectable mode every one of these is a labelled button, and the lethal one
+reads *Kill them with the mallet*. It appears only at `rush`, and no button
+anywhere earlier in the game carries it.
+
+### The killing
+
+One blow, at the wall, from behind, with a mason's mallet. Latches
+`earlier_self_dead` once: they cannot talk, cross, or be killed again, and
+`available` on their `PersonDef` takes them out of the room's people list, so
+the conversation is gone in both modes.
+
+The hero notices, flatly, that they have not gone anywhere. No account of why,
+no philosophy, no merge.
+
+### The pillar
+
+| Blow | What changes |
+| --- | --- |
+| 1 | The crack opens to a finger-width; grit on the floor; the hill settles overhead |
+| 2 | A wedge of stone comes out, the roof drops **a hand**, and the squeeze west closes to a gap you can get two fingers through — `escape_closed`. The hero then does the arithmetic out loud: the next one goes, it has to be struck from under the span, and there is no way out |
+| 3 | Asked first, through the engine's ordinary clarification prompt — a button in selectable mode, a typed answer otherwise. *Not yet* leaves everything exactly where it was |
+
+`EXAMINE PILLAR` supplies the crack, the grit and the roof here, so a player who
+skipped it in Chapter 1 and the workings is not acting on facts they never
+learned. Optional earlier examination is never a prerequisite.
+
+### The ending
+
+`chapter: 'ending'`, and `ended` now means the story is over rather than the
+build running out. One commit sets `cave_destroyed`, `hero_dead` and
+`story_complete`, puts the lantern on the floor, prints the collapse and then
+the epilogue under its own heading, and shows *— The end —*.
+
+The epilogue is village-POV and signposted. The square comes out of doors; Tyme
+digs at forty feet of raw hill until Sage makes him stop, and goes back for a
+long time; **somebody is missing and the whole square knows exactly who**; the
+rite ends because there is nothing to walk into; Sage files the words and writes
+that they came true without being able to work out which part.
+
+Then a hundred years on, in the same square, four contrasts with the ruined
+century the player walked through — a well with **no cap on it**, two hundred and
+sixty-one people, a **swing on a tree** where the turn had come down, and a sky
+*doing things* where the other one was a ceiling with no weather in it at all.
+No explanation of why.
+
+Afterwards the controls are an ending panel: read it again, export, back to the
+start of the chapter, new game. No command line, because there is nobody to give
+commands to, and no "coming soon". Reading it again prints the text and moves
+nothing.
+
+### The checkpoint
+
+A checkpoint is written on every chapter change **except** into `ending` — so
+the last one the game holds is the start of the finale, with the earlier self
+alive and the mallet in hand. That is deliberate: it is the one place a player
+might want to go back to.
 
 ## Everything worth seeing
 
@@ -597,6 +713,8 @@ asserts that no command in the run was rejected.
 | `future.square` | memorial, capped well, roofless shell, maul*, oak blocks*, record chest, Account* | Rue |
 | `present.sealed_chamber` *(on the return)* | their lantern, the seam, the worked pillar | the one with the lantern |
 
+Twenty locations; the finale adds no new ones, which is the point of it.
+
 `*` starts undiscovered.
 
 ### Items
@@ -611,7 +729,7 @@ asserts that no command in the run was rejected.
 
 ## Automated coverage
 
-335 tests across twelve files.
+397 tests across thirteen files.
 
 | File | Covers |
 | --- | --- |
@@ -620,7 +738,8 @@ asserts that no command in the run was rejected.
 | `engine/equivalence.test.ts` | Step-for-step state equality between typed and clicked play, through both chapters to the arrival; one full completion per input mode visiting all sixteen locations; the thirty-six-command route above, run verbatim; completion after crossing with both items left behind, via the crew's lamp; recovering a dropped item with buttons only and finishing afterwards; selectable labels giving nothing away; undiscovered things absent from the panel |
 | `engine/chapter2.test.ts` | The recitation (canonical text identical to the plank, refused before the villagers ask and outside the square, fires once, declining costs nothing, never spoken on the player's behalf, reloads before/during/after); worksite access by all three routes and in both orders, with the recovery routes reachable from required-path state alone; the three heights as fixed destinations, the low position's harmless round trip, the uncut middle refused on physical terms, the high gamble; the aperture's four refusals; wrong attempts and waiting consuming nothing; hints free and repeatable; the wrongnesses fired once each and never explained; the arrival as one commit, not duplicated on reload, with no injury, reveal, exploration or return; the opening chapter unaffected and completable without any of the new optional content |
 | `engine/chapter3.test.ts` | The ruined century: reaching the settlement through the tear without touching the seal, the blocked stair refusing to bypass it, the seal guarding the actual return dish and staying open; the four evidence sources in two different orders, the inference refused with the missing sources named and not offered as an affordance until they are in, fired once, every source still readable afterwards; the mechanism never explained anywhere in the chapter; the Account's out-of-the-hill claim marked as commentary; the canonical text identical in all three places; no return without a reason; the scale carried by three signs with each one's provenance; every wrong way at the seal costing nothing; the eye taken once in the right place with witnesses, not replayed on revisit, swing or reload, and impossible to trigger by experimenting; both tool substitutes; the fill, the lamp and the crossing as three separate acts with light required; the return committing coherently, not reading as the opening, keeping the earlier self's belongings out of the inventory, blocking the confrontation truthfully, and writing a continuable checkpoint; four incoherent-import cases; the hint ladders; and the low position as a real placement that needs a light |
-| `persistence/migration.test.ts` | Format 1 → 2 and 2 → 3: a mid-opening save keeping every field, a save stopped at the old prototype marker becoming playable in place, the historical transcript kept and corrected rather than contradicted, idempotency through both formats, no wholesale clearing of completion flags, the migration running on the autosave, backup, checkpoint and import routes, newer and never-shipped formats refused clearly, and format 2 written back out once played on |
+| `engine/finale.test.ts` | The confrontation and the ending: the room holding two of the same person with separate belongings and one lantern record; the hero's lantern described where it actually is; nothing advancing through looking, reading, hints or waiting, and them never crossing however long it is left; leaving answered per stage; every attempt landing somewhere different and none of them answered with *it is a trick*; the hero admitting they cannot explain it; them deciding only once they know who and what is claimed; every physical attempt working and being answered and leaving the ending reachable; no both-live branch; the killing refused on arrival and mid-conversation, needing the tool, offered as a labelled button only when eligible and nowhere earlier, happening once, surviving reload, and leaving the hero standing; the pillar refused while they live, escalating, closing the way out physically before the commitment, asking first in both modes and taking no for an answer; the ending latching, no play afterwards, the epilogue once with its four contrasts and no moral; reading not replaying; reloading as finished with the finale checkpoint intact; validation at every beat; seven incoherent-import cases; and both protagonists |
+| `persistence/migration.test.ts` | Format 1 → 2, 2 → 3 and 3 → 4: the return endpoint becoming the last chapter with the journey intact and the mallet recovered — moved rather than duplicated, created only when no record existed, announced, idempotent, never touching a current game and never firing outside `chapter: 'return'` — running on all four load routes, plus a format-1 file carried through all three steps and played to the ending; a mid-opening save keeping every field, a save stopped at the old prototype marker becoming playable in place, the historical transcript kept and corrected rather than contradicted, idempotency through both formats, no wholesale clearing of completion flags, the migration running on the autosave, backup, checkpoint and import routes, newer and never-shipped formats refused clearly, and format 2 written back out once played on |
 | `content/content.test.ts` | Dialogue discipline (a length and single-paragraph budget per answer, the rescue told one way everywhere, a named list of removed over-explanations that must not come back, follow-up detail actually gated behind a follow-up); map matches the brief, era/id agreement, reverse routes, unique ids and directions, only the deep exit gated, flag and reveal references valid, journal id consistency, no placeholder prose, no later reveals in player-facing text, the herb naming convention (every name on the list, ids matching names, no survivors of the earlier cast, no puns, the twins never explained, and no time vocabulary anywhere in Tyme's dialogue) |
 | `content/characters.test.ts` | Both names and pronoun sets, pronoun substitution in NPC lines, identical progress for either character, no unrendered placeholders anywhere |
 | `persistence/persistence.test.ts` | Round trip, export/import, reload mid-puzzle, resuming pending conversations and questions, atomic crossing, backup and checkpoint fallbacks, quarantine, storage-failure reporting, loading and exporting while writes are impossible, preferences kept apart from progress, 27 rejected-import cases, transcript sanitising |
@@ -631,7 +750,7 @@ asserts that no command in the run was rejected.
 ## Manual and browser verification
 
 `scripts/verify-browser.mjs` drives the built bundle in Chromium (see the README
-for how to run it). Last run: **88 of 88 checks passed.**
+for how to run it). Last run: **104 of 104 checks passed.**
 
 **Layout and input.** 360px with no horizontal scrolling, before and during play
 · touch targets at least 40px tall · buttons alone move the story · the
@@ -641,28 +760,38 @@ field focused on arrival · reduced motion collapses transitions and replaces th
 glide with a jump · Settings is a real modal: focus moves inside, Tab and
 Shift+Tab stay inside, Escape closes and returns focus.
 
-**All three chapters, both modes.** The whole game completed with the keyboard
-alone, ending in the sealed chamber facing the earlier self · crossing back
-refused while the tool the last chapter needs is on the floor, and allowed once
-it is picked up again · the recitation
+**The whole story, both modes.** Completed with the keyboard alone, from the
+bedroom to the last line · the hill coming down · the epilogue grieving somebody
+by name · the saved valley with weather in it · an ending panel with no command
+line on it · reading the ending again changing nothing · crossing back refused
+while the tool the last chapter needs is on the floor, and allowed once it is
+picked up again · the recitation
 saying the canonical text · the end-of-current-content marker shown, and not
 claiming to be the ending · the confrontation blocked with a reason · objective
 updated · inspection still possible afterwards · the whole game completed by
 clicking with no typing at all, including both crossings, the recitation, Fenn's
 route, the synthesis offered as an action once the pieces are in, the seal
-opening with the stone arriving before the fall, and the return · the return
-offering no way out of the room · the only person in that room being the one
-with the lantern.
+opening with the stone arriving before the fall, the return, and the whole
+confrontation — the lethal action absent until the scene supports it and then
+labelled with what it does, the earlier self dying and the hero not, the last
+blow asking first, and the epilogue · the return offering no way out of the
+room · the only person in that room being the one with the lantern.
 
 **Mode switching.** Switching to buttons mid-puzzle keeps the puzzle state ·
 switching to typing mid-conversation keeps the topic list readable · a
 conversation started by clicking can be finished by typing.
 
 **Reloads, at each stage.** Mid-investigation: the evidence is kept and the
-conclusion is not jumped to · after the injury: it persists and is not
-replayed, and swinging again does not take a second eye · at the return:
-chapter, era and place all survive, and there is one lantern record and it is
-the hero's · no console errors across three chapters and four reloads.
+conclusion is not jumped to · after the injury: it persists and is not replayed,
+and swinging again does not take a second eye · at the return: chapter, era,
+place and stage all survive · mid-argument: what has been said survives and
+nothing has advanced · after the killing: it persists, is not replayed, and the
+hero is alive · before the commitment: two blows in and nothing committed · the
+last blow asking and taking no for an answer · after the ending: it reloads as
+finished rather than as a living hero, into the ending panel · the checkpoint
+still at the start of the chapter with the earlier self alive and the mallet in
+hand · one lantern record throughout, and it is the hero's · no console errors
+across the whole story and eight reloads.
 
 **No accessibility penalty for the injury.** At 360px, after losing the eye:
 no horizontal overflow, the transcript still full height, no CSS filter, no clip
@@ -670,8 +799,8 @@ path or mask outside the screen-reader-only helpers, full opacity.
 
 **Saves.** Continue after reload restores place and transcript · mode switch
 preserves every stored transcript entry and the player's position · export
-downloads `adventure-save.json` containing the current state in format 3, with
-the injury in it · that file imports back · a malformed file is refused and the
+downloads `adventure-save.json` containing a finished state in format 4, with
+both deaths and the destruction in it · that file imports back · a malformed file is refused and the
 game is untouched · New Game confirms before overwriting and cancelling keeps
 progress · checkpoint restart returns to the start of the current chapter — the
 bedroom mid-rite, the sealed chamber after the last crossing — and that
@@ -679,7 +808,7 @@ checkpoint still carries the eye and the reason, which is what the last chapter
 would continue from · storage failure shows a persistent warning and play
 continues.
 
-**Saves from both previous builds.** A format-1 file written at the old
+**Saves from every previous build.** A format-1 file written at the old
 end-of-prototype marker, and a format-2 file written at the ruined-future
 arrival: each is offered as Continue · resumes in place without replaying any
 chapter · keeps the transcript the player read · is corrected rather than
@@ -711,12 +840,13 @@ document beyond the single-shot anchor nudge.
 - No deployment has been performed. The Cloudflare Pages settings in
   `docs/DEPLOYMENT.md` were read from current Cloudflare documentation, not
   confirmed by deploying.
-- **The last chapter is not built.** The confrontation, the killing, the
-  sacrifice, the destruction of the cave and the epilogue are design only.
-  `docs/FULL_GAME_DESIGN.md` describes them; nothing in this build implements or
-  tests any of them, and reaching the sealed chamber on the return is not an
-  ending. The player can look, read, examine and say one thing; everything after
-  that is refused with a reason.
+- **The story is complete; it has not been playtested.** 397 tests and 104
+  browser checks say the mechanisms behave. They say nothing at all about
+  whether the pacing works, whether the confrontation lands, or whether a
+  reader who is not the author can follow the three-crossing geometry. That is
+  a blind-playtest question and it has not been asked.
+- **The finale has been read aloud once, by its author.** Which is the weakest
+  possible review of dialogue.
 - **No screenshots are kept in this repo.** The browser pass reports measured
   values rather than images, and any screenshots taken for layout review are
   left out deliberately: they would be spoiler images of the last two chapters.

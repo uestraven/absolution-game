@@ -5,6 +5,7 @@ import { FLAGS } from '../content/flags';
 import { activeTopics, peopleHere, roomItems, visibleExits, visibleObjects } from './selectors';
 import { canRecite } from './puzzles/recitation';
 import { canReflect } from './puzzles/evidence';
+import { stageOf, theyAreHere } from './puzzles/confrontation';
 
 /**
  * The selectable-mode action list, computed by the engine rather than the UI.
@@ -263,6 +264,52 @@ export function getAffordances(state: GameState): Affordances {
       label: 'add it up',
       action: { type: 'REFLECT' },
     });
+  }
+
+  /*
+   * The finale's actions, offered as buttons on exactly the terms the typed
+   * verbs are offered on.
+   *
+   * The lethal one appears only once the scene supports it — after they have
+   * decided and are moving — and it is labelled with what it does, because a
+   * button that reads "use the mallet" on a person would be hiding the
+   * decision rather than offering it.
+   */
+  if (theyAreHere(state)) {
+    const stage = stageOf(state);
+    const shown: Array<[string, string, GameAction['type'] extends never ? never : GameAction]> = [
+      ['show-self', 'Tell them who you are', { type: 'SHOW', subject: 'self' }],
+      ['show-lantern', 'Hold up your lantern', { type: 'SHOW', subject: 'lantern' }],
+      ['show-journal', 'Show them the journal', { type: 'SHOW', subject: 'journal' }],
+      ['show-future', 'Describe the ruined valley', { type: 'SHOW', subject: 'future' }],
+      ['show-origin', 'Tell them where the words came from', { type: 'SHOW', subject: 'prophecy' }],
+    ];
+    for (const [key, label, action] of shown) {
+      meta.push({ key, label, action });
+    }
+    meta.push({
+      key: 'block-wall',
+      label: 'Stand in front of the wall',
+      action: { type: 'BLOCK', target: 'wall' },
+    });
+    meta.push({
+      key: 'restrain',
+      label: 'Get hold of them',
+      action: { type: 'RESTRAIN', target: 'earlier_self' },
+    });
+    if (stage === 'rush' && state.inventory.includes('mallet')) {
+      meta.push({
+        key: 'kill',
+        label: 'Kill them with the mallet',
+        action: { type: 'KILL', target: 'earlier_self', using: 'mallet' },
+      });
+    }
+  }
+
+  if (state.chapter === 'ending') {
+    meta.length = 0;
+    meta.push({ key: 'review', label: 'Read the ending again', action: { type: 'REVIEW' } });
+    meta.push({ key: 'meta-journal', label: 'journal', action: { type: 'JOURNAL' } });
   }
 
   // Items resting in a fixture can always be recovered.

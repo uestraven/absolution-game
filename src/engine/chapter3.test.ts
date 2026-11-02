@@ -580,7 +580,7 @@ describe('the middle position is the last guess the hero gets', () => {
  * 6. The return, and the boundary
  * ================================================================ */
 
-describe('the return is an arrival and the end of what is built', () => {
+describe('the return is an arrival, and the last chapter runs from it', () => {
   function returned(): GameState {
     return finishChapterThree(arrived()).state;
   }
@@ -591,7 +591,9 @@ describe('the return is an arrival and the end of what is built', () => {
     expect(state.era).toBe('present');
     expect(state.locationId).toBe('present.sealed_chamber');
     expect(state.objective).toBe(OBJECTIVES.returned);
-    expect(state.ended).toBe(true);
+    // Not the end of anything: the confrontation starts here.
+    expect(state.ended).toBe(false);
+    expect(state.flags[FLAGS.finaleStage]).toBe('arrival');
     expect(state.flags[FLAGS.crossed]).toBe(true);
     expect(state.flags[FLAGS.crossedForward]).toBe(true);
     expect(state.flags[FLAGS.crossedBack]).toBe(true);
@@ -633,41 +635,14 @@ describe('the return is an arrival and the end of what is built', () => {
     expect(tried.placements['lantern']).toEqual({ kind: 'carried' });
   });
 
-  it('blocks the confrontation truthfully, without claiming to be the ending', () => {
-    const state = returned();
-    const marker = state.transcript.filter((e) => e.kind === 'system').map((e) => e.text).join('\n');
-    expect(marker).toContain('End of the current content');
-    expect(marker).toContain('This is not the ending');
-    // Honest about which it is: the ending is decided, the chapter is not built.
-    expect(marker).toContain('not implemented yet');
-    expect(marker).not.toContain('has been decided');
-
-    // Violence is refused, and the refusal is about the writing and not the rules.
-    const swing = type(state, 'break them');
-    expect(swing.accepted).toBe(false);
-    expect(lastText(swing)).toContain('not written yet');
-    expect(swing.state.flags[FLAGS.lostEye]).toBe(true);
-
-    // Leaving is refused, and the portal is not reopened.
-    for (const line of ['west', 'out', 'go gallery', 'down']) {
-      const left = type(state, line);
-      expect(left.accepted, line).toBe(false);
-      expect(left.state.locationId, line).toBe('present.sealed_chamber');
-    }
-    const crossed = type(state, 'enter threshold');
-    expect(crossed.accepted).toBe(false);
-    expect(crossed.state.chapter).toBe('return');
-  });
-
-  it('still allows looking, journal, inventory and the one exchange', () => {
+  it('allows looking, reading and talking without advancing anything', () => {
     const state = returned();
     for (const line of ['look', 'journal', 'inventory', 'examine them', 'examine seam', 'examine pillar']) {
       expect(type(state, line).accepted, line).toBe(true);
     }
     const spoken = typeAll(state, ['talk to them', 'say nothing']);
-    // The scene itself does not break frame; the boundary message does that.
     expect(spoken.transcript.map((e) => e.text).join('\n')).toContain(
-      'The lamp in the alcove goes on burning'
+      'The lamp goes on burning in the alcove'
     );
   });
 
@@ -728,6 +703,8 @@ describe('the return is an arrival and the end of what is built', () => {
           delete flags[FLAGS.crossedBack];
           delete flags[FLAGS.crossedForward];
           delete flags[FLAGS.crossed];
+          delete flags[FLAGS.finaleStage];
+          delete flags[FLAGS.theirReach];
         },
         /era and its history disagree/,
       ],
@@ -756,9 +733,15 @@ describe('the chapter stays navigable', () => {
     expect(hintContext(knows)).toBe('seal');
     const inside = typeAll(knows, [...OPEN_THE_SEAL, 'west']);
     expect(hintContext(inside)).toBe('home');
-    const end = typeAll(inside, ['examine fill', 'clear fill', 'place lantern in middle dish', 'enter aperture']);
-    expect(hintContext(end)).toBe('done');
-    expect(nextHint(end).text).toContain('not the ending');
+    // Across the last crossing, the ladder points at the person in the room.
+    const end = typeAll(inside, [
+      'examine fill',
+      'clear fill',
+      'place lantern in middle dish',
+      'enter aperture',
+    ]);
+    expect(hintContext(end)).toBe('confront');
+    expect(nextHint(end).text).toContain('is on a timer');
   });
 
   it('walks each ladder to the end without running out', () => {

@@ -46,6 +46,22 @@ import {
   placeLanternInMiddleDish,
   returnBoundary,
 } from './puzzles/futureReturn';
+import {
+  blockWall,
+  claimIdentity,
+  describeFuture,
+  killThem,
+  openTheArgument,
+  restrainThem,
+  showJournal,
+  showLantern,
+  takeTheirLamp,
+  tellOrigin,
+  theyAreHere,
+  tryToLeave,
+  waitHere,
+} from './puzzles/confrontation';
+import { COMMIT_MARKER, afterTheEnd, reviewEnding, strikePillar } from './puzzles/sacrifice';
 import { CONTENT_VERSION, SCHEMA_VERSION } from './types';
 import { LOCATIONS } from '../content/locations';
 import { OBJECTS, OBJECTS_BY_LOCATION, objectVerbs } from '../content/objects';
@@ -118,7 +134,7 @@ export function eraOf(locationId: LocationId): GameState['era'] {
 export function chaptersForEra(era: GameState['era']): ReadonlyArray<GameState['chapter']> {
   if (era === 'past') return ['crossing'];
   if (era === 'future') return ['future'];
-  return ['rite', 'return'];
+  return ['rite', 'return', 'ending'];
 }
 
 /* ------------------------------------------------------------------ *
@@ -362,6 +378,15 @@ export function resolve(state: GameState, action: GameAction): ResolveResult {
     }
   }
 
+  /* --- After the end --------------------------------------------- */
+  if (state.chapter === 'ending') {
+    const refused = afterTheEnd(action.type);
+    if (refused !== null) {
+      const closed = clone(state);
+      return commit(closed, [{ kind: 'failure', text: refused }], false);
+    }
+  }
+
   const draft = clone(state);
   const events: NarrativeEvent[] = [];
 
@@ -436,13 +461,28 @@ function dispatch(draft: Draft, action: GameAction, events: NarrativeEvent[]): R
       return doFill(draft, action.target, events);
 
     case 'BREAK':
-      return doBreak(draft, action.target, events);
+      return doBreak(draft, action.target, events, action.using);
 
     case 'CLEAR':
       return doClear(draft, action.target, events);
 
     case 'REFLECT':
       return doReflect(draft, events);
+
+    case 'SHOW':
+      return doShow(draft, action.subject, events);
+
+    case 'RESTRAIN':
+      return doRestrain(draft, action.target, events);
+
+    case 'BLOCK':
+      return doBlock(draft, action.target, events);
+
+    case 'KILL':
+      return doKill(draft, action.target, events);
+
+    case 'REVIEW':
+      return reviewEnding(draft, events);
 
     case 'GIVE':
       return doGive(draft, action.item, action.target, events);
@@ -558,10 +598,7 @@ function doGo(draft: Draft, target: string, events: NarrativeEvent[]): ResolveRe
           exit.label.toLowerCase().includes(wanted) ||
           (exit.aliases ?? []).some((alias) => alias.toLowerCase() === wanted))
     );
-    if (draft.chapter === 'return') {
-      events.push({ kind: 'failure', text: returnBoundary(draft, 'leave') });
-      return commit(draft, events, false);
-    }
+    if (draft.chapter === 'return') return tryToLeave(draft, events);
     if (blocked?.id === 'to_worksite' && draft.locationId === 'past.deep_chamber') {
       events.push({
         kind: 'failure',
@@ -673,11 +710,22 @@ function doTake(draft: Draft, target: string, events: NarrativeEvent[]): Resolve
   if (ref.kind === 'item') {
     const item = ref.id as ItemId;
     if (draft.inventory.includes(item)) {
-      events.push({ kind: 'failure', text: `You already have the ${ITEMS[item].name}.` });
+      // In the one room that contains two of the same thing, say which one
+      // the player just named and what the other one is called.
+      const twin =
+        item === 'lantern' && draft.chapter === 'return' && theyAreHere(draft)
+          ? ' Theirs is in the alcove, and it answers to THEIR LANTERN.'
+          : '';
+      events.push({
+        kind: 'failure',
+        text: `You already have the ${ITEMS[item].name}.${twin}`,
+      });
       return commit(draft, events, false);
     }
     return retrieveItem(draft, item, events);
   }
+
+  if (ref.id === 'returnsealed.lamp') return takeTheirLamp(draft, events);
 
   const def = OBJECTS[ref.id]!;
   if (!def.item) {
@@ -763,6 +811,10 @@ function retrieveItem(draft: Draft, item: ItemId, events: NarrativeEvent[]): Res
     return commit(draft, events, true);
   }
 
+  if (item === 'lantern' && draft.chapter === 'return' && theyAreHere(draft)) {
+    // "Take the lantern" in that room is ambiguous in a way that matters.
+    return takeTheirLamp(draft, events);
+  }
   if (item === 'lantern' && itemIsIn(draft, 'lantern', 'worksite.lowdish')) {
     giveItem(draft, item);
     draft.flags[FLAGS.lanternInLowDish] = false;
@@ -1379,6 +1431,7 @@ function doTalk(draft: Draft, target: string, events: NarrativeEvent[]): Resolve
     return commit(draft, events, false);
   }
   draft.pending = { kind: 'conversation', personId: person.id, heard: [] };
+  if (person.id === 'earlier_self') openTheArgument(draft);
   events.push({ kind: 'dialogue', text: renderText(person.greeting(draft), draft) });
   topicListEvent(draft, events);
   return commit(draft, events, true);
@@ -1529,7 +1582,12 @@ function maybePastRealisation(draft: Draft, events: NarrativeEvent[]): boolean {
  * explains what the thing in front of you actually needs rather than refusing
  * in general.
  */
-function doBreak(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {
+function doBreak(
+  draft: Draft,
+  target: string,
+  events: NarrativeEvent[],
+  using?: string
+): ResolveResult {
   const refs = resolveNoun(draft, target);
   if (refs.length === 0) {
     events.push({ kind: 'failure', text: `You cannot see any ${target.trim()} here.` });
@@ -1547,6 +1605,18 @@ function doBreak(draft: Draft, target: string, events: NarrativeEvent[]): Resolv
 
   if (ref.kind === 'object' && ref.id === 'futureentrance.seal') {
     return strikeSeal(draft, events);
+  }
+  if (ref.kind === 'object' && ref.id === 'sealed.pillar' && draft.chapter === 'return') {
+    /*
+     * Confirmed when the player answered the clarification: the pending state
+     * is cleared before the chosen action is re-dispatched, so arriving here
+     * with the pillar already twice-struck and no prompt open means the answer
+     * was "swing".
+     */
+    return strikePillar(draft, events, using === COMMIT_MARKER);
+  }
+  if (ref.kind === 'person' && ref.id === 'earlier_self') {
+    return doKill(draft, ref.id, events);
   }
   if (ref.kind === 'object' && ref.id === 'futuresealed.fill') {
     return clearFill(draft, events);
@@ -1711,7 +1781,80 @@ function doGive(
  * chapter's tension is in what people have decided about them, which is a flag
  * that has already been set or has not.
  */
+/* ------------------------------------------------------------------ *
+ * The confrontation
+ *
+ * Thin routing only. Every consequence lives in puzzles/confrontation.ts and
+ * puzzles/sacrifice.ts, so the finale is not another block of special cases in
+ * the middle of the action pipeline.
+ * ------------------------------------------------------------------ */
+
+/** What a shown thing means. Authored, so nothing is a generic gesture. */
+function doShow(draft: Draft, subject: string, events: NarrativeEvent[]): ResolveResult {
+  if (!theyAreHere(draft)) {
+    events.push({ kind: 'failure', text: 'There is nobody here to show anything to.' });
+    return commit(draft, events, false);
+  }
+  const wanted = subject.trim().toLowerCase();
+  if (/journal|notes|page|dates|writing/.test(wanted)) return showJournal(draft, events);
+  if (/lantern|lamp|light|mine/.test(wanted)) return showLantern(draft, events);
+  if (/prophecy|words|plank|origin|wanderer/.test(wanted)) return tellOrigin(draft, events);
+  if (/future|village|valley|settlement|thirty|well/.test(wanted)) {
+    return describeFuture(draft, events);
+  }
+  if (/self|who|identity|name|me/.test(wanted)) return claimIdentity(draft, events);
+  events.push({
+    kind: 'failure',
+    text:
+      `You could show them the lantern, the journal, or tell them what you saw and where the ` +
+      `words came from. "${subject.trim()}" is not going to reach them.`,
+  });
+  return commit(draft, events, false);
+}
+
+function doRestrain(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {
+  const refs = resolveNoun(draft, target, ['person']);
+  if (refs.length === 0 || !theyAreHere(draft)) {
+    events.push({ kind: 'failure', text: 'There is nobody here to get hold of.' });
+    return commit(draft, events, false);
+  }
+  return restrainThem(draft, events);
+}
+
+function doBlock(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {
+  if (!theyAreHere(draft)) {
+    events.push({ kind: 'failure', text: 'There is nothing to stand in front of any more.' });
+    return commit(draft, events, false);
+  }
+  const wanted = target.trim().toLowerCase();
+  if (wanted.length > 0 && !/wall|seam|pattern|shadow|them|way/.test(wanted)) {
+    const refs = resolveNoun(draft, target);
+    if (refs.length === 0) {
+      events.push({ kind: 'failure', text: `You cannot see any ${target.trim()} here.` });
+      return commit(draft, events, false);
+    }
+  }
+  return blockWall(draft, events);
+}
+
+function doKill(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {
+  const refs = resolveNoun(draft, target, ['person']);
+  if (refs.length === 0) {
+    events.push({
+      kind: 'failure',
+      text: `There is nobody here called ${target.trim()}, and that is not a thing to try on a wall.`,
+    });
+    return commit(draft, events, false);
+  }
+  if (refs[0]!.id !== 'earlier_self') {
+    events.push({ kind: 'failure', text: `You are not going to do that to ${refs[0]!.label}.` });
+    return commit(draft, events, false);
+  }
+  return killThem(draft, events);
+}
+
 function doWait(draft: Draft, events: NarrativeEvent[]): ResolveResult {
+  if (draft.chapter === 'return') return waitHere(draft, events);
   if (draft.locationId === 'past.worksite') {
     events.push({
       kind: 'narration',

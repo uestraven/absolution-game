@@ -17,10 +17,17 @@ import { isLocationId, LOCATIONS } from '../content/locations';
 import { isItemId } from '../content/items';
 import { isCharacterId } from '../content/characters';
 import { ALL_FLAG_KEYS, FLAGS, FLAG_TYPES } from '../content/flags';
-import { CONTINUATION_FUTURE, CONTINUATION_NOTICE, OBJECTIVES } from '../content/text';
+import {
+  CONTINUATION_FINALE,
+  CONTINUATION_FUTURE,
+  CONTINUATION_NOTICE,
+  MALLET_RECOVERY,
+  OBJECTIVES,
+} from '../content/text';
 import { OBJECTS } from '../content/objects';
 import { PEOPLE } from '../content/dialogue';
 import { chaptersForEra, eraOf } from '../engine/reducer';
+import { isFinaleStage } from '../engine/puzzles/confrontation';
 
 /** Hard ceiling on an imported save, well above anything this chapter produces. */
 export const MAX_SAVE_BYTES = 512 * 1024;
@@ -45,7 +52,8 @@ function isChapter(value: unknown): value is Chapter {
     value === 'rite' ||
     value === 'crossing' ||
     value === 'future' ||
-    value === 'return'
+    value === 'return' ||
+    value === 'ending'
   );
 }
 
@@ -79,6 +87,18 @@ const ACTION_SHAPES: Record<string, { strings?: string[]; optional?: string[] }>
   DROP: { strings: ['target'] },
   OPEN: { strings: ['target'] },
   CLOSE: { strings: ['target'] },
+  BREAK: { strings: ['target'], optional: ['using'] },
+  CLEAR: { strings: ['target'] },
+  FILL: { strings: ['target'], optional: ['item'] },
+  GIVE: { strings: ['item', 'target'] },
+  SHOW: { strings: ['subject'], optional: ['target'] },
+  RESTRAIN: { strings: ['target'] },
+  BLOCK: { strings: ['target'] },
+  KILL: { strings: ['target'], optional: ['using'] },
+  RECITE: {},
+  REFLECT: {},
+  REVIEW: {},
+  WAIT: {},
   LIGHT: { strings: ['target'] },
   TALK: { strings: ['target'] },
   USE: { strings: ['item'], optional: ['target'] },
@@ -185,6 +205,8 @@ function isJournalEntry(value: unknown): value is JournalEntry {
  */
 const CONTINUATION_ENTRY_ID = 't.m3.continues';
 const CONTINUATION_FUTURE_ID = 't.m4.continues';
+const CONTINUATION_FINALE_ID = 't.m5.continues';
+const MALLET_RECOVERY_ID = 't.m5.mallet';
 
 function migrateV1toV2(data: Record<string, unknown>): Record<string, unknown> {
   const next = { ...data };
@@ -273,6 +295,62 @@ function migrateV2toV3(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
+ * Format 3 → 4.
+ *
+ * Same shape again, and the same single thing to fix one boundary further on:
+ * **a save that stopped where the previous build stopped.** That one is
+ * `ended: true` in `present.sealed_chamber` with `chapter: 'return'`, having
+ * just come back. The confrontation runs from there now.
+ *
+ * It also has one thing of its own to put right. The previous build let a
+ * player cross back without the mallet, and the finale needs it — so a
+ * return-endpoint save that has not got it is given it, with a line saying so.
+ *
+ * That recovery is deliberately narrow:
+ *
+ *  - **Only identified endpoint saves.** Conditioned on `chapter === 'return'`,
+ *    which is a state only the previous build's boundary produced.
+ *  - **It is a move, not a copy.** If the mallet exists anywhere in the save it
+ *    is moved to carried, so nothing is duplicated; only a save that never had
+ *    a record for it gets one created.
+ *  - **It is announced.** One transcript line, under a fixed id, rather than an
+ *    item appearing in the inventory out of nowhere.
+ *
+ * Current games are untouched: a player who puts the mallet down in the finale
+ * can pick it back up, and nothing here rewrites that.
+ */
+function migrateV3toV4(data: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...data };
+  if (next.chapter !== 'return') return next;
+
+  const transcript = Array.isArray(next.transcript) ? [...next.transcript] : [];
+  const told = (id: string) =>
+    transcript.some((entry: unknown) => isPlainObject(entry) && entry.id === id);
+  const say = (id: string, text: string) => {
+    if (!told(id)) transcript.push({ id, kind: 'system', text });
+  };
+
+  if (next.ended === true) {
+    next.ended = false;
+    next.objective = OBJECTIVES.returned;
+    say(CONTINUATION_FINALE_ID, CONTINUATION_FINALE);
+  }
+
+  const inventory = Array.isArray(next.inventory) ? [...next.inventory] : [];
+  if (!inventory.includes('mallet')) {
+    const placements = isPlainObject(next.placements) ? { ...next.placements } : {};
+    inventory.push('mallet');
+    placements['mallet'] = { kind: 'carried' };
+    next.inventory = inventory;
+    next.placements = placements;
+    say(MALLET_RECOVERY_ID, MALLET_RECOVERY);
+  }
+
+  next.transcript = transcript;
+  return next;
+}
+
+/**
  * Save-format migrations, oldest first, each one feeding the next.
  *
  * A format-1 save that has never been opened since goes through both steps, in
@@ -293,6 +371,10 @@ function migrate(
   if (at === 2) {
     working = migrateV2toV3(working);
     at = 3;
+  }
+  if (at === 3) {
+    working = migrateV3toV4(working);
+    at = 4;
   }
 
   if (at === SCHEMA_VERSION) return { ok: true, data: working };
@@ -478,16 +560,16 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
    * migrations above, so reaching here with `ended` set anywhere else means an
    * edited file.
    */
-  if (ended && !(locationId === 'present.sealed_chamber' && chapter === 'return')) {
+  /*
+   * `ended` now means the story is over, not that the build ran out. The main
+   * path has no content boundary left, so the only legitimate `ended` save is
+   * the ending — and saves that were `ended` at either of the two previous
+   * boundaries have been un-ended by the migrations above.
+   */
+  if (ended !== (chapter === 'ending')) {
     return {
       ok: false,
-      error: 'That save is marked complete somewhere the current content cannot end.',
-    };
-  }
-  if (ended && flags[FLAGS.crossedBack] !== true) {
-    return {
-      ok: false,
-      error: 'That save is marked complete without the crossing that gets there.',
+      error: 'That save disagrees with itself about whether the story is over.',
     };
   }
   /*
@@ -496,7 +578,7 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
    * the original era is reachable both before any crossing and after all three
    * of them, so the chapter is what distinguishes those.
    */
-  const hasCrossed = era !== 'present' || chapter === 'return';
+  const hasCrossed = era !== 'present' || chapter === 'return' || chapter === 'ending';
   if (Boolean(flags[FLAGS.crossed]) !== hasCrossed) {
     return {
       ok: false,
@@ -514,7 +596,7 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
       error: 'That save is inconsistent: its second crossing and its era disagree.',
     };
   }
-  if (Boolean(flags[FLAGS.crossedBack]) !== (chapter === 'return')) {
+  if (Boolean(flags[FLAGS.crossedBack]) !== (chapter === 'return' || chapter === 'ending')) {
     return {
       ok: false,
       error: 'That save is inconsistent: its last crossing and its chapter disagree.',
@@ -531,11 +613,80 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
       error: 'That save is inconsistent about the seal and the injury.',
     };
   }
-  if (chapter === 'return' && flags[FLAGS.lostEye] !== true) {
+  const inTheFinale = chapter === 'return' || chapter === 'ending';
+  if (inTheFinale && flags[FLAGS.lostEye] !== true) {
     return { ok: false, error: 'That save returns without the injury that got it there.' };
   }
-  if (chapter === 'return' && flags[FLAGS.knowsResponsibility] !== true) {
+  if (inTheFinale && flags[FLAGS.knowsResponsibility] !== true) {
     return { ok: false, error: 'That save returns without the reason for returning.' };
+  }
+
+  /*
+   * The finale's terminal facts, and the order they can only have happened in.
+   *
+   * Each of these is a state the engine cannot produce, so reaching here means
+   * an edited file. They are checked rather than repaired.
+   */
+  const stage: unknown = flags[FLAGS.finaleStage];
+  if (stage !== undefined && !isFinaleStage(stage)) {
+    return { ok: false, error: 'That save is at a stage of the last chapter that does not exist.' };
+  }
+  if (stage !== undefined && chapter !== 'return' && chapter !== 'ending') {
+    return { ok: false, error: 'That save is in the last chapter without being in it.' };
+  }
+  const theyAreDead = flags[FLAGS.earlierSelfDead] === true;
+  if (theyAreDead && chapter !== 'return' && chapter !== 'ending') {
+    return { ok: false, error: 'That save kills somebody who is not in it.' };
+  }
+  if (theyAreDead !== (stage === 'dead' || stage === 'pillar' || chapter === 'ending')) {
+    return {
+      ok: false,
+      error: 'That save disagrees with itself about whether the earlier self is alive.',
+    };
+  }
+  if (isPlainObject(pending) && pending.kind === 'conversation' && pending.personId === 'earlier_self' && theyAreDead) {
+    return { ok: false, error: 'That save is mid-conversation with somebody who is dead.' };
+  }
+  if (flags[FLAGS.caveDestroyed] === true && !theyAreDead) {
+    return {
+      ok: false,
+      error: 'That save brings the hill down with the earlier self still alive in it.',
+    };
+  }
+  if (flags[FLAGS.heroDead] === true && flags[FLAGS.caveDestroyed] !== true) {
+    return { ok: false, error: 'That save kills the hero without the thing that killed them.' };
+  }
+  if (chapter === 'ending') {
+    for (const [flag, complaint] of [
+      [FLAGS.earlierSelfDead, 'both deaths'],
+      [FLAGS.caveDestroyed, 'the destruction'],
+      [FLAGS.heroDead, 'both deaths'],
+      [FLAGS.storyComplete, 'the ending'],
+    ] as const) {
+      if (flags[flag] !== true) {
+        return { ok: false, error: `That save is at the ending without ${complaint}.` };
+      }
+    }
+    if (locationId !== 'present.sealed_chamber') {
+      return { ok: false, error: 'That save ends somewhere the story does not end.' };
+    }
+  }
+  if (flags[FLAGS.heroDead] === true && chapter !== 'ending') {
+    return { ok: false, error: 'That save has a dead hero walking around in it.' };
+  }
+  const struck = flags[FLAGS.pillarStruck];
+  if (typeof struck === 'number' && (struck < 0 || struck > 3 || !Number.isInteger(struck))) {
+    return { ok: false, error: 'That save has an impossible number of blows on the pillar.' };
+  }
+  if (typeof struck === 'number' && struck > 0 && !theyAreDead) {
+    return { ok: false, error: 'That save swings at the pillar with somebody under it.' };
+  }
+  if (flags[FLAGS.caveDestroyed] === true && struck !== 3) {
+    return { ok: false, error: 'That save destroys the cave without finishing the pillar.' };
+  }
+  const reach = flags[FLAGS.theirReach];
+  if (typeof reach === 'number' && (reach < 0 || reach > 3 || !Number.isInteger(reach))) {
+    return { ok: false, error: 'That save has an impossible position in the last chapter.' };
   }
   if (flags[FLAGS.sealOpened] === true && era === 'present' && chapter === 'rite') {
     return { ok: false, error: 'That save is inconsistent: its era and its history disagree.' };

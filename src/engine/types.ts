@@ -13,14 +13,16 @@
  * `future.*` location ids, and the items and flags Chapter 2 introduces.
  *
  * 3 adds the return: `chapter: 'return'`, which is the original era for the
- * second time. That is the first value a format-2 build would refuse, which is
- * why the version moves even though no field was removed or retyped. It is also
- * the hook the end-of-content normalisation hangs on — see
- * persistence/validate.ts, where both migrations are value fix-ups rather than
- * reshapes.
+ * second time.
+ *
+ * 4 adds the finale and the ending: `chapter: 'ending'`, the stage flag the
+ * confrontation runs on, and the flags recording both deaths and the
+ * destruction. Every step has been a value fix-up rather than a reshape — no
+ * field has ever been removed or retyped — and each is the hook its own
+ * end-of-content normalisation hangs on. See persistence/validate.ts.
  */
-export const SCHEMA_VERSION = 3;
-export const CONTENT_VERSION = '0.3.0';
+export const SCHEMA_VERSION = 4;
+export const CONTENT_VERSION = '1.0.0';
 
 /* ------------------------------------------------------------------ *
  * Identity
@@ -188,8 +190,10 @@ export type PendingState = PendingConversation | PendingClarification;
  *   crossing  → past
  *   future    → future
  *   return    → present   the same rooms, a hero with one eye, and two of them
+ *   ending    → present   after both of them are dead. Terminal: the hero is
+ *                         not alive in it, and ordinary play does not resume
  */
-export type Chapter = 'select' | 'rite' | 'crossing' | 'future' | 'return';
+export type Chapter = 'select' | 'rite' | 'crossing' | 'future' | 'return' | 'ending';
 
 export const MAX_TRANSCRIPT = 240;
 export const MAX_JOURNAL = 80;
@@ -268,6 +272,28 @@ export type GameAction =
   | { type: 'WAIT' }
   /** Swing something heavy at something that is in the way. */
   | { type: 'BREAK'; target: string; using?: string }
+  /**
+   * Show somebody something you are carrying, or tell them something you know.
+   *
+   * Separate from GIVE because nothing changes hands, and separate from TOPIC
+   * because the thing being shown *is* the argument.
+   */
+  | { type: 'SHOW'; subject: string; target?: string }
+  /** Put hands on somebody and try to stop them moving. */
+  | { type: 'RESTRAIN'; target: string }
+  /** Stand between somebody and the thing they are going for. */
+  | { type: 'BLOCK'; target: string }
+  /**
+   * Kill. Spelled out, with its own verb, so no generic "use the tool on the
+   * person" can conceal what it means — and so the command the player types is
+   * the decision they are making.
+   */
+  | { type: 'KILL'; target: string; using?: string }
+  /**
+   * Re-print the epilogue. Touches nothing: reading, not replaying, and the
+   * only story action a finished save accepts.
+   */
+  | { type: 'REVIEW' }
   /** Shift loose material out of the way of something behind it. */
   | { type: 'CLEAR'; target: string }
   /**

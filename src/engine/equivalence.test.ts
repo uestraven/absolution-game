@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   begin,
   finishChapterThree,
-  hasReturned,
+  finishTheStory,
+  hasFinished,
   progressOf,
   type,
   typeAll,
@@ -48,6 +49,8 @@ const itemVerb = (item: string, verb: string) => (a: Affordances) =>
   a.items.find((i) => i.id === item)?.actions.find((x) => x.key === `item-${item}-${verb}`);
 const person = (id: string) => (a: Affordances) => a.people.find((p) => p.key === `talk-${id}`);
 const meta = (key: string) => (a: Affordances) => a.meta.find((m) => m.key === key);
+const clarification = (label: string) => (a: Affordances) =>
+  a.clarification?.options.find((o) => o.label === label);
 const topic = (id: string) => (a: Affordances) => a.topics?.find((t) => t.key === `topic-${id}`);
 /** Handing something over is a target in the item's "use on…" list. */
 const giveTo = (item: string, personId: string) => (a: Affordances) =>
@@ -149,6 +152,22 @@ describe('the two input modes are the same game', () => {
         chosen: placeIn('lantern', 'futuresealed.middledish'),
       },
       { typed: 'enter aperture', chosen: objectVerb('futuresealed.aperture', 'cross') },
+      // Chapter 4
+      { typed: 'talk to them', chosen: person('earlier_self') },
+      { typed: 'say nothing', chosen: topic('say_nothing') },
+      { typed: 'show self', chosen: meta('show-self') },
+      { typed: 'show lantern', chosen: meta('show-lantern') },
+      { typed: 'show journal', chosen: meta('show-journal') },
+      { typed: 'tell them about the future', chosen: meta('show-future') },
+      { typed: 'tell them about the prophecy', chosen: meta('show-origin') },
+      { typed: 'block wall', chosen: meta('block-wall') },
+      { typed: 'hold them', chosen: meta('restrain') },
+      { typed: 'kill them', chosen: meta('kill') },
+      { typed: 'examine pillar', chosen: objectVerb('sealed.pillar', 'examine') },
+      { typed: 'break pillar', chosen: objectVerb('sealed.pillar', 'break') },
+      { typed: 'break pillar', chosen: objectVerb('sealed.pillar', 'break') },
+      { typed: 'break pillar', chosen: objectVerb('sealed.pillar', 'break') },
+      { typed: 'swing', chosen: clarification('Swing') },
     ];
 
     let typed = begin('basilia');
@@ -160,8 +179,8 @@ describe('the two input modes are the same game', () => {
       expect(progressOf(selected), `after "${step.typed}"`).toEqual(progressOf(typed));
     }
 
-    expect(hasReturned(typed)).toBe(true);
-    expect(hasReturned(selected)).toBe(true);
+    expect(hasFinished(typed)).toBe(true);
+    expect(hasFinished(selected)).toBe(true);
   });
 });
 
@@ -363,10 +382,29 @@ describe('end to end', () => {
       'examine them',
       'examine their lantern',
       'examine seam',
+      'examine pillar',
+      // Chapter 4: everything said, every hand tried, and then the end.
+      'talk to them',
+      'say nothing',
+      'show self',
+      'show lantern',
+      'show journal',
+      'tell them about the future',
+      'tell them about the prophecy',
+      'block wall',
+      'hold them',
+      'take their lantern',
+      'wait',
+      'kill them',
+      'break pillar',
+      'break pillar',
+      'break pillar',
+      'swing',
+      'review',
     ]);
 
-    expect(hasReturned(state)).toBe(true);
-    expect(state.objective).toBe(OBJECTIVES.returned);
+    expect(hasFinished(state)).toBe(true);
+    expect(state.objective).toBe(OBJECTIVES.over);
     expect([...state.visited].sort()).toEqual([...EXPECTED_ORDER].sort());
     expect(state.journal.length).toBeGreaterThan(34);
     // Nothing in this run should have been rejected as nonsense.
@@ -474,10 +512,23 @@ describe('end to end', () => {
       objectVerb('futuresealed.fill', 'clear'),
       placeIn('lantern', 'futuresealed.middledish'),
       objectVerb('futuresealed.aperture', 'cross'),
+      person('earlier_self'),
+      topic('say_nothing'),
+      meta('show-lantern'),
+      meta('show-origin'),
+      meta('block-wall'),
+      meta('restrain'),
+      meta('kill'),
+      objectVerb('sealed.pillar', 'examine'),
+      objectVerb('sealed.pillar', 'break'),
+      objectVerb('sealed.pillar', 'break'),
+      objectVerb('sealed.pillar', 'break'),
+      clarification('Swing'),
+      meta('review'),
     ];
     for (const step of path) state = click(state, step);
 
-    expect(hasReturned(state)).toBe(true);
+    expect(hasFinished(state)).toBe(true);
     expect([...state.visited].sort()).toEqual([...EXPECTED_ORDER].sort());
   });
 });
@@ -552,6 +603,14 @@ describe('the documented shortest route', () => {
     'clear fill',
     'place lantern in middle dish',
     'enter aperture',
+    'talk to them',
+    'show lantern',
+    'tell them about the prophecy',
+    'kill them',
+    'break pillar',
+    'break pillar',
+    'break pillar',
+    'swing',
   ];
 
   /** Where the opening chapter's own shortest route used to stop. */
@@ -563,12 +622,21 @@ describe('the documented shortest route', () => {
     let state = begin('basil');
     for (const line of SHORTEST) {
       const result = type(state, line);
-      expect(result.accepted, `"${line}" was refused at ${state.locationId}`).toBe(true);
+      /*
+       * A line that opens a question rather than acting is not a refusal of
+       * the player's intent — and the last blow on the pillar deliberately
+       * asks before it is taken.
+       */
+      const asked = result.state.pending?.kind === 'clarification';
+      expect(
+        result.accepted || asked,
+        `"${line}" was refused at ${state.locationId}`
+      ).toBe(true);
       state = result.state;
     }
-    expect(SHORTEST).toHaveLength(64);
-    expect(hasReturned(state)).toBe(true);
-    expect(state.objective).toBe(OBJECTIVES.returned);
+    expect(SHORTEST).toHaveLength(72);
+    expect(hasFinished(state)).toBe(true);
+    expect(state.objective).toBe(OBJECTIVES.over);
   });
 
   it('takes the recitation-first order, so both recovery routes are load-bearing', () => {
@@ -628,7 +696,7 @@ describe('the documented shortest route', () => {
 
     // And on through the ruined century, borrowing both tools from the shed.
     const finished = finishChapterThree(state);
-    expect(hasReturned(finished.state)).toBe(true);
+    expect(hasFinished(finishTheStory(finished.state))).toBe(true);
   });
 
   it('does not require the echo chamber or any conversation before the cave', () => {
@@ -705,7 +773,7 @@ describe('selectable mode can reach everything typing can', () => {
     ]);
     expect(finished.locationId).toBe('future.deep_chamber');
     const end = finishChapterThree(finished);
-    expect(hasReturned(end.state)).toBe(true);
+    expect(hasFinished(finishTheStory(end.state))).toBe(true);
   });
 });
 

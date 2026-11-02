@@ -125,32 +125,52 @@ inject markup.
 
 ### Migrations
 
-`SCHEMA_VERSION` is **2**. Format 1 was the opening-chapter builds; format 2
-adds the later era. `migrate` runs the steps oldest-first and feeds each into
-the next, and invents no step for a version that never shipped — a newer format
-is refused by name, and an unknown one is refused as unreadable.
+`SCHEMA_VERSION` is **4**. Format 1 was the opening-chapter builds; 2 added the
+ruined-future era; 3 added `chapter: 'return'`, the original era for the second
+time; 4 adds `chapter: 'ending'` and the finale's stage and terminal flags.
 
-Format 2 only *widens* `era`, `chapter` and `locationId`, and adds items and
-flags. No field was removed or retyped, so 1 → 2 is a value fix-up with one
-thing to fix: a save marked `ended` in `past.square`, which is where the
-prototype used to stop. That position is playable now, so the migration clears
-`ended`, sets the objective the rest of the chapter answers, and appends one
-transcript line saying so — keyed on a fixed id, so it cannot be appended
-twice.
+`migrate` runs the steps oldest-first and feeds each into the next — a format-1
+file that has not been opened since goes through all three — and invents no step
+for a version that never shipped. A newer format is refused by name and an
+unknown one as unreadable.
 
-Two properties it holds to deliberately, both tested in
+Each step only *widens* `era`, `chapter` and `locationId`, and adds items and
+flags. No field has ever been removed or retyped, so every migration is a value
+fix-up, and each has one thing to fix: **a save marked `ended` at the boundary
+that build stopped at.**
+
+| Step | Fixes | Sets |
+| --- | --- | --- |
+| 1 → 2 | `ended` in `past.square` with the flag the old ending required | `ended: false`, the objective the rest of Chapter 2 answers, one appended transcript line |
+| 2 → 3 | `ended` in `future.deep_chamber` with `crossed_forward` | `ended: false`, the objective the rest of Chapter 3 answers, one appended transcript line |
+| 3 → 4 | `chapter: 'return'` | `ended: false` and the finale's objective if it was `ended`; **and the mallet in hand** if it is missing |
+
+The version is the right hook for these precisely because the state shape did
+not change: `ended` at an old boundary is indistinguishable from a legitimate
+current state by inspection alone, so the rule is "the previous format said the
+story stopped here, this one says it does not", and it runs once per file on the
+way in. Each notice is keyed on a fixed transcript id so it cannot land twice.
+
+**The mallet step** is the only migration that has ever added an item, and it is
+narrow on purpose. The build that wrote format 3 let the hero come back through
+the wall without the one tool the ending needs. So: it fires only for
+`chapter: 'return'`, a state only that build's boundary produced; it *moves* an
+existing placement rather than copying one, so nothing is duplicated; it creates
+a record only when the save never had one; and it says so in the transcript
+rather than letting an item appear from nowhere. A current game that put the
+mallet down is untouched — it is a room item and can be picked back up.
+
+Two properties every step holds to, all tested in
 `persistence/migration.test.ts`:
 
-- **Only eligible saves.** The fix-up is conditioned on the location *and* the
-  flag the old ending required. No other completion flag is cleared; nothing is
-  reset wholesale; a save marked complete anywhere else is refused as an edited
-  file rather than repaired.
-- **Idempotent.** After the fix-up the save is no longer `ended`, so running the
-  migration again is a no-op — including the worst case of a migrated save being
-  re-presented as format 1.
-
-Because `validateSave` is the only way in, the migration runs on every route: the
-autosave, the backup, the checkpoint and Import Save.
+- **Only eligible saves.** Each fix-up is conditioned on the location, the
+  chapter, and the flags that state could only have been reached with. No other
+  completion flag is cleared; nothing is reset wholesale; a save marked complete
+  anywhere the story does not end is refused as an edited file rather than
+  repaired.
+- **Idempotent.** After each fix-up the condition no longer holds, so running it
+  again is a no-op — including the worst case of a migrated save being
+  re-presented in the older format.
 
 ## UI
 
@@ -178,7 +198,9 @@ The puzzle-specific code has been lifted out of the reducer:
 | `engine/puzzles/rupture.ts` | The authored wrongnesses, their triggers, and nothing that explains any of them |
 | `engine/puzzles/evidence.ts` | The four sources, which are missing, and the hero's inference |
 | `engine/puzzles/futureSeal.ts` | Breaking back into the hill, and the one authored injury |
-| `engine/puzzles/futureReturn.ts` | The middle position, and the last crossing |
+| `engine/puzzles/futureReturn.ts` | The middle position, and the crossing home |
+| `engine/puzzles/confrontation.ts` | The finale's stage table — the authoritative copy — and the killing |
+| `engine/puzzles/sacrifice.ts` | The pillar, the commitment, the ending, and what a finished save will accept |
 | `engine/reducer.ts` | The action pipeline, noun resolution and the generic verbs |
 
 The destination table deserves a note, because it is the thing most likely to be
@@ -222,6 +244,40 @@ Adding to the game:
   Add the chapter to the `Chapter` union and to the chapter/era coherence rules
   in `persistence/validate.ts`.
 
+## The finale's state
+
+One string flag, `finale_stage`, and nothing derived. It is never read out of
+the transcript, never inferred from how many questions have been asked, and
+never advanced by time: the table in `engine/puzzles/confrontation.ts` is the
+only thing that moves it, and the only thing that moves `their_reach` is the
+hero's own physical interventions.
+
+The terminal facts are separate flags, checked against each other rather than
+trusted:
+
+| Flag | Means | Validated as |
+| --- | --- | --- |
+| `earlier_self_dead` | once, for ever | ⟺ stage `dead`/`pillar` or chapter `ending`; no conversation with them may be pending |
+| `pillar_struck` | 0–3 | above zero only once they are dead; must be 3 if the cave is down |
+| `escape_closed` | the squeeze is full of hill | set by the second blow |
+| `cave_destroyed` | the chamber and the fold are under the hill | requires them dead |
+| `hero_dead` | the returning hero | requires the destruction |
+| `story_complete` | the epilogue has been shown | with the three above, ⟺ chapter `ending` |
+
+`ended` means **the story is over**, not that the build ran out, and a save that
+disagrees with itself about that is refused. Each of the three
+end-of-content markers that have shipped is un-ended by its own migration, so
+the only legitimate `ended` save is a finished one.
+
+The third blow goes through the engine's ordinary clarification prompt, which is
+why it needs no new UI: a button in selectable mode, a typed answer in type-only
+mode. The confirmed action carries a marker so an answered prompt can be told
+from a fresh `BREAK PILLAR`.
+
+A checkpoint is written on every chapter change **except** into `ending`, so the
+last one the game holds is the start of the finale — the one place a player
+might actually want to go back to.
+
 ## Revisiting a room in a different chapter
 
 The sealed chamber is entered in two chapters, a hundred years apart in the
@@ -241,8 +297,8 @@ work, and they are the pattern for any room that has to do it again:
   which is what stops the return offering the earlier self's wedge.
 - **People have `available`.** `discovered` latches — once met, always met — so
   presence has to be a separate question from acquaintance. `earlier_self` is
-  `available: chapter === 'return'`, which is why that room has nobody in it
-  during the opening.
+  `available: chapter === 'return' && !earlier_self_dead`, which is why that
+  room has nobody in it during the opening and nobody in it afterwards.
 
 The other half of the rule is that the other person's belongings are **objects,
 not items.** There is one lantern record in the save and it is the hero's. A

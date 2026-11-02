@@ -220,7 +220,51 @@ export function hasReturned(state: GameState): boolean {
   return (
     state.locationId === 'present.sealed_chamber' &&
     state.chapter === 'return' &&
-    state.era === 'present' &&
-    state.ended
+    state.era === 'present'
   );
+}
+
+/** True when the story is over: both of them dead and the hill on top of it. */
+export function hasFinished(state: GameState): boolean {
+  return (
+    state.chapter === 'ending' &&
+    state.ended &&
+    state.flags['earlier_self_dead'] === true &&
+    state.flags['cave_destroyed'] === true &&
+    state.flags['hero_dead'] === true &&
+    state.flags['story_complete'] === true
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Chapter 4: the confrontation and the end
+ * ------------------------------------------------------------------ */
+
+/** Everything the hero can say, in the order that makes them decide last. */
+export const THE_ARGUMENT = [
+  'talk to them',
+  'say nothing',
+  'show self',
+  'show lantern',
+  'show journal',
+  'tell them about the future',
+  'tell them about the prophecy',
+];
+
+/** Every nonlethal thing the hands can try, once they are moving. */
+export const THE_HANDS = ['block wall', 'hold them', 'take their lantern', 'west', 'wait'];
+
+/** The killing, and then the pillar, and then the end. */
+export const THE_END = [
+  'kill them',
+  'examine pillar',
+  'break pillar',
+  'break pillar',
+  'break pillar',
+  'swing',
+];
+
+/** The finale, played out in full. */
+export function finishTheStory(state: GameState): GameState {
+  return typeAll(state, [...THE_ARGUMENT, ...THE_HANDS, ...THE_END]);
 }

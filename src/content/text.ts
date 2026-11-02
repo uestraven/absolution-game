@@ -43,8 +43,16 @@ export const OBJECTIVES = {
   settlement: 'Find out what happened here.',
   /** Once the hero has put the evidence together. */
   responsible: 'Get back to the night it started.',
-  /** The return, and the end of what is built. */
+  /** The return. */
   returned: 'Stop yourself going through.',
+  /** Once they have decided and are moving. */
+  stopThem: 'Stop them reaching the wall.',
+  /** After. */
+  destroy: 'Make sure nobody can ever walk into this hill again.',
+  /** Two blows in, with the squeeze shut. */
+  finish: 'Finish it.',
+  /** Afterwards. */
+  over: 'The end.',
 } as const;
 
 export const CROSSING = `You do not jump, and you do not fall. You put a hand flat on the rim, and then a foot over it, the way you would get into a cold river in the dark — testing for a bottom you have already been told is not there.
@@ -162,14 +170,6 @@ High on the wall behind you, where no opening has ever been, the hill has torn i
 
 You are not in your own village. You know that before you have got your feet under you, and you know it from the quality of the light.`;
 
-export const END_OF_CONTENT = `— End of the current content —
-
-This is as far as the story is built. What the two of you say to each other, and what it costs, is the last chapter, and it is not written yet.
-
-This is not the ending. Nothing here is the end of the story.
-
-You can keep looking around, read your JOURNAL, or use Settings to restart from the checkpoint at the start of this chapter. Settings will tell you whether this browser is keeping your progress, and Export Save works either way.`;
-
 /**
  * Shown once to a player continuing a save that stopped at an older
  * end-of-content marker, so the transcript they are looking at — which still
@@ -286,10 +286,18 @@ You are not quiet. You land badly, and your breathing is the breathing of somebo
 
 They turn round.`;
 
-export const END_OF_CONTENT_RETURN = `— End of the current content —
+/* ------------------------------------------------------------------ *
+ * Compatibility notices
+ * ------------------------------------------------------------------ */
 
-Everything after this — what the two of you say, what you do about it, and what it costs — is the last chapter, and it is not written yet.
+export const CONTINUATION_FINALE = `— The story continues past this point now —
 
-This is not the ending. Nothing here is the end of the story — the last chapter is written down in the design and is not implemented yet, so this build stops in front of it rather than guessing at it.
+Your saved game ended where the previous build stopped. The last chapter runs from here: everything above is still yours, and nothing has been reset.
 
-You can look, read your JOURNAL, check your INVENTORY, or use Settings to restart from the checkpoint at the start of this chapter. Export Save works whether or not this browser is keeping your progress.`;
+You are on your hands and knees on the floor of the sealed chamber, and somebody has just turned round.`;
+
+export const MALLET_RECOVERY = `— A note about your save —
+
+The build that wrote this save let you come back through the wall without Lovage's mallet, and the last chapter needs it. You are carrying it now.
+
+Nothing else in your save has been changed, and no second mallet exists: if you had left it somewhere, that is where it has come from.`;

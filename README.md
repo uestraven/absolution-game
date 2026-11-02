@@ -1,7 +1,6 @@
 # Absolution
 
-A short, text-led adventure. This build contains three complete, playable
-chapters.
+A short, text-led adventure, complete from the first morning to the last line.
 
 **Chapter 1** — character selection, a village to explore, contrasting accounts
 of the cave, one real puzzle, the discovery of a passage nobody else found, and
@@ -17,10 +16,14 @@ where there were two hundred, a hill somebody has walled up, a chest of records
 with a woman sitting against it, and four separate things that have to be put
 together before the way home is worth taking.
 
-Then it stops, on purpose, with a clear end-of-current-content message. **That
-is not the ending.** The last chapter is designed and not built.
+**Chapter 4** — four paces of rock, two people, and one of them has to decide.
 
-First playthrough is roughly 75–95 minutes.
+The story has an ending and the build reaches it. First playthrough is roughly
+90–110 minutes.
+
+**Spoiler warning for the documentation.** `docs/WALKTHROUGH.md`,
+`docs/CANON.md` and the full-game design describe the whole plot including the
+ending. The player-facing text does not.
 
 - **Working title.** Nothing here is a final name.
 - **No backend.** No accounts, database, API keys, paid services or runtime AI.
@@ -178,6 +181,8 @@ src/
       evidence.ts          the four sources, and the hero's inference
       futureSeal.ts        breaking back in, and the eye
       futureReturn.ts      the middle position, and the way home
+      confrontation.ts     the finale's stage table, and the killing
+      sacrifice.ts         the pillar, the ending, and what a finished save does
   content/      authored data: locations, objects, dialogue, items, flags,
                 hints, markup helpers, prose
   persistence/  localStorage slots, export/import, save validation
@@ -213,28 +218,38 @@ saves do not. Storage keys are unchanged from the first prototype
 | --- | --- | --- |
 | 1 | the opening-chapter builds | **Loads.** Migrated on read |
 | 2 | the builds that ended at the ruined-future arrival | **Loads.** Migrated on read |
-| 3 | this build | Current |
+| 3 | the builds that ended at the return | **Loads.** Migrated on read |
+| 4 | this build | Current |
 
 Each step only *widens* what `era`, `chapter` and `locationId` may hold, and
-adds items and flags. No field has ever been removed or retyped, so both
-migrations are value fix-ups — and each has exactly one thing to fix: **a save
-that stopped where that build stopped.**
+adds items and flags. No field has ever been removed or retyped, so every
+migration is a value fix-up — and each has one thing to fix: **a save that
+stopped where that build stopped.**
 
 | Step | The save it fixes | What it does |
 | --- | --- | --- |
-| 1 → 2 | marked complete in the past square | Un-ends it, sets the objective the rest of Chapter 2 answers |
-| 2 → 3 | marked complete at the arrival in the broken chamber | Un-ends it, sets the objective the rest of Chapter 3 answers |
+| 1 → 2 | marked complete in the past square | Un-ends it; sets the objective the rest of Chapter 2 answers |
+| 2 → 3 | marked complete at the arrival in the broken chamber | Un-ends it; sets the objective the rest of Chapter 3 answers |
+| 3 → 4 | marked complete at the return | Un-ends it; sets the objective the last chapter answers; **and makes sure the hero is carrying the mallet** |
 
-Either way the save comes back as a game in progress, with one line appended to
-the transcript saying the story continues past that point now. The historical
+The save comes back as a game in progress, with one line appended to the
+transcript saying the story continues past that point now. The historical
 end-of-content entry is left exactly where it is rather than silently
 contradicted, and a format-1 file that has not been opened since goes through
-both steps in order.
+all three steps in order.
+
+**The mallet.** The build that wrote format 3 let a player come back through
+the wall without it, and the last chapter needs it. So a return-endpoint save
+that has not got it is given it, with a line in the transcript saying so. That
+recovery is deliberately narrow: it only fires for `chapter: 'return'`, it
+*moves* an existing record rather than copying one so nothing is duplicated, and
+it never touches a current game — a player who puts the mallet down in the
+finale can simply pick it back up.
 
 Nothing else is touched. No other completion flag is cleared, no progress is
-reset, no items are added to an old inventory, and both migrations are
-idempotent. A save marked complete anywhere the current content cannot end is
-refused as an edited file rather than quietly repaired.
+reset, and every migration is idempotent. `ended` now means the story is over,
+and a save that disagrees with itself about that is refused as an edited file
+rather than quietly repaired.
 
 The version is the right hook for this precisely *because* the state shape did
 not change: `ended` at an old boundary is indistinguishable from a legitimate

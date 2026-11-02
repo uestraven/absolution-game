@@ -373,7 +373,7 @@ describe('imports are validated before anything is touched', () => {
     [
       'completion claimed in the wrong place',
       corrupt((d) => (d.ended = true)),
-      /marked complete somewhere the current content cannot end/,
+      /disagrees with itself about whether the story is over/,
     ],
     [
       'a crossing flag that disagrees with the era',

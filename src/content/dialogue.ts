@@ -1424,7 +1424,8 @@ const PERSON_LIST: PersonDef[] = [
     name: 'the one with the lantern',
     nouns: ['them', 'self', 'earlier self', 'younger self', 'child', 'figure', 'sixteen', 'the one with the lantern'],
     locationId: 'present.sealed_chamber',
-    available: (state) => state.chapter === 'return',
+    available: (state) =>
+      state.chapter === 'return' && !f(state, FLAGS.earlierSelfDead),
     listAs: c('somebody kneeling at the patterned wall'),
     appearance: () =>
       'Sixteen. A wedge-shaped bulge in one pocket, both knees grey from the gallery floor, ' +
@@ -1441,17 +1442,25 @@ const PERSON_LIST: PersonDef[] = [
       'their own, and it goes through you like cold water.\n\n' +
       'You do not have an answer prepared. You have had three days and a hundred years and you ' +
       'do not have an answer prepared.',
+    /*
+     * One topic. The arguments are not conversation topics: each of them does
+     * something to the scene, so they are actions — SHOW LANTERN, SHOW
+     * JOURNAL, TELL THEM WHERE THE WORDS CAME FROM — reachable typed and as
+     * buttons. Putting them here as well would mean two sources for the same
+     * prose and two ways to set the same flags.
+     */
     topics: [
       {
-        id: 'nothing_yet',
+        id: 'say_nothing',
         label: 'say nothing',
-        aliases: ['nothing', 'wait', 'say nothing', 'silence'],
+        aliases: ['nothing', 'wait', 'silence'],
         response: () =>
           'You do not say anything.\n\n' +
-          'They get up off their knees, slowly, keeping the pillar between you, and their hand ' +
-          'goes to the pocket with the wedge in it, which is the only thing in the pocket.\n\n' +
-          'Behind them, in the fan of light, the seam is exactly where it is.\n\n' +
-          'Neither of you says anything. The lamp in the alcove goes on burning.',
+          'They keep the pillar between you and watch your hands. After a while they say, "Say ' +
+          'something," and when you do not, they stop asking and start looking past you at the ' +
+          'wall.\n\n' +
+          'The lamp goes on burning in the alcove. Somebody\'s breathing is too loud and you ' +
+          'are no longer sure which of you it is.',
       },
     ],
   },

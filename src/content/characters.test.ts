@@ -107,6 +107,21 @@ describe('both characters', () => {
         'clear fill',
         'place lantern in middle dish',
         'enter aperture',
+        'talk to them',
+        'say nothing',
+        'show self',
+        'show lantern',
+        'show journal',
+        'tell them about the future',
+        'tell them about the prophecy',
+        'block wall',
+        'hold them',
+        'kill them',
+        'examine pillar',
+        'break pillar',
+        'break pillar',
+        'break pillar',
+        'swing',
       ]);
     const boy = run('basil');
     const girl = run('basilia');

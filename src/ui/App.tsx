@@ -99,7 +99,17 @@ export function App() {
    * results are combined rather than the later one winning.
    */
   const persist = useCallback((next: GameState, chapterChanged: boolean) => {
-    const checkpoint = chapterChanged ? writeCheckpoint(next) : null;
+    /*
+     * A checkpoint per chapter, except the ending.
+     *
+     * The ending is a terminal state, and writing it over the checkpoint would
+     * destroy the one place a player might actually want to go back to — the
+     * moment they came through the wall, with the confrontation still ahead of
+     * them. So the last checkpoint this game writes is the start of the last
+     * chapter, and that is deliberate.
+     */
+    const writable = chapterChanged && next.chapter !== 'ending';
+    const checkpoint = writable ? writeCheckpoint(next) : null;
     if (checkpoint?.working) setHasCheckpoint(true);
 
     const autosave = writeAutosave(next);
@@ -417,7 +427,14 @@ export function App() {
         id="main-controls"
         aria-label="Actions"
       >
-        {prefs.inputMode === 'type' ? (
+        {state.chapter === 'ending' ? (
+          <EndingPanel
+            onReview={() => act({ type: 'REVIEW' }, 'read the ending again')}
+            onExport={doExport}
+            onNewGame={startNewGame}
+            onRestartCheckpoint={hasCheckpoint ? restartCheckpoint : null}
+          />
+        ) : prefs.inputMode === 'type' ? (
           <TypeInput label="What do you do?" placeholder={placeHint} onSubmit={submitTyped} />
         ) : (
           <SelectPanel
@@ -443,6 +460,52 @@ export function App() {
 
       <FilePicker inputRef={fileInput} onFile={onFileChosen} />
       {notice ? <Toast message={notice} onDismiss={() => setNotice(null)} /> : null}
+    </div>
+  );
+}
+
+/**
+ * What a finished save offers.
+ *
+ * Not a command line, because there is nobody left to give commands to, and
+ * not a "coming soon" banner, because nothing is coming: this is the ending.
+ * Reading it again is explicitly reading — it appends the text and touches no
+ * state — and the checkpoint goes back to the start of the last chapter rather
+ * than to a fresh game.
+ */
+function EndingPanel({
+  onReview,
+  onExport,
+  onNewGame,
+  onRestartCheckpoint,
+}: {
+  onReview: () => void;
+  onExport: () => void;
+  onNewGame: () => void;
+  onRestartCheckpoint: (() => void) | null;
+}) {
+  return (
+    <div className="panel" aria-label="The end">
+      <h3 className="panel-title">The end</h3>
+      <div className="chip-row">
+        <button type="button" className="btn" onClick={onReview}>
+          Read the ending again
+        </button>
+        <button type="button" className="btn" onClick={onExport}>
+          Export Save
+        </button>
+        {onRestartCheckpoint ? (
+          <button type="button" className="btn" onClick={onRestartCheckpoint}>
+            Back to the start of the chapter
+          </button>
+        ) : null}
+        <button type="button" className="btn btn-quiet" onClick={onNewGame}>
+          New Game
+        </button>
+      </div>
+      <p className="panel-note">
+        Reading the ending again prints the text. It does not undo anything.
+      </p>
     </div>
   );
 }

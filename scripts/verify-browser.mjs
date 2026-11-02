@@ -261,6 +261,11 @@ async function newPage(viewport) {
     'whether the wall is as good as it looks','leave',
     'use wedge on seal','break seal','break seal',
     'west','examine fill','clear fill','place lantern in middle dish','enter aperture',
+    // Chapter 4: everything said, every hand tried, and then the end.
+    'talk to them','say nothing','show self','show lantern','show journal',
+    'tell them about the future','tell them about the prophecy',
+    'block wall','hold them','take their lantern','wait',
+    'kill them','examine pillar','break pillar','break pillar','break pillar','swing',
   ];
   for (const line of script) {
     await field.fill(line);
@@ -270,48 +275,70 @@ async function newPage(viewport) {
   const whole = await page.locator('.transcript').innerText();
   const place = (await page.locator('.topbar-place').innerText()).toLowerCase();
   place === 'the sealed chamber'
-    ? ok('keyboard only: all three chapters completed to the return')
-    : bad('keyboard only: all three chapters completed to the return', place);
+    ? ok('keyboard only: the whole story completed to the ending')
+    : bad('keyboard only: the whole story completed to the ending', place);
 
   whole.includes('They turn round')
     ? ok('keyboard only: the return lands on the earlier self')
     : bad('keyboard only: the return lands on the earlier self');
+
+  whole.includes('It takes about nine seconds')
+    ? ok('keyboard only: the hill comes down')
+    : bad('keyboard only: the hill comes down');
+  whole.includes('Somebody is missing, and the whole square knows exactly who')
+    ? ok('keyboard only: the epilogue grieves somebody by name')
+    : bad('keyboard only: the epilogue grieves somebody');
+  whole.includes('sky is doing things')
+    ? ok('keyboard only: the saved valley has weather in it')
+    : bad('keyboard only: the saved valley has weather in it');
 
   // The canonical prophecy, spoken in the square a century before the plank.
   whole.includes('One who braves the Cave of Absolution will have the power to turn it aside')
     ? ok('keyboard only: the recitation says the canonical text')
     : bad('keyboard only: the recitation says the canonical text');
 
-  const ended = await page.locator('.entry-system', { hasText: 'End of the current content' }).count();
-  ended > 0 ? ok('keyboard only: end-of-current-content marker shown')
-            : bad('keyboard only: end-of-current-content marker shown');
+  const ended = await page.locator('.entry-system', { hasText: '— The end —' }).count();
+  ended > 0 ? ok('keyboard only: the ending marker is shown')
+            : bad('keyboard only: the ending marker is shown');
 
-  whole.includes('This is not the ending')
-    ? ok('end state: the marker does not claim to be the ending')
-    : bad('end state: the marker does not claim to be the ending');
+  !/not implemented|coming soon|not written yet/i.test(whole.slice(-2000))
+    ? ok('end state: the ending does not promise anything further')
+    : bad('end state: the ending does not promise anything further');
 
   // The objective folds away by default now; open the disclosure to read it.
   if ((await page.locator('.status').count()) === 0) {
     await page.locator('.topbar-toggle').click();
   }
   const objective = await page.getByLabel('Current objective').innerText();
-  objective.includes('Stop yourself') ? ok('end state: objective updated')
-                                      : bad('end state: objective updated', objective);
+  /The end/.test(objective) ? ok('end state: objective updated')
+                            : bad('end state: objective updated', objective);
 
-  // The player can keep looking around after the end.
-  await field.fill('examine them');
-  await page.keyboard.press('Enter');
-  const stillPlayable = await page.locator('.transcript').innerText();
-  stillPlayable.includes('Two eyes') ? ok('end state: inspection still possible')
-                                     : bad('end state: inspection still possible');
+  // No command line at the ending: a panel, with reading on it.
+  const endingPanel = await page.getByRole('region', { name: 'Actions' })
+    .getByRole('button', { name: 'Read the ending again' }).count();
+  const noField = await page.getByLabel('What do you do?').count();
+  endingPanel === 1 && noField === 0
+    ? ok('ending: a panel with the ending on it, and no command line')
+    : bad('ending: panel', `panel=${endingPanel} field=${noField}`);
 
-  // And the confrontation is refused truthfully rather than silently.
-  await field.fill('break them');
-  await page.keyboard.press('Enter');
-  const refused = await page.locator('.transcript').innerText();
-  refused.includes('not written yet')
-    ? ok('end state: the confrontation is blocked, and says why')
-    : bad('end state: the confrontation is blocked, and says why');
+  // Reading it again prints it again and changes nothing.
+  const beforeReview = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  await page.getByRole('region', { name: 'Actions' })
+    .getByRole('button', { name: 'Read the ending again' }).click();
+  const afterReview = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  /*
+   * The transcript is capped, so "it got longer" is not the test. What matters
+   * is that nothing moved and the epilogue is on the page again.
+   */
+  const reviewedText = await page.locator('.transcript').innerText();
+  JSON.stringify(beforeReview.flags) === JSON.stringify(afterReview.flags) &&
+  afterReview.chapter === beforeReview.chapter &&
+  afterReview.journal.length === beforeReview.journal.length &&
+  reviewedText.includes('The village, that evening and after')
+    ? ok('ending: reading it again is reading, not replaying')
+    : bad('ending: review changed state');
 
   if ((await page.locator('.status').count()) === 0) {
     await page.locator('.topbar-toggle').click();
@@ -418,7 +445,7 @@ async function newPage(viewport) {
   await page.reload();
   await page.getByRole('button', { name: 'Continue' }).click();
   const after = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  const endAfter = await page.locator('.entry-system', { hasText: 'End of the current content' }).count();
+  const endAfter = await page.locator('.entry-system', { hasText: '— The end —' }).count();
   after === 'the sealed chamber' && endAfter > 0
     ? ok('reload: Continue restores place and transcript')
     : bad('reload: Continue restores place and transcript', `${after} / entries ${endAfter}`);
@@ -451,9 +478,12 @@ async function newPage(viewport) {
   const exported = JSON.parse(await readFile(await file.path(), 'utf8'));
   exported.ended === true &&
   exported.locationId === 'present.sealed_chamber' &&
-  exported.chapter === 'return' &&
+  exported.chapter === 'ending' &&
   exported.flags['lost_eye'] === true &&
-  exported.schemaVersion === 3
+  exported.flags['earlier_self_dead'] === true &&
+  exported.flags['hero_dead'] === true &&
+  exported.flags['cave_destroyed'] === true &&
+  exported.schemaVersion === 4
     ? ok('export: file contains the current state, in the current format')
     : bad('export: file contents', JSON.stringify(exported).slice(0, 140));
 
@@ -512,7 +542,7 @@ async function newPage(viewport) {
   await (await chooser).setFiles(await file.path());
   await page.waitForTimeout(150);
   const placeImported = (await page.locator('.topbar-place').innerText()).toLowerCase();
-  const endedImported = await page.locator('.entry-system', { hasText: 'End of the current content' }).count();
+  const endedImported = await page.locator('.entry-system', { hasText: '— The end —' }).count();
   placeImported === 'the sealed chamber' && endedImported > 0
     ? ok('import: the exported save is restored')
     : bad('import: the exported save is restored', `${placeImported} / entries ${endedImported}`);
@@ -822,8 +852,8 @@ async function newPage(viewport) {
 
   const returned = (await page.locator('.topbar-place').innerText()).toLowerCase();
   returned === 'the sealed chamber'
-    ? ok('selectable mode: all three chapters completed with no typing at all')
-    : bad('selectable mode: all three chapters completed with no typing at all', returned);
+    ? ok('selectable mode: the return works by clicking')
+    : bad('selectable mode: the return works by clicking', returned);
 
   const noExits = await panel.getByRole('button', { name: /^Go/ }).count();
   noExits === 0
@@ -836,7 +866,59 @@ async function newPage(viewport) {
     ? ok('the only person in the room is the one with the lantern')
     : bad('the only person in the room is the one with the lantern', String(onlyPerson));
 
-  errors.length === 0 ? ok('selectable mode: no console errors across all three chapters')
+  /* ---- Chapter 4, still without typing ---- */
+  await panel.getByRole('button', { name: 'Talk to the one with the lantern' }).click();
+  await panel.getByRole('button', { name: /say nothing/ }).click();
+
+  // The lethal action is not on offer yet, and nothing is labelled "use the mallet".
+  const tooEarly = await panel.getByRole('button', { name: /Kill them/ }).count();
+  tooEarly === 0
+    ? ok('selectable mode: the lethal action is not offered before the scene supports it')
+    : bad('selectable mode: lethal action offered too early');
+
+  await panel.getByRole('button', { name: 'Tell them who you are' }).click();
+  await panel.getByRole('button', { name: 'Hold up your lantern' }).click();
+  await panel.getByRole('button', { name: 'Show them the journal' }).click();
+  await panel.getByRole('button', { name: 'Describe the ruined valley' }).click();
+  await panel.getByRole('button', { name: 'Tell them where the words came from' }).click();
+  await panel.getByRole('button', { name: 'Stand in front of the wall' }).click();
+  await panel.getByRole('button', { name: 'Get hold of them' }).click();
+
+  const nowOffered = panel.getByRole('button', { name: 'Kill them with the mallet' });
+  (await nowOffered.count()) === 1
+    ? ok('selectable mode: the lethal action appears, labelled with what it does')
+    : bad('selectable mode: lethal action not offered');
+  await nowOffered.click();
+
+  const dead = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  dead.flags['earlier_self_dead'] === true && dead.flags['hero_dead'] === undefined
+    ? ok('selectable mode: the earlier self dies and the hero does not')
+    : bad('selectable mode: the killing', JSON.stringify(dead.flags).slice(0, 120));
+
+  await thing(/pillar/, 'Examine');
+  await thing(/pillar/, 'Break it open');
+  await thing(/pillar/, 'Break it open');
+  await thing(/pillar/, 'Break it open');
+  const swing = panel.getByRole('button', { name: 'Swing', exact: true });
+  (await swing.count()) === 1
+    ? ok('selectable mode: the last blow asks first, as a button')
+    : bad('selectable mode: no confirmation button');
+  await swing.click();
+
+  const finished = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  finished.chapter === 'ending' && finished.flags['hero_dead'] === true &&
+  finished.flags['cave_destroyed'] === true && finished.ended === true
+    ? ok('selectable mode: the whole story completed with no typing at all')
+    : bad('selectable mode: completion', JSON.stringify(finished.flags).slice(0, 140));
+
+  const endingText = await page.locator('.transcript').innerText();
+  endingText.includes('The village, that evening and after')
+    ? ok('selectable mode: the epilogue is shown')
+    : bad('selectable mode: the epilogue is shown');
+
+  errors.length === 0 ? ok('selectable mode: no console errors across the whole story')
                       : bad('selectable mode: console errors', errors.join(' | ').slice(0, 200));
   await context.close();
 }
@@ -918,7 +1000,7 @@ async function newPage(viewport) {
     : bad('m3 endpoint save: plays on', walked);
 
   const version = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).schemaVersion, KEY2);
-  version === 3 ? ok('m3 endpoint save: written back out in the current format')
+  version === 4 ? ok('m3 endpoint save: written back out in the current format')
                 : bad('m3 endpoint save: written back out in the current format', String(version));
   await context.close();
 }
@@ -1067,7 +1149,7 @@ async function newPage(viewport) {
     : bad('legacy save: plays on into the new chapter');
 
   const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).schemaVersion, KEY);
-  stored === 3 ? ok('legacy save: written back out in the current format')
+  stored === 4 ? ok('legacy save: written back out in the current format')
                : bad('legacy save: written back out in the current format', String(stored));
   await context.close();
 }
@@ -1243,20 +1325,95 @@ async function newPage(viewport) {
 
   await run(['take mallet', 'enter aperture']);
 
-  // At the return.
+  // At the return, with the confrontation ahead of them.
   const atReturn = await reloadAndContinue();
   const returnState = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('cave-of-absolution:save')));
   atReturn === 'the sealed chamber' && returnState.chapter === 'return' &&
-  returnState.era === 'present' && returnState.ended === true
-    ? ok('reload at the return: chapter, era and place all survive')
+  returnState.era === 'present' && returnState.ended === false &&
+  returnState.flags['finale_stage'] === 'arrival'
+    ? ok('reload at the return: chapter, era, place and stage all survive')
     : bad('reload at the return', `${atReturn} / ${returnState.chapter}/${returnState.era}`);
 
-  // One lantern record, and it is the hero's.
-  JSON.stringify(returnState.placements) === '{"lantern":{"kind":"carried"},"wedge":{"kind":"room","locationId":"future.entrance"}}' ||
-  returnState.placements.lantern.kind === 'carried'
+  // Mid-argument.
+  await run(['talk to them', 'show self', 'show lantern']);
+  await reloadAndContinue();
+  const midArgument = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  midArgument.flags['identity_accepted'] === true &&
+  midArgument.flags['finale_stage'] === 'talking' &&
+  midArgument.flags['earlier_self_dead'] === undefined
+    ? ok('reload mid-argument: what has been said survives, and nothing has advanced')
+    : bad('reload mid-argument', JSON.stringify(midArgument.flags).slice(0, 140));
+
+  // After the killing.
+  await run(['tell them about the prophecy', 'block wall', 'hold them', 'kill them']);
+  await reloadAndContinue();
+  const afterKill = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  const killCount = afterKill.journal.filter((e) => e.id === 'j.killed').length;
+  afterKill.flags['earlier_self_dead'] === true &&
+  afterKill.flags['hero_dead'] === undefined && killCount === 1
+    ? ok('reload after the killing: it persists, is not replayed, and the hero is alive')
+    : bad('reload after the killing', `dead=${afterKill.flags['earlier_self_dead']} n=${killCount}`);
+
+  // Before the commitment.
+  await run(['break pillar', 'break pillar']);
+  await reloadAndContinue();
+  const beforeCommit = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  beforeCommit.flags['pillar_struck'] === 2 &&
+  beforeCommit.flags['escape_closed'] === true &&
+  beforeCommit.flags['cave_destroyed'] === undefined
+    ? ok('reload before the commitment: two blows in, and nothing committed')
+    : bad('reload before the commitment', JSON.stringify(beforeCommit.flags).slice(0, 140));
+
+  // The confirmation, declined and then taken.
+  await run(['break pillar', 'not yet']);
+  const declined = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  declined.flags['cave_destroyed'] === undefined && declined.chapter === 'return'
+    ? ok('the last blow asks, and takes no for an answer')
+    : bad('the commitment', JSON.stringify(declined.flags).slice(0, 120));
+
+  await run(['break pillar', 'swing']);
+
+  // After completion.
+  const atEnd = await reloadAndContinue();
+  const endState = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  atEnd === 'the sealed chamber' && endState.chapter === 'ending' &&
+  endState.ended === true && endState.flags['hero_dead'] === true &&
+  endState.flags['cave_destroyed'] === true
+    ? ok('reload after the ending: it reloads as finished, not as a living hero')
+    : bad('reload after the ending', `${atEnd} / ${endState.chapter}`);
+
+  const stillPanel = await page.getByRole('region', { name: 'Actions' })
+    .getByRole('button', { name: 'Read the ending again' }).count();
+  stillPanel === 1
+    ? ok('a finished save reloads into the ending, not a fresh confrontation')
+    : bad('finished save reloads into the ending', String(stillPanel));
+
+  // One lantern record all the way through, and it is the hero's.
+  returnState.placements.lantern.kind === 'carried' &&
+  Object.keys(returnState.placements).filter((k) => k === 'lantern').length === 1
     ? ok("the earlier self's belongings are not in the hero's inventory")
     : bad('item records at the return', JSON.stringify(returnState.placements).slice(0, 140));
+
+  // Back to the start of the chapter: the ending must not have written over it.
+  await openSettings(page);
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('dialog', { name: 'Settings' })
+    .getByRole('button', { name: 'Restart from checkpoint' }).click();
+  await page.waitForTimeout(150);
+  const restarted = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('cave-of-absolution:save')));
+  restarted.chapter === 'return' &&
+  restarted.flags['earlier_self_dead'] === undefined &&
+  restarted.flags['hero_dead'] === undefined &&
+  restarted.inventory.includes('mallet')
+    ? ok('the ending keeps a checkpoint at the start of the chapter, not over it')
+    : bad('finale checkpoint', `${restarted.chapter} ${JSON.stringify(restarted.inventory)}`);
 
   errors.length === 0
     ? ok('no console errors across three chapters and four reloads')

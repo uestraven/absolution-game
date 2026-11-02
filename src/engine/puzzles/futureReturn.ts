@@ -1,11 +1,6 @@
 import type { GameState, NarrativeEvent, ResolveResult } from '../types';
 import { FLAGS } from '../../content/flags';
-import {
-  CROSSING_BACK,
-  END_OF_CONTENT_RETURN,
-  OBJECTIVES,
-  RETURN_ARRIVAL,
-} from '../../content/text';
+import { CROSSING_BACK, OBJECTIVES, RETURN_ARRIVAL } from '../../content/text';
 import {
   addJournal,
   commit,
@@ -248,41 +243,36 @@ export function enterPanel(draft: Draft, events: NarrativeEvent[]): ResolveResul
     events
   );
 
+  /*
+   * No end-of-content marker. This used to be where the build stopped; the
+   * last chapter runs from here, so the arrival sets the stage the
+   * confrontation starts in and the objective the hero actually has.
+   */
+  draft.flags[FLAGS.finaleStage] = 'arrival';
+  draft.flags[FLAGS.theirReach] = 0;
   setObjective(draft, OBJECTIVES.returned, events);
-  draft.ended = true;
-  events.push({ kind: 'system', text: END_OF_CONTENT_RETURN });
   return commit(draft, events, true);
 }
 
 /**
- * What the returning hero may not do yet.
+ * Two things in that room that are not what the player meant.
  *
- * The confrontation is the last chapter and it is not written. Refusing is
- * honest about that rather than pretending the actions do not exist, and it
- * never implies the story is over.
+ * `leave` used to live here; leaving is the confrontation's business now and is
+ * answered per stage in puzzles/confrontation.ts.
  */
-export function returnBoundary(state: GameState, what: 'violence' | 'leave' | 'cross'): string {
+export function returnBoundary(state: GameState, what: 'violence' | 'cross'): string {
   if (state.chapter !== 'return') return '';
-  switch (what) {
-    case 'violence':
-      return (
-        'Not yet.\n\n' +
-        'You are standing in a room with a mallet in your hand and a reason, and what happens ' +
-        'next is the last chapter of this story, and it is not written yet. It is not going to ' +
-        'be written carelessly either.'
-      );
-    case 'leave':
-      return (
-        'You do not go anywhere.\n\n' +
-        'You came back a hundred years for the next minute and a half, and it is happening now, ' +
-        'and it is happening in this room.'
-      );
-    case 'cross':
-    default:
-      return (
-        'There is nothing to step into. The seam is a shadow on a wall and the passage behind ' +
-        'it has not been opened yet, and the only reason you know it is there is that you are ' +
-        'the one who opened it.'
-      );
+  if (what === 'violence') {
+    return (
+      'You stand there with a mallet in your hand looking for something to hit, and the only ' +
+      'things in this room are three patterned walls, a pillar holding the roof up, and a ' +
+      'person.\n\n' +
+      'Pick one of those on purpose or put it down.'
+    );
   }
+  return (
+    'There is nothing to step into. The seam is a shadow on a wall and the passage behind it ' +
+    'has not been opened yet, and the only reason you know it is there is that you are the one ' +
+    'who opened it.'
+  );
 }

@@ -1000,8 +1000,18 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['pillar', 'column', 'support', 'worked pillar', 'post'],
     locationId: 'present.sealed_chamber',
     initiallyVisible: true,
-    listAs: c('a worked pillar holding the roof'),
-    verbs: () => ['examine'],
+    listAs: (state) =>
+      state.chapter === 'return' && Number(state.flags[FLAGS.pillarStruck] ?? 0) > 0
+        ? c('the pillar, and what is left of its base')
+        : c('a worked pillar holding the roof'),
+    /*
+     * Swinging at it is offered only in the last chapter, so no button
+     * anywhere in the opening carries the finale in its label.
+     */
+    verbs: (state) =>
+      state.chapter === 'return' && f(state, FLAGS.earlierSelfDead)
+        ? ['examine', 'break']
+        : ['examine'],
     description: () =>
       'A square-dressed pillar of the same stone as the walls, standing where the middle of ' +
       'the room would be if anybody wanted a pillar in the middle of a room. It was not built ' +
@@ -2045,7 +2055,14 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'returnsealed.lamp',
     name: "their lantern",
-    nouns: ['their lantern', 'their lamp', 'the other lantern', 'alcove lamp'],
+    /*
+     * Not bare "lantern". There are two identical lanterns in this room and
+     * one of them is the hero's, and an item's id is also a word a player
+     * types — so bare "lantern" is theirs by the ordinary rule, and this one
+     * is addressed as what it is. The room says which is which in as many
+     * words, and taking the one already in hand points at the other.
+     */
+    nouns: ['their lantern', 'their lamp', 'the other lantern', 'alcove lamp', 'lamp in the alcove'],
     locationId: 'present.sealed_chamber',
     initiallyVisible: true,
     hiddenWhen: (state) => state.chapter !== 'return',

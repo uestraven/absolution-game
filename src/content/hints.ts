@@ -16,6 +16,8 @@ export type HintContext =
   | 'investigate'
   | 'seal'
   | 'home'
+  | 'confront'
+  | 'finish'
   | 'done';
 
 /**
@@ -27,7 +29,10 @@ export type HintContext =
  * is no timer.
  */
 export function hintContext(state: GameState): HintContext {
-  if (state.chapter === 'return') return 'done';
+  if (state.chapter === 'ending') return 'done';
+  if (state.chapter === 'return') {
+    return f(state, FLAGS.earlierSelfDead) ? 'finish' : 'confront';
+  }
   if (state.era === 'future') {
     if (state.locationId === 'future.sealed_chamber') return 'home';
     if (f(state, FLAGS.sealOpened)) return 'home';
@@ -346,6 +351,66 @@ const HOME_LADDER: Array<(state: GameState) => string> = [
   },
 ];
 
+/** The confrontation. Nothing here is on a clock, and the ladder says so. */
+const CONFRONT_LADDER: Array<(state: GameState) => string> = [
+  () =>
+    'Nothing in this room is on a timer. You can look at anything, read the journal, ask for ' +
+    'this again, and nothing moves while you do.\n\n' +
+    'They are frightened of you and they are between you and the wall. Talk to them.',
+  (state) =>
+    f(state, FLAGS.identityAccepted)
+      ? 'They know who you are now. That settled who, and it settled nothing about what either ' +
+        'of you should do next — which is the argument you are actually having.\n\n' +
+        'There are two things left you have not told them: what the valley looks like in a ' +
+        'hundred years, and where the words on the plank came from.'
+      : 'They will not take your word for who you are, and they are right not to. You are ' +
+        'carrying the one thing that settles it.\n\n' +
+        'SHOW LANTERN.',
+  (state) => {
+    const steps: string[] = [];
+    if (!f(state, FLAGS.showedLantern)) steps.push('SHOW LANTERN — it settles who you are.');
+    if (!f(state, FLAGS.showedJournal)) steps.push('SHOW JOURNAL — they will find the flaw in it.');
+    if (!f(state, FLAGS.describedFuture)) {
+      steps.push('TELL THEM ABOUT THE FUTURE — thirty people where there were two hundred.');
+    }
+    if (!f(state, FLAGS.toldOrigin)) {
+      steps.push('TELL THEM ABOUT THE PROPHECY — that the words are yours.');
+    }
+    steps.push(
+      'When they stop arguing and go for the wall, your hands are worth trying: BLOCK WALL, ' +
+        'HOLD THEM, TAKE THEIR LANTERN. Each of those does something and none of them is ' +
+        'enough.'
+    );
+    steps.push(
+      'And then there is the thing you carried up the hill. The game will not let you do it ' +
+        'until the moment supports it, and it will not do it by accident.'
+    );
+    return 'What there is:\n\n' + steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  },
+];
+
+/** After. */
+const FINISH_LADDER: Array<(state: GameState) => string> = [
+  () =>
+    'Their death stops their journey. It does not take the plank down from beside the well, ' +
+    'and it does not stop the next sixteen-year-old being allowed in here.',
+  () =>
+    'EXAMINE PILLAR. Lovage told you what it was a hundred years ago and you have seen what ' +
+    'became of it a hundred years the other way.',
+  (state) => {
+    const steps: string[] = [];
+    if (!state.inventory.includes('mallet')) {
+      steps.push('Pick the mallet back up — INVENTORY will say where it is.');
+    }
+    steps.push('BREAK PILLAR. Three times.');
+    steps.push(
+      'The second one closes the way out, and the game tells you so before the third. The ' +
+        'third asks you to confirm.'
+    );
+    return 'The full solution:\n\n' + steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  },
+];
+
 const LADDERS: Record<HintContext, Array<(state: GameState) => string>> = {
   prep: PREP_LADDER,
   puzzle: PUZZLE_LADDER,
@@ -358,11 +423,9 @@ const LADDERS: Record<HintContext, Array<(state: GameState) => string>> = {
   investigate: INVESTIGATE_LADDER,
   seal: SEAL_LADDER,
   home: HOME_LADDER,
-  done: [
-    () =>
-      'This is as far as the story is built. There is nothing here left to solve, and this is ' +
-      'not the ending — the chapters that follow it are simply not written yet.',
-  ],
+  confront: CONFRONT_LADDER,
+  finish: FINISH_LADDER,
+  done: [() => 'That is the end of the story. There is nothing left to solve.'],
 };
 
 export interface HintResult {

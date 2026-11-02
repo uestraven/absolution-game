@@ -116,7 +116,10 @@ supersede earlier drafting. The reasoning and the detail live in
 | **A word-for-word recitation** | Built. One canonical text in `content/prophecy.ts`, used by both the plank and the recitation, because the plank's words come from the recitation. No wording variants, no selectable clauses, no flag recording what was said. The hero mentions it assuming common ground, is shocked that nobody knows it, is asked, and answers by a deliberate action the player takes |
 | **Nobody in the past knows the prophecy** | Built. Saffra turns the word over as one she has not been given before; Fenn asks whether it is a dog |
 | **The mechanism is never explained** | Built, and asserted by test. Three authored observations and no account of any of them: Lovage says outright he has no idea and would not believe a man who said he did. No inscription, narrator, builder or journal entry diagnoses anything |
-| **Singularity is never shown or stated** | Nothing in the built chapters touches it. It constrains the last chapter, and the opening contains no future-self meeting for it to contradict |
+| **Singularity is never shown or stated** | Built. The hero kills their earlier self and notices, in one flat line with a hand on the pillar, that they have not gone anywhere. No explanation, no philosophy, no merge, and the word is never used |
+| **The required ending** | Built. The returning hero kills their earlier self, then brings the pillar down on themselves and the chamber and the fold. Both deaths and the destruction latch once. There is no cooperative survival, no spare-and-save, no resurrection, no surviving duplicate, no escape and no replacement portal — and the game has no branch: what the player chooses is whether they tried everything first |
+| **Both believe they are right** | Built. The earlier self is frightened, fast and certain, and their best argument — *you went forward; I am not going forward* — is the best argument in the scene. They are never made foolish or evil, and the hero's conviction is experience rather than proof: asked *how*, they say they do not know, and are heard |
+| **The destruction is the worked pillar** | Built. Lovage's warning in Chapter 2, the settlement crack in Chapter 1, and three blows in Chapter 4. Not the natural gallery pillar the rope is tied to, and no future century of damage is invoked |
 | **No future-self encounter in the original journey** | Built, and asserted by test. Chapter 1 as played has nobody else in that room; the second temporal version appears for the first time on the return, which is a chapter the opening cannot know about. The settlement's oldest story is a child who went in and did not come out — an event that did happen — and there is no record anywhere of a one-eyed figure in year 0 |
 | **The hero becomes what the words describe** | Built. A stone off the hillside takes the left eye while the seal is being broken, in daylight, in front of witnesses, and a man with a bucket puts the word to it out of what he believes. The narration never certifies it, and Rue says in as many words that the words never promised a stranger to blame |
 | **A worldwide catastrophe, shown not asserted** | Built. A sky with no weather in it, a capped well drawn one bucket at a time, a settlement that only mends, and Rue's eleven written places of which nine simply stop. Nobody claims to know the state of everywhere: she has not known about the one other survivor for thirty-one years |
@@ -323,12 +326,14 @@ owner-approved fact about how this world works:
 | Rue and Sorrel, the record chest, the Account, the memorial, the sealed mouth and its loose third course | All of it. Names, roles, the shape of the evidence and the practical puzzle |
 | The eye lost at the seal, from a stone that arrives before its rockfall | The timing, the staging and the witness. The *canon* is only that a missing eye fulfils the description |
 | The middle position reaching the original era, at the moment the younger self's lamp finds the seam | The destination rule, and which instant it lands on |
+| The confrontation's beats, the attempts and their answers, the single blow, the three on the pillar, and the village-POV epilogue | All of it. The *ending* is canon — both deaths, the permanent destruction — and every beat that gets there is this implementation's proposal |
 
-What the built chapters deliberately still do **not** contain: the
-confrontation, the killing, the sacrifice, the destruction of the cave and the
-epilogue. Reaching the sealed chamber on the return is the end of the built
-content and is not an ending — the hero can look, read and say one thing, and
-everything after that is refused with a reason.
+**The story is now complete.** Every one of the five owner decisions is
+implemented and reachable in play, in both input modes, for either protagonist.
+
+What remains is not story: pacing, blind playtesting and release polish. The
+documents below continue to mark which practical details are proposals rather
+than owner-approved facts, and implementing one has never promoted it.
 
 ## Milestone 1 housekeeping
 

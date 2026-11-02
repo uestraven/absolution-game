@@ -87,6 +87,11 @@ a different complete command instead replaces the question. `CANCEL`
 | --- | --- |
 | `JOURNAL` | `LOG`, `NOTES`. Observations you have established — never an unexplored solution. |
 | `HINT` | Nudge, then more, then the full answer. Three steps, identical in both input modes. Ask again to go deeper; the ladder restarts when you move on to the next problem. Hints are free and repeatable, and asking for one never uses anything up. |
+| `SHOW <thing>` | Show somebody something, or tell them something. `SHOW LANTERN`, `SHOW JOURNAL`, `TELL THEM ABOUT THE PROPHECY`, `TELL THEM ABOUT THE FUTURE` |
+| `BLOCK <thing>` | Stand between somebody and what they are going for. Also `STAND IN FRONT OF <thing>` |
+| `RESTRAIN <person>` | `HOLD`. Get hold of somebody |
+| `KILL <person>` | Spelled out, with its own verb, so nothing else can mean it by accident. Only available where the scene supports it |
+| `REVIEW` | Read the ending again, once there is one |
 | `REFLECT` | `THINK`, `CONSIDER`. Stop and put together what you have found. Offered as an action once there is something to put together, and it says what is still missing if there is not. |
 | `WAIT` | `Z`. Lets a moment pass. Nothing in this story is on a clock, so waiting never costs anything and never closes a way forward. |
 | `HELP` | `COMMANDS`. This list, in-game. |
