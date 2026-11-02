@@ -346,6 +346,13 @@ earlier self.** One line, the mallet because it is what is in the hand, and no
 dwelling. What the narration spends
 words on is the four seconds afterwards.
 
+As implemented, this is **not available until at least one nonlethal attempt
+has been made and has failed** — getting hold of them, taking the light out of
+the dish, or standing in front of the wall once they are going for it. Any one
+of the three is enough; the hero is not made to exhaust them. The reason Basil
+ends up swinging is that their hands were not enough, and that has to have been
+played rather than assumed.
+
 ```
 examine basil                            ← four seconds
 examine pillar                           ← the one worked pillar holding the

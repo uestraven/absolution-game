@@ -382,8 +382,8 @@ const CONFRONT_LADDER: Array<(state: GameState) => string> = [
         'enough.'
     );
     steps.push(
-      'And then there is the thing you carried up the hill. The game will not let you do it ' +
-        'until the moment supports it, and it will not do it by accident.'
+      'And then there is the thing you carried up the hill. Not before one of those has been ' +
+        'tried and has failed — any one of them is enough — and never by accident.'
     );
     return 'What there is:\n\n' + steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
   },

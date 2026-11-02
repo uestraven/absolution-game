@@ -192,6 +192,15 @@ export const FLAGS = {
   tookTheirLamp: 'took_their_lamp',
   /** The hero has had hold of them. */
   restrainedThem: 'restrained_them',
+  /**
+   * At least one nonlethal attempt to stop them has been made and has failed.
+   *
+   * Latches. Getting hold of them or taking the light out of the dish counts
+   * whenever it happens, because both of those fail on their own terms. Standing
+   * in front of the wall only counts once they are actually going for it —
+   * before that they have not tried to get past, so nothing has been tested.
+   */
+  triedToStopThem: 'tried_to_stop_them',
 
   /* ---- Chapter 4: the terminal facts ------------------------------- */
   /** The earlier self is dead. Latches, once, for ever. */
@@ -302,6 +311,7 @@ export const FLAG_TYPES: Record<string, 'boolean' | 'number' | 'string'> = {
   [FLAGS.blockingWall]: 'boolean',
   [FLAGS.tookTheirLamp]: 'boolean',
   [FLAGS.restrainedThem]: 'boolean',
+  [FLAGS.triedToStopThem]: 'boolean',
   [FLAGS.earlierSelfDead]: 'boolean',
   [FLAGS.pillarStruck]: 'number',
   [FLAGS.escapeClosed]: 'boolean',

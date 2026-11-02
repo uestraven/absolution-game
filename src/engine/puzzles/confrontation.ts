@@ -25,7 +25,7 @@ import {
  * | --- | --- | --- | --- |
  * | `arrival` | They are on their feet with the pillar between you, and neither of you has said anything | the hero addresses them at all — TALK, SHOW, or any attempt | `talking` |
  * | `talking` | The argument. SHOW and the topics each do something different | the hero tells them where the words came from **or** what the century looks like, *and* they have accepted the identity | `rush` |
- * | `rush` | They have decided, and they are going for the wall. Hands work here; so does the mallet | the hero kills them | `dead` |
+ * | `rush` | They have decided, and they are going for the wall. Hands work here; so does the mallet | the hero kills them — which the game refuses until one nonlethal attempt has been made and failed | `dead` |
  * | `dead` | Their lamp still burning in the alcove, the seam still on the wall, the prophecy still on a plank in a square | the first blow on the pillar | `pillar` |
  * | `pillar` | Three blows, the last one taken deliberately with its cost stated | the third blow | *chapter* `ending` |
  *
@@ -49,6 +49,12 @@ import {
  * destroys the cave. What the player chooses is whether they tried everything
  * first, and the game's job is to make every one of those attempts land
  * somewhere real rather than bounce off the same refusal.
+ *
+ * One of them is required, though. Not a checklist — any single one will do —
+ * but the killing is not available to somebody who has talked them round and
+ * then reached straight for the mallet, because the reason Basil ends up doing
+ * it is that their hands were not enough, and that has to have been played
+ * rather than assumed. See `killRefusal`.
  */
 
 export const FINALE_STAGES = ['arrival', 'talking', 'rush', 'dead', 'pillar'] as const;
@@ -247,6 +253,9 @@ export function blockWall(draft: Draft, events: NarrativeEvent[]): ResolveResult
     return commit(draft, events, true);
   }
   draft.flags[FLAGS.blockingWall] = true;
+  // They are going for the wall, so standing in front of it is a real attempt
+  // and it is about to fail.
+  draft.flags[FLAGS.triedToStopThem] = true;
   events.push({ kind: 'narration', text: T.BLOCK_RUSH });
   closeIn(draft, events);
   return commit(draft, events, true);
@@ -267,6 +276,7 @@ export function takeTheirLamp(draft: Draft, events: NarrativeEvent[]): ResolveRe
     return commit(draft, events, true);
   }
   draft.flags[FLAGS.tookTheirLamp] = true;
+  draft.flags[FLAGS.triedToStopThem] = true;
   events.push({ kind: 'narration', text: T.LAMP_TAKEN });
   journalEvents(
     addJournal(draft, [
@@ -294,6 +304,7 @@ export function restrainThem(draft: Draft, events: NarrativeEvent[]): ResolveRes
   openTheArgument(draft);
   const first = !f(draft, FLAGS.restrainedThem);
   draft.flags[FLAGS.restrainedThem] = true;
+  draft.flags[FLAGS.triedToStopThem] = true;
   events.push({ kind: 'narration', text: first ? T.RESTRAIN_FIRST : T.RESTRAIN_AGAIN });
   closeIn(draft, events);
   return commit(draft, events, true);
@@ -351,6 +362,16 @@ export function killRefusal(state: GameState): string | null {
     case 'talking':
       return T.KILL_STILL_TALKING;
     default:
+      /*
+       * One failed attempt, not a checklist.
+       *
+       * Talking them out of it and then going straight to the mallet skips the
+       * only thing that makes the killing legible: that the hero tried to stop
+       * them with their hands and could not. Any one of the three is enough —
+       * each fails on its own terms, and the hero is not required to exhaust
+       * them.
+       */
+      if (!f(state, FLAGS.triedToStopThem)) return T.KILL_UNTRIED;
       return state.inventory.includes('mallet') ? null : T.KILL_NO_TOOL;
   }
 }

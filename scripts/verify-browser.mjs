@@ -1531,8 +1531,30 @@ async function newPage(viewport) {
     ? ok('reload mid-argument: what has been said survives, and nothing has advanced')
     : bad('reload mid-argument', JSON.stringify(midArgument.flags).slice(0, 140));
 
+  /*
+   * The lethal choice is not available on arrival at the decision: the mallet
+   * is refused until one nonlethal attempt has been made and has failed.
+   */
+  await run(['tell them about the prophecy']);
+  await run(['kill them']);
+  const tooSoon = await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('cave-of-absolution:save'));
+    const log = document.querySelector('.transcript').textContent;
+    return {
+      dead: save.flags['earlier_self_dead'],
+      stage: save.flags['finale_stage'],
+      refused: /not laid a hand on them/.test(log),
+      offered: [...document.querySelectorAll('.panel-meta button, .panel button')].some((b) =>
+        /kill them/i.test(b.textContent)
+      ),
+    };
+  });
+  tooSoon.dead === undefined && tooSoon.stage === 'rush' && tooSoon.refused && !tooSoon.offered
+    ? ok('the killing is refused until a nonlethal attempt has failed')
+    : bad('the killing was available with nothing tried', JSON.stringify(tooSoon));
+
   // After the killing.
-  await run(['tell them about the prophecy', 'block wall', 'hold them', 'kill them']);
+  await run(['block wall', 'hold them', 'kill them']);
   await reloadAndContinue();
   const afterKill = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('cave-of-absolution:save')));

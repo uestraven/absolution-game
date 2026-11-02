@@ -45,11 +45,11 @@ Two hooded lanterns. Tin, dented along the same shoulder, the same horn pane, th
 
 They look at theirs, in the dish, burning. They look at yours, in your hand, burning.
 
-"That's mine," they say. It is not a question and it is not a denial. It is somebody doing arithmetic they would rather not have the answer to.
+"That's mine," they say.
 
 "Right." They say it twice. "Right."
 
-Then they wipe their face with the back of their wrist and you watch them come out the other side of it, and the thing that comes out is not what you wanted.
+Then they wipe their face with the back of their wrist.
 
 "Then it works," says ${m('your own voice')}, sixteen years old and steadier than it has any business being. "Then the cave *works*."`;
 
@@ -57,7 +57,7 @@ export const NO_LANTERN_TO_SHOW = `You go to hold your lantern up and you are no
 
 You put it down somewhere in this room, which was a reasonable thing to do with both hands full and is not a reasonable thing to have done now.`;
 
-export const LANTERN_AGAIN = `You hold it up again. They have already done that arithmetic.
+export const LANTERN_AGAIN = `You hold it up again. They do not look at it.
 
 "I know," they say. "I said I know."`;
 
@@ -71,7 +71,7 @@ They give it back.
 
 "I am not going forward. I am going down there, and I am coming back out, and I am coming back out *here*." A beat. "You did not do that. So I am not doing what you did."
 
-It is the best argument either of you makes all evening and it is wrong, and you cannot yet say why.`;
+It is the best argument either of you makes, and it is wrong, and you cannot say why.`;
 
 export const JOURNAL_AGAIN = `They have read it. They have read the date twice.
 
@@ -83,7 +83,7 @@ Not all of it. You tell them about the well, capped with a slab and sealed round
 
 You tell them that there were thirty people in the square.
 
-They have stopped moving. They are listening the way you listen when somebody is describing an accident you have been in.
+They have stopped moving.
 
 "Thirty," they say.
 
@@ -93,7 +93,7 @@ They have stopped moving. They are listening the way you listen when somebody is
 
 "Two hundred and eleven."
 
-Something goes out of their face and then comes straight back into it, and when they speak again they have gone somewhere harder.
+Something goes out of their face and comes straight back into it.
 
 "${m('How')}," they say. "How does that happen. What *does* that."
 
@@ -115,13 +115,13 @@ That there is no prophecy. That there never was one. That a hundred years ago a 
 
 They go absolutely still.
 
-You watch them get there. It takes them about four seconds, which is about three and a half seconds faster than it took you, and you know exactly which line they have gone to because you went to the same one.
+It takes them about four seconds.
 
 "Then the last one's mine as well," they say.
 
 *One who braves the Cave of Absolution will have the power to turn it aside.*
 
-"That's not a prophecy. That's a—" They are groping for the word and they find it and it is worse than the word you would have found. "That's *instructions*. Somebody went in and came back out with the power. You just told me it was me. Why are you standing in front of the wall?"`;
+"That's not a prophecy. That's a—" They are groping for the word, and they find it. "That's *instructions*. Somebody went in and came back out with the power. You just told me it was me. Why are you standing in front of the wall?"`;
 
 export const ORIGIN_AGAIN = `"You said," they say. "The words are yours. I have got that."
 
@@ -129,7 +129,7 @@ They have not moved off it.`;
 
 export const THEY_DECIDE = `They stop arguing.
 
-That is the thing that frightens you, after all of it: not shouting, not crying. They look past you at the fan of light on the patterned wall, and at the line in it that is reading as a shadow instead of a cut, and you watch the whole thing stop being a conversation.
+Not shouting. Not crying. They look past you at the fan of light on the patterned wall, and at the line in it that is reading as a shadow instead of a cut.
 
 "Eleven days," they say. "There is a cord of lanterns up over that square and nobody has lit them and Marjoram is making bread for tomorrow."
 
@@ -203,7 +203,7 @@ export const RESTRAIN_AGAIN = `You get hold of them again. It goes the same way 
 
 export const LEAVE_EARLY = `You get two steps into the squeeze and stop.
 
-West is the gallery, and the rope, and the slot of sky, and a man on a bench with a coil of hemp who will stand up when he sees you. And behind you, in that room, there is a sixteen-year-old with a lit lamp and four lines of their own handwriting on a plank at the bottom of the hill, and the moment you are out of the doorway they are going through that wall.
+West is the gallery, and the rope, and the slot of sky, and a man on a bench with a coil of hemp who will stand up when he sees you. And behind you, in that room, there is a sixteen-year-old with a lit lamp and four lines of their own words on a plank at the bottom of the hill, and the moment you are out of the doorway they are going through that wall.
 
 You came a hundred years for the next three minutes.
 
@@ -217,7 +217,7 @@ export const LEAVE_AFTER = `You get as far as the squeeze.
 
 Then you stand in it for a while with one hand on each side of the rock, and you think about Tyme on the bench with his rope, and what he will do with his face when he sees you, and what he will do with the rest of his life once somebody has gone down and looked in this room.
 
-And you think about the plank by the well, with your own handwriting a hundred years rubbed into it, promising two hundred and eleven people that whoever braves this cave gets the power to turn it aside. It says it every midwinter. It will go on saying it to every sixteen-year-old in that square for as long as the words last.
+And you think about the plank by the well — your four lines, in Saffra's careful hand, a hundred years rubbed into the board — promising two hundred and eleven people that whoever braves this cave gets the power to turn it aside. It says it every midwinter. It will go on saying it to every sixteen-year-old in that square for as long as the words last.
 
 Walking down this hill does not take that plank down.
 
@@ -252,6 +252,12 @@ Put the mallet down. Or do not put it down, but say something first. You did not
 export const KILL_STILL_TALKING = `They are standing behind a pillar on the far side of a room four paces across, talking to you.
 
 You cannot. Not while they are *talking* to you. You have tried to work out, on three days of walking, what it would take, and it turns out that what it would take is for them to stop.`;
+
+export const KILL_UNTRIED = `You get the mallet up behind them and your arm does not finish it.
+
+Not yet. Not when you have not laid a hand on them. You are standing in a four-pace room with both arms working and their lamp in a dish an arm's length away, and you have not so much as tried.
+
+Try to stop them. Get hold of them, or get the light off that wall, or put yourself in front of it. Then see what you have got left.`;
 
 export const KILL_NO_TOOL = `Your hands are empty.
 
@@ -304,13 +310,11 @@ A wedge of dressed stone the size of your forearm comes away from the base and g
 
 Not falls. *Down a hand*, all of it, at once, with a noise like a door closing in a much bigger building than this one — and the squeeze west that you came in by is now a hand's width of air with a hill sitting on it, and you can see daylight in it, and you could get two fingers through.
 
-You stand still for a moment and do the arithmetic you have been refusing to do since the top of the hill.
+You stand still for a moment.
 
-The pillar will go on the next one. You know that the way you know your own stairs. And the next one has to be struck from here, from under the span, because the crack is on this face and there is nowhere else to stand.
+The pillar will go on the next one. The crack is on this face, so the next one has to be struck from in here, from under the span. And the squeeze is shut.
 
-And there is no way out of this room.
-
-So that is the whole of it. One more swing, from where you are standing, and the hill comes down on this chamber and the fold under it and everything in it.
+One more swing, from where you are standing, and the hill comes down on this chamber and the fold under it and everything in it.
 
 ${m('Including you')}.`,
 ] as const;
@@ -327,9 +331,12 @@ export const COMMIT_DECLINED = `You lower the mallet.
 
 Nothing in this room is going anywhere. It will be exactly this when you pick it up again.`;
 
-export const THE_SACRIFICE = `You take your time over the last one, which surprises you.
+export const THE_SACRIFICE_OPEN = `You take your time over the last one, which surprises you.`;
 
-You put your own lantern down on the floor first, by the pillar, out of some idea about not dropping it, which makes no sense at all and you do it anyway. You look at the patterned wall, and at the line in it reading as a shadow. You look at the lamp in the alcove and do not look at what is lying under it.
+/** Only when it is still in hand. A player who put it down already has. */
+export const THE_SACRIFICE_LAMP = `You set your own lantern on the floor by the pillar, where it will be no use to anybody.`;
+
+export const THE_SACRIFICE = `You look at the patterned wall, and at the line in it reading as a shadow. You look at the lamp in the alcove and do not look at what is lying under it.
 
 Then you set your feet where Lovage put his, a hundred years ago, in a room that was three-quarters finished, and you swing.
 
@@ -341,7 +348,7 @@ export const THE_END_OF_THE_CAVE = `Under the hill, in the dark, the roof of the
 
 What happens to the fold is not a thing anybody will ever write down. Nobody is going to stand in that room again, because that room is not a room; it is a seam of crushed limestone under four hundred thousand tons of hill, and the water that used to stand in a cut basin at the bottom of it has gone off somewhere into the rock to be ordinary.
 
-It does not close like a door. It stops being a place, which is a different thing and a much more final one.
+It does not close like a door. It stops being a place.
 
 The hill goes on moving for a while after that, downward and outward, taking the gallery and the crawl and the echo chamber and the squeeze and the worked stair, and then the mouth, and then the overhang above the mouth, and then it stops.
 
@@ -382,9 +389,9 @@ The rite ends, because there is nothing left to walk into.
 
 There is no vote about it and no announcement. The strung lanterns come down off the cord in the autumn because the cord is in the way of a roof repair. The bowl of salt sits on the well-cap until the following spring and then somebody uses the salt.
 
-Sage puts the Wanderer-words in the chest with the midwinter minutes. She writes a line underneath them in her own hand, and the line says that they came true, and that is the only entirely accurate sentence anybody says about any of it.
+Sage puts the Wanderer-words in the chest with the midwinter minutes. Underneath them, in her own hand, she writes: ${m('They came true')}.
 
-She does not write down which part came true, because she cannot work it out, and neither can anybody else: the hill opened and what stood did not stand and somebody who braved the cave did turn it aside, and there is no arrangement of those facts that anybody in that square will ever get to see the shape of.
+Then she sits with the pen a while longer and does not write anything else.
 
 ---
 
@@ -402,6 +409,6 @@ Nobody in that square has ever heard of the Cave of Absolution. There is a hill 
 
 export const ENDING_MARKER = `— The end —
 
-That is the whole of it. Three chapters, two of them, and one hill.
+That is the whole of it. Four chapters, two of them, and one hill.
 
 You can read the ending again, export your save, or start a new game — and if you want to go back to the moment you came through that wall and try the confrontation differently, Settings will take you to the checkpoint at the start of the chapter.`;

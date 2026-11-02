@@ -27,9 +27,10 @@ import {
  *    `escapeClosed` — and the exit stops being listed because it is full of
  *    hill, not because the finale needs it not to be there.
  *
- * So after the second blow the game has told the player, in the hero's own
- * arithmetic, that one more swing brings the hill down on this chamber with
- * them under it and that there is no way out. The third blow is then taken
+ * So after the second blow the game has told the player plainly — in the hero's
+ * own words, as three physical facts rather than a summary of them — that one
+ * more swing brings the hill down on this chamber with them under it, and that
+ * the squeeze is shut. The third blow is then taken
  * through an explicit confirmation, which exists in both input modes because it
  * is the engine's ordinary clarification prompt.
  *
@@ -162,11 +163,23 @@ function bringItDown(draft: Draft, events: NarrativeEvent[]): ResolveResult {
   draft.flags[FLAGS.lanternLit] = false;
   draft.pending = null;
 
-  // The lamp goes down by the pillar before the swing, and stays there.
-  removeFromInventory(draft, 'lantern');
-  draft.placements['lantern'] = { kind: 'room', locationId: 'present.sealed_chamber' };
+  /*
+   * The lamp goes down by the pillar before the swing — but only if it is still
+   * in hand. A player who put it down somewhere in this room earlier does not
+   * get told they are doing it again.
+   */
+  const carried = draft.inventory.includes('lantern');
+  if (carried) {
+    removeFromInventory(draft, 'lantern');
+    draft.placements['lantern'] = { kind: 'room', locationId: 'present.sealed_chamber' };
+  }
 
-  events.push({ kind: 'narration', text: T.THE_SACRIFICE });
+  events.push({
+    kind: 'narration',
+    text: [T.THE_SACRIFICE_OPEN, ...(carried ? [T.THE_SACRIFICE_LAMP] : []), T.THE_SACRIFICE].join(
+      '\n\n'
+    ),
+  });
   events.push({ kind: 'narration', text: T.THE_END_OF_THE_CAVE });
 
   journalEvents(

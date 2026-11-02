@@ -606,6 +606,7 @@ describe('the documented shortest route', () => {
     'talk to them',
     'show lantern',
     'tell them about the prophecy',
+    'hold them',
     'kill them',
     'break pillar',
     'break pillar',
@@ -634,7 +635,7 @@ describe('the documented shortest route', () => {
       ).toBe(true);
       state = result.state;
     }
-    expect(SHORTEST).toHaveLength(72);
+    expect(SHORTEST).toHaveLength(73);
     expect(hasFinished(state)).toBe(true);
     expect(state.objective).toBe(OBJECTIVES.over);
   });

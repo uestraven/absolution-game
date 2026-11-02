@@ -156,16 +156,24 @@ enter aperture            · 64   ← crossing 3
 talk to them              · 65
 show lantern              · 66   ← settles who, and nothing else
 tell them about the prophecy · 67   ← and now they are moving
-kill them                 · 68
-break pillar              · 69
-break pillar              · 70   ← the roof drops; the squeeze shuts
-break pillar              · 71   ← asks
-swing                     · 72   ← the end
+hold them                 · 68   ← required: one failed attempt, any one
+kill them                 · 69
+break pillar              · 70
+break pillar              · 71   ← the roof drops; the squeeze shuts
+break pillar              · 72   ← asks
+swing                     · 73   ← the end
 ```
 
-That is the shortest route, not the intended one: it skips the journal, the
-ruined valley, and every attempt to stop them with hands rather than a mallet.
-A player who tries all of those reaches the same ending having earned it.
+That is the shortest route, not the intended one: it skips the journal and the
+ruined valley, and it tries exactly one of the three ways of stopping them
+instead of all of them. A player who tries all of them reaches the same ending
+having earned it.
+
+The killing is not available before that one attempt. `hold them` above could
+equally be `take their lantern` or `stand in front of the wall` — any single
+one is enough, in either input mode — but reaching for the mallet with nothing
+tried is refused, because the reason Basil ends up doing it is that their hands
+were not enough.
 
 Run verbatim as a test in `src/engine/equivalence.test.ts`, so this list cannot
 drift away from the game.

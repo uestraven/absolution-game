@@ -27,6 +27,7 @@ import { FLAGS } from '../content/flags';
 import { PROPHECY_LINES } from '../content/prophecy';
 import { OBJECTIVES } from '../content/text';
 import { stripMarkup } from '../content/markup';
+import * as FINALE_TEXT from '../content/confrontationText';
 import { hintContext, nextHint } from '../content/hints';
 import {
   importFromText,
@@ -73,9 +74,16 @@ function moving(): GameState {
   return state;
 }
 
+/** Moving, and one nonlethal attempt has been made and has failed. */
+function handsTried(): GameState {
+  const state = typeAll(moving(), ['hold them']);
+  expect(state.flags[FLAGS.triedToStopThem]).toBe(true);
+  return state;
+}
+
 /** Them dead, the hero alive, the pillar untouched. */
 function afterTheKilling(): GameState {
-  return typeAll(moving(), ['kill them']);
+  return typeAll(handsTried(), ['kill them']);
 }
 
 /* ================================================================ *
@@ -389,6 +397,58 @@ describe('the killing requires the moment, and happens once', () => {
     expect(lastText(talking)).toContain('while they are *talking* to you');
   });
 
+  it('attributes the plank to the hand that actually wrote it', () => {
+    /*
+     * Saffra asked for the words a second time, slower, and took them down in
+     * char on an offcut of board. The words are Basil's; the handwriting is
+     * hers. Nothing in the finale may claim Basil wrote the plank — the whole
+     * point of the origin is that they only ever said it out loud.
+     */
+    const finale = Object.values(FINALE_TEXT)
+      .flatMap((value) =>
+        typeof value === 'string' ? [value] : Array.isArray(value) ? value : []
+      )
+      .filter((value): value is string => typeof value === 'string')
+      .map(stripMarkup);
+    for (const passage of finale) {
+      if (!/plank|board/i.test(passage)) continue;
+      expect(passage, passage.slice(0, 60)).not.toMatch(/your own handwriting/i);
+      expect(passage, passage.slice(0, 60)).not.toMatch(/their own handwriting/i);
+    }
+    expect(stripMarkup(FINALE_TEXT.LEAVE_AFTER)).toContain("Saffra's careful hand");
+  });
+
+  it('refuses until one nonlethal attempt has been made and failed', () => {
+    const untried = type(moving(), 'kill them');
+    expect(untried.accepted).toBe(false);
+    expect(untried.state.flags[FLAGS.earlierSelfDead]).toBeUndefined();
+    // The refusal is Basil's, and it names what there is to try.
+    const text = stripMarkup(lastText(untried));
+    expect(text).toContain('not laid a hand on them');
+    expect(text).toMatch(/get hold of them/i);
+  });
+
+  it('is unlocked by any one of the three, and does not require all of them', () => {
+    for (const attempt of ['hold them', 'take their lantern', 'block wall']) {
+      const after = typeAll(moving(), [attempt]);
+      expect(after.flags[FLAGS.triedToStopThem], attempt).toBe(true);
+      const killed = type(after, 'kill them');
+      expect(killed.accepted, attempt).toBe(true);
+      expect(killed.state.flags[FLAGS.earlierSelfDead], attempt).toBe(true);
+    }
+  });
+
+  it('does not count standing in front of the wall before they move', () => {
+    /*
+     * Blocking the wall while they are still talking is not a failed attempt —
+     * they have not tried to get past, so nothing has been tested. The same
+     * verb counts once they are moving, which is the previous test.
+     */
+    const early = typeAll(arrived(), ['talk to them', 'block wall']);
+    expect(early.flags[FLAGS.blockingWall]).toBe(true);
+    expect(early.flags[FLAGS.triedToStopThem]).toBeUndefined();
+  });
+
   it('is not reachable through a generic use of the tool', () => {
     const state = moving();
     const used = type(state, 'use mallet on them');
@@ -402,7 +462,7 @@ describe('the killing requires the moment, and happens once', () => {
   });
 
   it('needs the tool, and says so', () => {
-    const empty = typeAll(moving(), ['drop mallet']);
+    const empty = typeAll(handsTried(), ['drop mallet']);
     const bare = type(empty, 'kill them');
     expect(bare.accepted).toBe(false);
     expect(lastText(bare)).toContain('not going to do this with your hands');
@@ -417,11 +477,14 @@ describe('the killing requires the moment, and happens once', () => {
     const talking = typeAll(arrived(), ['talk to them', 'show lantern']);
     expect(getAffordances(talking).meta.some((m) => m.key === 'kill')).toBe(false);
 
-    const ready = getAffordances(moving()).meta.find((m) => m.key === 'kill');
+    // Moving, but nothing tried: still not offered.
+    expect(getAffordances(moving()).meta.some((m) => m.key === 'kill')).toBe(false);
+
+    const ready = getAffordances(handsTried()).meta.find((m) => m.key === 'kill');
     expect(ready).toBeDefined();
     // The label says what it does. No button anywhere reads "use the mallet".
     expect(ready!.label).toBe('Kill them with the mallet');
-    const done = resolve(moving(), ready!.action);
+    const done = resolve(handsTried(), ready!.action);
     expect(done.state.flags[FLAGS.earlierSelfDead]).toBe(true);
   });
 
@@ -616,7 +679,40 @@ describe('the ending is an ending', () => {
     }
   });
 
-  it('keeps the prophecy exact and lets the reader do the arithmetic', () => {
+  it('only narrates putting the lantern down if it is still in hand', () => {
+    const ready = typeAll(afterTheKilling(), ['break pillar', 'break pillar']);
+
+    const carried = typeAll(ready, ['break pillar', 'swing']);
+    const carriedText = stripMarkup(carried.transcript.map((e) => e.text).join('\n'));
+    expect(carried.inventory).not.toContain('lantern');
+    expect(carriedText).toContain('set your own lantern on the floor');
+
+    // Already put down earlier: the hero does not do it twice.
+    const dropped = typeAll(ready, ['drop lantern']);
+    expect(dropped.inventory).not.toContain('lantern');
+    const after = typeAll(dropped, ['break pillar', 'swing']);
+    const afterSacrifice = stripMarkup(
+      after.transcript
+        .slice(dropped.transcript.length)
+        .map((e) => e.text)
+        .join('\n')
+    );
+    expect(afterSacrifice).not.toContain('set your own lantern on the floor');
+    // And it still ends, with the lamp lying where they left it.
+    expect(hasFinished(after)).toBe(true);
+    expect(after.placements['lantern']).toEqual({
+      kind: 'room',
+      locationId: 'present.sealed_chamber',
+    });
+  });
+
+  it('counts the chapters it actually has', () => {
+    const end = finishTheStory(arrived());
+    const marker = end.transcript.filter((e) => e.kind === 'system').at(-1)!.text;
+    expect(marker).toContain('Four chapters');
+  });
+
+  it('keeps the prophecy exact and does not explain how it fits', () => {
     const end = finishTheStory(arrived());
     const whole = stripMarkup(end.transcript.map((e) => e.text).join('\n'));
     for (const line of PROPHECY_LINES) {
@@ -625,7 +721,21 @@ describe('the ending is an ending', () => {
     const epilogue = stripMarkup(
       end.transcript.filter((e) => e.heading === 'Afterwards')[0]!.text
     );
-    expect(epilogue).toContain('they came true');
+    // Sage writes her one line and stops.
+    expect(epilogue).toContain('They came true');
+    /*
+     * And the epilogue does not rate that line or arrange the facts into a fit
+     * on the reader's behalf. Which part came true is the reader's problem,
+     * which is the only place it can honestly sit.
+     */
+    for (const pattern of [
+      /entirely accurate/i,
+      /which part/i,
+      /work it out/i,
+      /no arrangement/i,
+    ]) {
+      expect(epilogue, `the epilogue matches ${pattern}`).not.toMatch(pattern);
+    }
     // No tidy moral, no absolution, no explanation of every clue.
     for (const pattern of [/forgive/i, /at peace/i, /learned that/i, /the lesson/i, /redeem/i]) {
       expect(epilogue, `the epilogue matches ${pattern}`).not.toMatch(pattern);

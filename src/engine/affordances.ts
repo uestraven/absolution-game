@@ -297,7 +297,16 @@ export function getAffordances(state: GameState): Affordances {
       label: 'Get hold of them',
       action: { type: 'RESTRAIN', target: 'earlier_self' },
     });
-    if (stage === 'rush' && state.inventory.includes('mallet')) {
+    /*
+     * Offered only once a nonlethal attempt has been made and failed — the same
+     * gate `killRefusal` applies to the typed verb, so neither mode can reach
+     * the killing before the hands have been tried.
+     */
+    if (
+      stage === 'rush' &&
+      state.inventory.includes('mallet') &&
+      state.flags[FLAGS.triedToStopThem] === true
+    ) {
       meta.push({
         key: 'kill',
         label: 'Kill them with the mallet',
