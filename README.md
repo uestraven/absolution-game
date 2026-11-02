@@ -228,10 +228,9 @@ The full mapping with location ids is in
 Two formats ship — WebM/Opus where it is supported, MP3 everywhere else,
 because Safari supports neither Vorbis nor Opus in Ogg or WebM. Exactly one
 variant of one track is downloaded at a time; nothing is fetched before the
-player asks. Sizes, conversions and the loop measurements are in
-[`art/music/README.md`](art/music/README.md) — including the fact that **no
-attribution or licence was supplied with the tracks**, which needs settling
-before release.
+player asks. Sizes, conversions, the loop measurements and attribution are in
+[`art/music/README.md`](art/music/README.md). The eight tracks are the project
+owner's own work, written for this game.
 
 ## Documentation
 

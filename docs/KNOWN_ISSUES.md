@@ -8,8 +8,8 @@ Severity: **blocker** stops a release · **major** spoils a playthrough for some
 players · **minor** is visible but survivable · **limitation** is a deliberate
 boundary, not a bug.
 
-There is **one blocker**: the soundtrack has no attribution or licence
-([#10](#10-the-soundtrack-has-no-attribution-or-licence--blocker-for-release)).
+There are **no blockers**. The one there was — unknown provenance for the
+soundtrack — is resolved: see [#10](#10-the-soundtrack-is-the-owners-own-work--resolved).
 
 ---
 
@@ -165,19 +165,19 @@ it.
 
 ---
 
-## 10. The soundtrack has no attribution or licence — *blocker for release*
+## 10. The soundtrack is the owner's own work — *resolved*
 
-**What:** Eight audio masters were supplied with no author, source or licence.
-None is stated anywhere, because none was given and none may be invented.
+Was a release blocker: eight audio masters arrived with no author, source or
+licence, and none could be invented. **Resolved on 2026-11-02** — the owner
+states that they created all eight tracks themselves, solely, for this game.
 
-**Reproduce:** Not applicable; it is an absence.
+So there is no third-party licence to honour and nothing to clear. Recorded in
+[`art/music/README.md`](../art/music/README.md), which also notes the two things
+that remain a choice rather than an obligation: an in-game credit, and a licence
+if the tracks are ever published apart from the game.
 
-**Why it blocks:** if the tracks are not original work made for this project,
-shipping them is a licensing problem. The game is otherwise releasable; this is
-the one item that is not an engineering question.
-
-**Workaround:** none. Record the terms in `art/music/README.md` and add a
-player-visible credit before any deployment, or replace the tracks.
+Kept here rather than deleted because it was reported as a blocker and the
+resolution is worth being able to find.
 
 ---
 

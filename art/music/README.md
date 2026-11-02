@@ -1,19 +1,25 @@
 # The soundtrack masters
 
-Eight supplied WAV masters. **Not bundled** — Vite emits only what `src/`
-imports, so these cost nothing in the deployed site and exist so the delivery
-copies can be regenerated rather than recovered.
+Eight WAV masters. **Not bundled** — Vite emits only what `src/` imports, so
+these cost nothing in the deployed site and exist so the delivery copies can be
+regenerated rather than recovered.
 
-## Attribution and licence
+## Attribution
 
-**Not supplied, and not invented here.** No author, source or licence came with
-these files, so none is stated anywhere in the repository or the game.
+**Original work, written for this game by the project's owner** — stated by them
+on 2026-11-02. All eight tracks, solely.
 
-If the tracks are not original work made for this project, the attribution and
-licence terms need filling in — in this file and in a player-visible credit —
-**before release**. Shipping audio with unknown provenance is a licensing
-problem, not a documentation one. It is recorded as an open item in
-[`docs/KNOWN_ISSUES.md`](../../docs/KNOWN_ISSUES.md).
+So there is no third-party licence to honour and nothing to clear: the game
+ships the owner's own music. Nothing further is required before release, and
+this file does not invent terms that were not given.
+
+Two things that remain the owner's choice rather than an obligation:
+
+- **A credit in the game.** There is none at present. Worth one if the music is
+  to be attributed to a person by name anywhere a player can see.
+- **A licence, if the files are ever published separately** from the game — in
+  a repository, a soundtrack release, or anywhere a third party might reuse
+  them. Not needed for shipping them inside the game.
 
 ## What was supplied
 
@@ -118,8 +124,9 @@ change: Chromium wrapped cleanly, with a stall of ~17 ms (WebM/Opus) and ~33 ms
 
 **Verified after the change:** a real track played past its own length keeps
 sounding — peak 0.107 across twelve sampling windows past the 59.6 s mark, with
-no silent window. **Nobody has listened to a wrap**, and nobody has confirmed
-the iOS fix on a device. See
+no silent window — and **confirmed working on iOS Chrome** against the deployed
+site by the owner, which is where the original report came from. **Nobody has
+listened for a seam** at the wrap. See
 [`docs/KNOWN_ISSUES.md`](../../docs/KNOWN_ISSUES.md).
 
 ## Measuring again
