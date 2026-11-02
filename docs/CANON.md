@@ -215,6 +215,18 @@ consumable resources, so nothing here presumes a system for any of them.
 
 ---
 
+## Related: the full-game design draft
+
+[`docs/FULL_GAME_DESIGN.md`](FULL_GAME_DESIGN.md) proposes the complete
+adventure — ending, causal model, maps, puzzles and the twelve required
+decisions — with [`docs/M2_DECISIONS.md`](M2_DECISIONS.md) as the owner
+decision sheet.
+
+**Everything in those documents is PROPOSED, not canon.** They are a draft
+awaiting the owner's decisions and nothing in them has been approved or
+implemented. This file remains the record of what is actually settled; do not
+promote anything from the draft into it without the owner saying so.
+
 ## Milestone 1 housekeeping
 
 **Title.** The game is **Absolution**. The place inside it remains the **Cave of

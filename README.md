@@ -74,6 +74,9 @@ Colour stays on short spans, measuring about 2% of the transcript in practice.
 | [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) | **Spoilers.** Shortest and fullest routes, every puzzle state, verification checklist. |
 | [`docs/CANON.md`](docs/CANON.md) | **Spoilers.** What is approved canon, what is provisional, what is explicitly undecided. |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Cloudflare Pages settings, verified against current docs. |
+| [`docs/FULL_GAME_DESIGN.md`](docs/FULL_GAME_DESIGN.md) | **Spoilers. Proposed, not approved.** The complete adventure: ending, causal model, maps, puzzles. |
+| [`docs/FULL_GAME_WALKTHROUGH.md`](docs/FULL_GAME_WALKTHROUGH.md) | **Spoilers. Proposed.** Critical path for the whole game, plus a continuity audit. |
+| [`docs/M2_DECISIONS.md`](docs/M2_DECISIONS.md) | The five decisions the owner needs to settle before Milestone 3. |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module layout, state shape, the rules the engine enforces. |
 
 `docs/WALKTHROUGH.md` and `docs/CANON.md` describe later events in the story and
