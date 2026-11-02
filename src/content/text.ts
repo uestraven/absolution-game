@@ -13,13 +13,13 @@ import { prophecyBlock } from './prophecy';
 export const TITLE = 'Absolution';
 export const SUBTITLE = 'The opening chapters';
 
-export const SELECT_PROMPT = `You turned sixteen at some point in the night, which means that today you are allowed into the cave.
+export const SELECT_PROMPT = `Somebody in this village turns sixteen today.
 
 Who are you?`;
 
-export const OPENING = `You wake up sixteen.
+export const OPENING = `You turn sixteen today. You're finally allowed into the Cave of Absolution.
 
-Nothing about the room has changed to mark it. The same angle of light across the same floorboards, the same cold patch where the flue is. The difference is entirely administrative: yesterday you were not allowed into the Cave of Absolution, and today you are, and the village has had the better part of a year to look forward to telling you so.
+Nothing about the room has changed to mark it. The same angle of light across the same floorboards, the same cold patch where the flue is. The difference is entirely administrative, and the village has had the better part of a year to look forward to telling you so.
 
 Somebody has been up before you. There is bread on the stool. The shutter is already hooked back.
 

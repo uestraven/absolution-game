@@ -170,7 +170,7 @@ describe('accessibility affordances', () => {
     await user.type(screen.getByLabelText('What do you do?'), 'take lantern{Enter}');
     expect(live!.textContent).toMatch(/lift the lantern off the sill/);
     // Not the whole history.
-    expect(live!.textContent).not.toMatch(/You wake up sixteen/);
+    expect(live!.textContent).not.toMatch(/You turn sixteen today/);
   });
 
   it('labels the transcript as a log and keeps it focusable', async () => {
