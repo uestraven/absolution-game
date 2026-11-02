@@ -317,6 +317,33 @@ export function createSoundtrack(options: SoundtrackOptions): Soundtrack {
       el.addEventListener?.('error', () => fail('A music track could not be loaded.'));
       if (el.dataset) el.dataset.track = track;
       incoming = { el, track, level: 0 };
+      /*
+       * Loop it again, by hand.
+       *
+       * `loop = true` is set above and is what does the work where it works —
+       * but it is not reliable everywhere. Safari has a long history of
+       * ignoring it on `audio`, and a media element that reaches its end for
+       * any other reason (a stalled seek at the wrap, a decoder giving up on
+       * the last packet) also just stops. `ended` is the signal that it has
+       * happened, and the answer is the same in every case: go back to the
+       * start and carry on.
+       *
+       * Where `loop` works this never fires, so it costs nothing. The guard
+       * matters: a released voice, a muted controller or a hidden page must
+       * not be restarted by a late event.
+       */
+      const again = incoming;
+      el.addEventListener?.('ended', () => {
+        if (destroyed || !enabled || !visible) return;
+        if (!loops(again.track)) return;
+        if (!voices.includes(again)) return;
+        try {
+          again.el.currentTime = 0;
+        } catch {
+          /* an element that will not seek cannot be helped */
+        }
+        start(again);
+      });
       voices.push(incoming);
     }
 

@@ -413,6 +413,28 @@ try {
     ? ok('the loop wraps instead of ending', `back round to ${wrapped.at}s`)
     : bad('the track did not loop', JSON.stringify(wrapped));
 
+  /*
+   * And the belt as well as the braces: `loop = true` is not honoured
+   * everywhere, so the controller also listens for `ended` and starts the
+   * track again by hand. Here the flag works, so `ended` never fires on its
+   * own — which is exactly why the fallback has to be provoked to be tested.
+   */
+  const byHand = await mp.evaluate(async () => {
+    const el = [...document.querySelectorAll('audio')].find((a) => a.src);
+    el.currentTime = 12;
+    await new Promise((r) => setTimeout(r, 200));
+    const before = +el.currentTime.toFixed(2);
+    el.dispatchEvent(new Event('ended'));
+    await new Promise((r) => setTimeout(r, 700));
+    return { before, after: +el.currentTime.toFixed(2), paused: el.paused };
+  });
+  byHand.before > 10 && byHand.after < 3 && !byHand.paused
+    ? ok(
+        'a track that ends anyway is started again by hand',
+        `${byHand.before}s -> ${byHand.after}s, still playing`
+      )
+    : bad('the manual loop fallback', JSON.stringify(byHand));
+
   /* Crossfade: two sources briefly, one afterwards, one new file. */
   await mp.getByRole('button', { name: 'Settings' }).click();
   await mp.getByRole('dialog', { name: 'Settings' }).getByRole('radio', { name: 'Type-only' }).click();

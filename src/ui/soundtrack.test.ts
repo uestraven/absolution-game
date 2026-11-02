@@ -18,6 +18,7 @@ interface FakeAudio {
   loop: boolean;
   preload: string;
   volume: number;
+  currentTime: number;
   plays: number;
   pauses: number;
   cleared: number;
@@ -44,6 +45,7 @@ function fakeAudio(src: string): HTMLAudioElement {
     loop: false,
     preload: '',
     volume: 1,
+    currentTime: 0,
     plays: 0,
     pauses: 0,
     cleared: 0,
@@ -127,6 +129,121 @@ describe('nothing plays until the player asks', () => {
     music.enable();
     music.setTrack('epilogue');
     expect(live()[0]!.loop).toBe(true);
+  });
+});
+
+describe('looping does not depend on the browser honouring loop=true', () => {
+  /*
+   * `loop = true` is set, and where it works `ended` never fires. Where it
+   * does not — Safari has a long history of ignoring it on `audio`, and a
+   * stalled wrap stops playback anywhere — the element reaches its end and
+   * just stops. These cover the hand-rolled fallback.
+   */
+  const end = (el: FakeAudio) => {
+    for (const fn of el.listeners['ended'] ?? []) fn();
+  };
+
+  it('sets the flag as well, for the browsers that honour it', () => {
+    const music = deck();
+    music.enable();
+    music.setTrack('present_village');
+    expect(live()[0]!.loop).toBe(true);
+  });
+
+  it('starts the track again when it ends anyway', () => {
+    const music = deck();
+    music.enable();
+    music.setTrack('present_village');
+    finishFade();
+    const el = live()[0]!;
+    el.currentTime = 42;
+
+    end(el);
+
+    // Back to the beginning, playing, and no second element.
+    expect(el.currentTime).toBe(0);
+    expect(el.plays).toBe(2);
+    expect(made).toHaveLength(1);
+    expect(music.voices()).toBe(1);
+  });
+
+  it('goes round as many times as it has to', () => {
+    const music = deck();
+    music.enable();
+    music.setTrack('final_boss');
+    finishFade();
+    const el = live()[0]!;
+    for (let i = 0; i < 5; i++) end(el);
+    expect(el.plays).toBe(6);
+    expect(made).toHaveLength(1);
+  });
+
+  it('does not restart a voice that has been faded out and released', () => {
+    const music = deck();
+    music.enable();
+    music.setTrack('present_village');
+    finishFade();
+    const old = made[0]!;
+    music.setTrack('present_cave');
+    finishFade();
+    const playsWhenReleased = old.plays;
+
+    // A late `ended` from the element we have finished with.
+    end(old);
+    expect(old.plays).toBe(playsWhenReleased);
+    expect(music.voices()).toBe(1);
+    expect(music.current()).toBe('present_cave');
+  });
+
+  it('does not restart while the page is hidden', () => {
+    const music = deck();
+    music.enable();
+    music.setTrack('present_village');
+    finishFade();
+    const el = live()[0]!;
+    music.setPageVisible(false);
+    end(el);
+    expect(el.plays).toBe(1);
+  });
+
+  it('does not restart once music is turned off', () => {
+    const music = deck();
+    music.enable();
+    music.setTrack('present_village');
+    finishFade();
+    const el = made[0]!;
+    music.disable();
+    end(el);
+    expect(el.plays).toBe(1);
+  });
+
+  it('does not restart after teardown', () => {
+    const music = deck();
+    music.enable();
+    music.setTrack('present_village');
+    finishFade();
+    const el = made[0]!;
+    music.destroy();
+    end(el);
+    expect(el.plays).toBe(1);
+  });
+
+  it('survives an element that refuses to seek', () => {
+    const music = deck();
+    music.enable();
+    music.setTrack('present_village');
+    finishFade();
+    const el = live()[0]!;
+    Object.defineProperty(el, 'currentTime', {
+      configurable: true,
+      get: () => 10,
+      set: () => {
+        throw new Error('no seeking');
+      },
+    });
+    expect(() => end(el)).not.toThrow();
+    // It still tries to play rather than giving up silently.
+    expect(el.plays).toBe(2);
   });
 });
 
