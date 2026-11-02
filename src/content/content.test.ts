@@ -397,6 +397,137 @@ describe('the naming convention', () => {
   });
 });
 
+/* ================================================================ *
+ * Dialogue discipline
+ *
+ * Two problems the owner found in review, and the rules that came out of it.
+ * Neither is fully mechanisable, so these guard the specific regressions
+ * rather than pretending to judge prose.
+ * ================================================================ */
+
+describe('dialogue', () => {
+  function everyResponse(): Array<[string, string]> {
+    const out: Array<[string, string]> = [];
+    for (const person of Object.values(PEOPLE)) {
+      for (const topic of person.topics) {
+        out.push([`${person.name}/${topic.id}`, stripMarkup(topic.response(state))]);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * A budget, not a rule. An ordinary answer to an ordinary question should be
+   * a few beats, not an essay with several conclusions in it. The longest two
+   * are Sage's, and that is deliberate: she is the one who keeps the words, and
+   * her prophecy and age topics carry text CANON.md marks load-bearing.
+   */
+  it('keeps ordinary answers to a few beats', () => {
+    for (const [where, text] of everyResponse()) {
+      const beats = text.split('\n\n');
+      expect(text.length, `${where} is long for one question`).toBeLessThanOrEqual(700);
+      expect(beats.length, `${where} has too many beats`).toBeLessThanOrEqual(6);
+      /*
+       * The one that actually catches a monologue. Several short beats are a
+       * conversation — Fenn's question, the answer, his "Oh" — but one long
+       * block is somebody making a speech, and the paragraph count alone
+       * cannot tell those apart.
+       */
+      const longest = Math.max(...beats.map((b) => b.length));
+      expect(longest, `${where} has a paragraph that is a speech`).toBeLessThanOrEqual(330);
+    }
+  });
+
+  /**
+   * The rescue has one version. Dilly's own account, Tyme's account and Tyme's
+   * bench topic all have to agree: two people went in, and they found her
+   * sitting down — she did not walk out on her own.
+   */
+  it('tells the rescue the same way everywhere', () => {
+    const dilly = stripMarkup(PEOPLE['nessa']!.topics.find((t) => t.id === 'her_rite')!.response(state));
+    const tymeRescue = stripMarkup(PEOPLE['aldren']!.topics.find((t) => t.id === 'dilly')!.response(state));
+    const tymeBench = stripMarkup(PEOPLE['aldren']!.topics.find((t) => t.id === 'bench')!.response(state));
+
+    // Two rescuers, in both accounts, and never four.
+    expect(dilly).toContain('Two people');
+    expect(tymeRescue).toContain('Two of us');
+    for (const [where, text] of [
+      ['dilly', dilly],
+      ['tyme/dilly', tymeRescue],
+      ['tyme/bench', tymeBench],
+    ] as const) {
+      expect(text, `${where} should not revive the four-men version`).not.toMatch(/four men/i);
+    }
+
+    // She was found. No version has her coming out by herself.
+    expect(tymeRescue).toMatch(/Found her/);
+    expect(tymeBench, 'the bench topic used to have Dilly walk out on her own').not.toMatch(
+      /came round the corner/i
+    );
+  });
+
+  /**
+   * Lines that explained what had already been shown, or wrapped an exchange up
+   * in a maxim. Each was removed on purpose; this is the list, so none of them
+   * comes back in a later edit.
+   */
+  it('does not re-explain what the scene already showed', () => {
+    const removed: Array<[string, RegExp]> = [
+      ['Dilly interpreting her own account', /the wrong version is about being frightened/i],
+      ['Dilly turning advice into a moral', /the only thing you are bringing in that can hurt you/i],
+      ['Dilly summarising her own regret', /my advice and my one regret in the same sentence/i],
+      ['narration reading Lovage before he speaks', /what is in his face is not suspicion/i],
+      ['narration excusing Lovage', /because he is not a cruel man/i],
+      ['narration reading Lovage again', /He is not angry\. That is the difficulty/i],
+      ['narration naming the detail that lands on Fenn', /that is the part that lands on him/i],
+      ['Saffra foreshadowing the plot', /wrong about what you are/i],
+      ['narration explaining a silence', /you think she has decided not to/i],
+      ['narration explaining a non-reaction', /It lands on nothing at all/i],
+      ['narration grading a character', /which from Oreg is a significant quantity/i],
+      ['narration flagging its own irony', /which cannot be true/i],
+      ['narration telling the player what they feel', /you find you are not going to be the one/i],
+    ];
+    const all = everyResponse();
+    for (const [what, pattern] of removed) {
+      for (const [where, text] of all) {
+        expect(text, `${where} brought back: ${what}`).not.toMatch(pattern);
+      }
+    }
+  });
+
+  /**
+   * Follow-up detail belongs behind a follow-up question.
+   *
+   * A gate may be written either way — on the `topic.<person>.<id>` entry the
+   * engine records in `discovered`, or on a flag the first topic sets — so this
+   * applies the first topic's effects the way the engine would and then checks
+   * the follow-up has opened.
+   */
+  it('puts the detail behind follow-ups rather than in the first answer', () => {
+    for (const [person, first, followUp] of [
+      ['orla', 'prophecy', 'last_line'],
+      ['lovage', 'cut_the_dish', 'the_panel'],
+      ['nessa', 'her_rite', 'how_lost'],
+      ['tolv', 'his_attempt', 'square_room'],
+    ] as const) {
+      const def = PEOPLE[person]!;
+      const opener = def.topics.find((t) => t.id === first);
+      const topic = def.topics.find((t) => t.id === followUp);
+      expect(opener, `${person}/${first} should exist`).toBeDefined();
+      expect(topic, `${person}/${followUp} should exist`).toBeDefined();
+      expect(topic!.available, `${person}/${followUp} should be gated`).toBeDefined();
+      expect(topic!.available!(state), `${person}/${followUp} before asking`).toBe(false);
+
+      const after: GameState = {
+        ...state,
+        discovered: [...state.discovered, `topic.${person}.${first}`],
+        flags: { ...state.flags, ...(opener!.effects?.flags ?? {}) },
+      };
+      expect(topic!.available!(after), `${person}/${followUp} after asking`).toBe(true);
+    }
+  });
+});
+
 describe('player-facing text keeps the chapter secrets', () => {
   /**
    * Development notes hold the canon. Nothing the player can read in this

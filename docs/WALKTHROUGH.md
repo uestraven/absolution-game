@@ -189,6 +189,21 @@ In the past the basin is a hand deep with two coins and a bone pin in it.
 `ENTER THRESHOLD` there gives a plain explanation — the water is water and
 whatever carried you down is not there — rather than a silent refusal.
 
+## Dilly's rescue, in one version
+
+The owner found this told two ways. There is one version now, and
+`content/content.test.ts` asserts all three places agree:
+
+**Two people went in. One of them was Tyme. They found her sitting down with
+her back to a wall and her hands up her sleeves.** She did not walk out on her
+own, and there were never four men, and there was no dog — the four-men-and-a-dog
+version is the square's, and Dilly resents it.
+
+Tyme's bench topic used to have her come round the corner by herself while he
+was still putting a boot into the dark. It now says only that twice in his life
+he has not sat on that bench and one of those was Dilly, which leaves the
+account itself to his `dilly` topic.
+
 ## The realisation
 
 Changed landmarks, each with its own description: intact tool-work with a chalk
@@ -420,7 +435,7 @@ asserts that no command in the run was rejected.
 | `engine/equivalence.test.ts` | Step-for-step state equality between typed and clicked play, through both chapters to the arrival; one full completion per input mode visiting all sixteen locations; the thirty-six-command route above, run verbatim; completion after crossing with both items left behind, via the crew's lamp; recovering a dropped item with buttons only and finishing afterwards; selectable labels giving nothing away; undiscovered things absent from the panel |
 | `engine/chapter2.test.ts` | The recitation (canonical text identical to the plank, refused before the villagers ask and outside the square, fires once, declining costs nothing, never spoken on the player's behalf, reloads before/during/after); worksite access by all three routes and in both orders, with the recovery routes reachable from required-path state alone; the three heights as fixed destinations, the low position's harmless round trip, the uncut middle refused on physical terms, the high gamble; the aperture's four refusals; wrong attempts and waiting consuming nothing; hints free and repeatable; the wrongnesses fired once each and never explained; the arrival as one commit, not duplicated on reload, with no injury, reveal, exploration or return; the opening chapter unaffected and completable without any of the new optional content |
 | `persistence/migration.test.ts` | Format 1 → 2: a mid-opening save keeping every field, a save stopped at the old prototype marker becoming playable in place, the historical transcript kept and corrected rather than contradicted, idempotency through both formats, no wholesale clearing of completion flags, the migration running on the autosave, backup, checkpoint and import routes, newer and never-shipped formats refused clearly, and format 2 written back out once played on |
-| `content/content.test.ts` | Map matches the brief, era/id agreement, reverse routes, unique ids and directions, only the deep exit gated, flag and reveal references valid, journal id consistency, no placeholder prose, no later reveals in player-facing text, the herb naming convention (every name on the list, ids matching names, no survivors of the earlier cast, no puns, the twins never explained, and no time vocabulary anywhere in Tyme's dialogue) |
+| `content/content.test.ts` | Dialogue discipline (a length and single-paragraph budget per answer, the rescue told one way everywhere, a named list of removed over-explanations that must not come back, follow-up detail actually gated behind a follow-up); map matches the brief, era/id agreement, reverse routes, unique ids and directions, only the deep exit gated, flag and reveal references valid, journal id consistency, no placeholder prose, no later reveals in player-facing text, the herb naming convention (every name on the list, ids matching names, no survivors of the earlier cast, no puns, the twins never explained, and no time vocabulary anywhere in Tyme's dialogue) |
 | `content/characters.test.ts` | Both names and pronoun sets, pronoun substitution in NPC lines, identical progress for either character, no unrendered placeholders anywhere |
 | `persistence/persistence.test.ts` | Round trip, export/import, reload mid-puzzle, resuming pending conversations and questions, atomic crossing, backup and checkpoint fallbacks, quarantine, storage-failure reporting, loading and exporting while writes are impossible, preferences kept apart from progress, 27 rejected-import cases, transcript sanitising |
 | `ui/app.dom.test.tsx` | Title screen states, both modes end to end in the DOM, mode switching preserving state and transcript, option lists per mode, live region carrying only new output, focus not stolen |

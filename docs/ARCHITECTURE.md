@@ -218,6 +218,46 @@ Adding to the game:
   Add the chapter to the `Chapter` union and to the chapter/era coherence rules
   in `persistence/validate.ts`.
 
+## Dialogue
+
+Six rules, from an owner review of the cast. They are authoring conventions
+rather than engine constraints, so the parts that can be checked are checked in
+`content/content.test.ts` and the rest is on whoever writes the next scene.
+
+1. **Do not translate an action or a line that already reads.** If a character
+   digs a thumbnail into a stump, the narration does not then say what the
+   gesture meant. If a question lands, the narration does not name which detail
+   landed. The removed instances are listed by pattern in the test, so a later
+   edit cannot quietly reintroduce them.
+2. **One answer, one purpose.** An ordinary topic gets a few beats and one
+   thing to say. Additional detail goes behind a follow-up topic, gated on
+   having heard the first — `Sage/last_line` behind `prophecy`,
+   `Lovage/the_panel` behind `cut_the_dish`. Budget: 700 characters per
+   response, no single paragraph over 330, at most six beats. The paragraph cap
+   is the one that catches a monologue; several short beats are a conversation
+   and the count alone cannot tell them apart.
+3. **Keep memorable lines rare.** A polished closing maxim on every topic makes
+   the whole village sound like one witty narrator. A few are earned — Tyme on
+   the slot of sky, Sage on words becoming rude, Marjoram on the cupboard with
+   a sword in it — and the rest of the answers end on a plain instruction or an
+   action.
+4. **Physical beats should change the exchange**, not meet a quota. Dilly
+   folding six fingers down one at a time is the answer; a trowel scraped for
+   the third time in a scene is stage business.
+5. **Voices differ.** Dilly is terse and still resentful. Lovage speaks in
+   nouns and refuses to be read. Oreg talks while he works. Sage is the one who
+   is allowed to be articulate, because keeping the words is her job.
+6. **Puzzle instructions stay explicit.** Making the emotional content indirect
+   must not make the practical content vague: Fenn still says exactly where the
+   gap is, Dilly still says to go and look at the relief, and Saffra still names
+   the spring and the skins.
+
+Two kinds of text are **not** subject to this pass. The canonical prophecy in
+`content/prophecy.ts` is fixed, and the lines `docs/CANON.md` marks load-bearing
+— Sage's cyclops gloss and her age gloss — may be re-paragraphed but not
+reworded. Basil's authored responses stay: this game has a protagonist who
+speaks, and the recitation is the whole hinge of the story.
+
 ## Colour
 
 One palette, applied by `RichText` and nowhere else. Three meanings, used

@@ -276,8 +276,8 @@ export function apertureRefusal(state: GameState): string | null {
       'people, and you have talked to them about water and chalk lines and whose tree it is.\n\n' +
       'And you have not once asked them the thing you grew up with. You have no idea whether ' +
       'there is a plank by that well in their year, or a cord of lanterns, or a night in ' +
-      'midwinter when somebody reads something out. You have not asked because you assumed, ' +
-      'the way you assume about a step you have climbed ten thousand times.\n\n' +
+      'midwinter when somebody reads something out. You never asked, because it did not occur ' +
+      'to you that it was a question.\n\n' +
       'Go down and find out. Whatever is behind this panel can wait the length of a ' +
       'conversation.'
     );

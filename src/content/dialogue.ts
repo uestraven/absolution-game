@@ -36,7 +36,7 @@ const PERSON_LIST: PersonDef[] = [
       'owes which a roof-beam, because her aunt kept all of it before her and handed it over ' +
       'without asking whether she wanted it.\n\n' +
       'She is very good at it. She is also the youngest person in this square who can tell you ' +
-      'what any of it is for, and you can see that sitting on her.',
+      'what any of it is for, and she is twenty-three.',
     greeting: () =>
       'Sage straightens up with the chalk still in her fist. "There {they} is," she says — not ' +
       'to you, to nobody — and then, to you: "Sixteen today. Right."',
@@ -53,11 +53,8 @@ const PERSON_LIST: PersonDef[] = [
           'face, big as a dish, and everyone has had that picture in their head since they were ' +
           'four. That is the carvers\' idea, not the words\'." She shrugs. "Half of what people ' +
           '*know* about the ' + m('Wanderer') + ', they know off a wall."\n\n' +
-          '"And the part they do not repeat is the last line. Someone who braves the ' +
-          m('Cave of Absolution') + ' will have the power to turn it aside." She wipes chalk ' +
-          'off her thumb. ' +
-          '"Which is why the whole village has opinions about you this morning, and why I would ' +
-          'rather you heard it from the plank than from Marjoram."',
+          '"And the part they do not repeat is the last line." She wipes chalk off her thumb. ' +
+          '"It is on the plank. Read it there rather than off Marjoram."',
         effects: {
           flags: { [FLAGS.heardProphecy]: true },
           journal: [
@@ -72,13 +69,43 @@ const PERSON_LIST: PersonDef[] = [
         },
       },
       {
+        id: 'last_line',
+        label: 'the last line nobody repeats',
+        aliases: ['last line', 'power', 'turn it aside', 'the power'],
+        available: (state) => state.discovered.includes('topic.orla.prophecy'),
+        response: () =>
+          '"Someone who braves the ' + m('Cave of Absolution') + ' will have the power to turn ' +
+          'it aside." Sage does not look at the plank while she says it. "Those are the words. ' +
+          'That is all they are."\n\n' +
+          '"Three of your year have been in this spring and the hill is still a hill." The ' +
+          'chalk goes back in her apron. "And you are sixteen today, and the date Hyssop ' +
+          'counted is this year. People have noticed."',
+        effects: {
+          journal: [
+            {
+              id: 'j.last_line',
+              text:
+                'The line nobody repeats: whoever braves the ' + m('Cave of Absolution') +
+                ' will have the power to turn the ' + m('Wanderer') + ' aside. Sage says the ' +
+                'whole square has done the arithmetic on my birthday.',
+            },
+          ],
+        },
+      },
+      {
         id: 'how_old',
         label: 'how old the prophecy is',
         aliases: ['age', 'old', 'how long'],
         response: () =>
+          /*
+           * The wording of this answer is load-bearing for the fourth owner
+           * decision and CANON.md marks it do-not-edit, so the only thing
+           * touched here is where the paragraph breaks.
+           */
           '"Older than the plank. Older than the chalk, older than me, older than my aunt, and ' +
           'she had them from hers." Sage says it the way you would recite a list you have been ' +
-          'made to learn. "The ' + m('Wanderer-words') + ' get said at midwinter. They have been said at ' +
+          'made to learn.\n\n' +
+          '"The ' + m('Wanderer-words') + ' get said at midwinter. They have been said at ' +
           'midwinter for as long as anybody has been counting midwinters. Nobody ever thought ' +
           'they were about next year."\n\n' +
           '"Then Hyssop read a date out of them — counted it off the lines, the way you would ' +
@@ -118,9 +145,9 @@ const PERSON_LIST: PersonDef[] = [
           'in and you come out and you are the same person with one more thing in you."\n\n' +
           'She points the chalk at you. "Three of your year have gone already. Chervil went to ' +
           'the end of the rope and loved every minute. Borage went because you are supposed to ' +
-          'came back out at the gallery. Mint said no, out loud, in front of everyone." A beat. ' +
-          '"None of them came back with a power. Nobody expects you to either."\n\n' +
-          '"Go in because you are sixteen. Not because of a plank."',
+          'and came back out at the gallery. Mint said no, out loud, in front of everyone."\n\n' +
+          '"None of them came back with a power."\n\n' +
+          'She turns back to the plank. "Go in because you are sixteen."',
       },
     ],
   },
@@ -223,14 +250,13 @@ const PERSON_LIST: PersonDef[] = [
         aliases: ['stone', 'pebble', 'map'],
         available: (state) => f(state, FLAGS.gaveStone),
         response: () =>
-          'He has it in both hands and he is not going to put it down.\n\n' +
-          '"Past the names. *Past* the names." He is already drawing the map in the air with ' +
-          'one elbow. "Right, so when I go, I have to get past where you got it, and you got it ' +
-          'past the names, so I have to go—"\n\n' +
-          'He stops. A thought arrives and visibly costs him something.\n\n' +
+          'He has it in both hands.\n\n' +
+          '"Past the names. *Past* the names." He draws the map in the air with one elbow. ' +
+          '"Right, so when I go, I have to get past where you got it, and you got it past the ' +
+          'names, so I have to go—"\n\n' +
+          'He stops.\n\n' +
           '"How far does it go?"\n\n' +
-          'You tell him you do not know, which is true, and which he accepts with the ' +
-          'seriousness of a boy being told a real thing by an adult for the first time.',
+          'You tell him you do not know. He nods and does not ask again.',
       },
       {
         id: 'bring_back',
@@ -240,10 +266,9 @@ const PERSON_LIST: PersonDef[] = [
           '"A stone. Not a normal one." He has clearly thought about this. "And you have to ' +
           'tell me where in it you got the stone, and I\'ll draw the map, and then when I go I ' +
           'can go further than where you got it."\n\n' +
-          'He looks up at you with the stick held like a measuring pole. "That\'s how it works. ' +
-          'Everyone has to go a bit further than the last one or it\'s not a proper rite."\n\n' +
-          'Nobody has told him that is not how it works, and you find you are not going to be ' +
-          'the one.',
+          'He holds the stick up like a measuring pole. "That\'s how it works. Everyone has to ' +
+          'go a bit further than the last one or it\'s not a proper rite."\n\n' +
+          'He waits for you to agree.',
       },
     ],
   },
@@ -298,10 +323,10 @@ const PERSON_LIST: PersonDef[] = [
           'day. I had a torch and a lot of ideas."\n\n' +
           '"And I found nothing. Not nothing-as-in-I-failed. Nothing as in there is nothing ' +
           'there. I went over that square room twice. Good stonework, no door, no hole, nothing ' +
-          'behind anything." He blows the shaving off. "Whoever cut it cut it and left it empty. ' +
-          'People do that. Half the things I make are boxes nobody ever puts anything in."\n\n' +
-          '"So. Go in. Enjoy the stonework. Expect nothing and you will not be disappointed, ' +
-          'which is the only guarantee I am in a position to offer."',
+          'behind anything."\n\n' +
+          'He blows the shaving off. "Whoever cut it cut it and left it empty. People do that. ' +
+          'Half the things I make are boxes nobody ever puts anything in."\n\n' +
+          '"Go in. Enjoy the stonework."',
         effects: {
           flags: { [FLAGS.heardFoundNothing]: true },
           journal: [
@@ -321,8 +346,8 @@ const PERSON_LIST: PersonDef[] = [
         available: (state) => f(state, FLAGS.heardFoundNothing),
         response: () =>
           '"Best work in there by a long way. Three walls cut in scales, every one the same, ' +
-          'and whoever did it never once lost the row." Grudging respect, which from Oreg is a ' +
-          'significant quantity. "I ran a candle along every join. Nothing."\n\n' +
+          'and whoever did it never once lost the row." He stops planing to say it. "I ran a ' +
+          'candle along every join. Nothing."\n\n' +
           '"There is a slab low down on the fourth wall. That is the one that taught me about ' +
           'wedges. I got it up, had a look, there is a hole behind it about as deep as your ' +
           'arm and black with smoke, and it is at ankle height, so it is nobody\'s lamp ' +
@@ -373,16 +398,11 @@ const PERSON_LIST: PersonDef[] = [
         label: 'what happened when she went in',
         aliases: ['rescued', 'lost', 'her rite', 'what happened'],
         response: () =>
-          '"I got lost, and they came and got me out, and I was in there one night and most of ' +
-          'a day." She says it flatly, like a date. "You will have heard it as a funny story. ' +
-          'I would rather you had not."\n\n' +
-          '"In the square version I am screaming, and there are four men with ropes, and ' +
-          'somebody\'s dog finds me. There was no dog. There were two people, one of them was ' +
-          'Tyme, and I was sitting down with my back against a wall being extremely quiet ' +
-          'because I had worked out that shouting was using me up."\n\n' +
-          'She picks at the stump. "I do not mind it being told. I mind it being told wrong, ' +
-          'because the wrong version is about being frightened, and the true one is about ' +
-          'arithmetic."',
+          '"One night and most of a day." She says it like a date. "You will have heard it as a ' +
+          'funny story."\n\n' +
+          '"There wasn\'t a dog." Dilly digs a thumbnail into the stump. "Two people. Tyme and ' +
+          'someone else. I was sitting down."\n\n' +
+          'She brushes the bark off her knee. "Tell that version."',
         effects: {
           flags: { [FLAGS.heardRescued]: true },
           journal: [
@@ -401,14 +421,11 @@ const PERSON_LIST: PersonDef[] = [
         aliases: ['rope', 'six paces', 'arithmetic'],
         available: (state) => f(state, FLAGS.heardRescued),
         response: () =>
-          '"I let go of the rope to look at something." She holds up a hand before you can say ' +
-          'anything. "Not in the dark. I had a light. I was fine. I let go of the rope, and ' +
-          'then I walked six paces to see the thing better, and then I could not have told you ' +
-          'which way I had come in."\n\n' +
-          '"Six paces. That is the whole distance between fine and not fine, and nobody tells ' +
-          'you that because it does not sound like a danger."\n\n' +
-          'She taps the stump. "Keep the way out in your head as a thing with a shape. Not as a ' +
-          'feeling. Feelings turn round when you do."',
+          '"I let go of the rope." She holds up a hand. "I had a light. I was fine."\n\n' +
+          '"I walked six paces to see the thing better. Then I couldn\'t have told you which ' +
+          'way I came in."\n\n' +
+          'She holds up six fingers, and then folds them down one at a time, and leaves her ' +
+          'hand like that.',
         effects: {
           journal: [
             {
@@ -426,14 +443,12 @@ const PERSON_LIST: PersonDef[] = [
         aliases: ['what she saw', 'the thing', 'looked at'],
         available: (state) => f(state, FLAGS.heardRescued),
         response: () =>
-          'She takes long enough answering that you think she has decided not to.\n\n' +
-          '"The old picture. On the right-hand wall of the first gallery, the one with the ' +
-          'water run over it." She frowns at her own feet. "I could not make it out. There is a ' +
-          'person in it doing something very deliberate and I wanted to know what, and I kept ' +
-          'moving the torch about to get the shadow off it, and the more I moved it the flatter ' +
-          'it went."\n\n' +
-          '"So that is my advice and my one regret in the same sentence: go and look at it ' +
-          'properly. With both feet still on the rope."',
+          'She turns a boot over and knocks the grit out of it before she answers.\n\n' +
+          '"The old picture. Right-hand wall of the first gallery, the one the water has run ' +
+          'over." She frowns at her feet. "There\'s a person in it doing something very ' +
+          'deliberate and I couldn\'t make out what. I kept moving the torch to get the shadow ' +
+          'off it and the more I moved it the flatter it went."\n\n' +
+          '"Go and look at it properly. Off the rope is where I made my mistake, not looking."',
         effects: {
           journal: [
             {
@@ -450,11 +465,9 @@ const PERSON_LIST: PersonDef[] = [
         label: 'whether you should be afraid',
         aliases: ['afraid', 'scared', 'fear'],
         response: () =>
-          '"Not of the cave." She pulls a boot on. "Everyone who has ever come to harm at that ' +
-          'cave came to it by way of a decision they made. Including me. That is not comfort, ' +
-          'it is just where the danger actually is."\n\n' +
-          '"So be careful with your decisions. They are the only thing you are bringing in ' +
-          'that can hurt you."',
+          'Dilly pulls her boot on. The lace catches; she starts again.\n\n' +
+          '"Keep hold of the rope."\n\n' +
+          'She pulls the knot tight. "Even if you see something."',
       },
     ],
   },
@@ -477,13 +490,10 @@ const PERSON_LIST: PersonDef[] = [
         label: 'what he does while you are inside',
         aliases: ['bench', 'wait', 'waiting', 'outside'],
         response: () =>
-          'He looks at the bench as though he has not thought about it, which cannot be true.\n\n' +
           '"Sit there. Coil that." The rope. "Watch the slot."\n\n' +
-          'He is quiet for a bit. "You get a feel for how long is long. Dilly was long. I had ' +
-          'the rope off my shoulder and one boot in the dark before she came round the corner, ' +
-          'and she was fine, and I sat back down and coiled it again."\n\n' +
-          '"I will be on that bench when you come out. That is the whole of my job and I am ' +
-          'very good at it."',
+          'He sets the coil down on the bench and squares it up.\n\n' +
+          '"Twice in my life I have not sat there. One of those was Dilly."\n\n' +
+          '"I will be on it when you come out."',
         effects: {
           journal: [
             {
@@ -500,11 +510,11 @@ const PERSON_LIST: PersonDef[] = [
         response: () =>
           '"Rope runs from the ring at the mouth to the pillar in the gallery. Knots every ' +
           'arm-span. You can walk it out blind and people have." He slaps the coil. "Past the ' +
-          'pillar there is no rope, because past the pillar there are only two ways and both of ' +
-          'them come back to the pillar. That is the honest layout of the place."\n\n' +
+          'pillar there is no rope. Past the pillar there are two ways and both of them come ' +
+          'back to the pillar."\n\n' +
           '"And from the gallery you can still see the mouth. Little bright slot, back over ' +
-          'your shoulder. Look for it now and then. If you can see it, you are not lost; you ' +
-          'are just somewhere dark."',
+          'your shoulder. Look for it now and then. If you can see it you are not lost. You are ' +
+          'just somewhere dark."',
         effects: {
           flags: { [FLAGS.heardKeeper]: true },
           journal: [
@@ -546,13 +556,10 @@ const PERSON_LIST: PersonDef[] = [
         available: (state) => f(state, FLAGS.heardRescued),
         response: () =>
           'He stops coiling. "Two of us. Not four, whatever the square says."\n\n' +
-          '"She had done the one sensible thing available to her, which was to sit down and ' +
-          'stop spending herself. Found her with her back to a wall and her hands in her ' +
-          'sleeves, and she said *you took the scenic route* at me, which under the ' +
-          'circumstances I ' +
-          'thought was fair."\n\n' +
+          '"Found her with her back to a wall and her hands up her sleeves. Sitting still. She ' +
+          'said *you took the scenic route* at me."\n\n' +
           'He starts coiling again. "She comes up and sits on that stump most weeks. I have ' +
-          'never once asked her why and I would advise you to extend her the same courtesy."',
+          'never asked her why."',
       },
       {
         id: 'come_back',
@@ -670,17 +677,13 @@ const PERSON_LIST: PersonDef[] = [
         aliases: ['wanderer', 'prophecy', 'vigil', 'lanterns', 'warning', 'danger'],
         available: (state) => state.discovered.includes('topic.sabra.cave'),
         response: () =>
-          'You try to ask it without asking it. Whether they keep a vigil, in this village. ' +
-          'Whether they string the lanterns up on a cord between the eaves and sit out a night, ' +
-          'any night, for anything.\n\n' +
-          'Saffra looks at you with the patience of a woman on a plank.\n\n' +
-          '"Lanterns on a cord? Over the square? In this wind?" She laughs once. "Whose ' +
-          'lanterns?"\n\n' +
+          'You try to ask it without asking it. Whether they keep a vigil here. Whether they ' +
+          'string lanterns on a cord between the eaves and sit out a night, any night, for ' +
+          'anything.\n\n' +
+          '"Lanterns on a cord? Over the square? In this wind?" She laughs once and goes back ' +
+          'to the course. "Whose lanterns?"\n\n' +
           'You ask, more carefully, whether she has ever heard of the ' + m('Wanderer') +
-          '.\n\n' +
-          'It lands on nothing at all. Not fear, not caution, not the flicker people in your ' +
-          'square get when the word comes up. She turns it over as a word she has not been ' +
-          'given before, decides it is probably a ford-village thing, and hands it back.\n\n' +
+          '. The trowel does not stop.\n\n' +
           '"No," says Saffra. "Should I have?"\n\n' +
           'Fenn says, "Is it a dog?"',
         effects: {
@@ -702,15 +705,12 @@ const PERSON_LIST: PersonDef[] = [
         available: (state) => f(state, FLAGS.heardNoProphecy) && !f(state, FLAGS.recitedProphecy),
         once: true,
         response: () =>
-          'She has stopped working. That is the thing you notice: the trowel is resting on the ' +
-          'course and her hands are still, and you have been talking to her for a quarter of an ' +
-          'hour and they have not been still once.\n\n' +
+          'The trowel stops on the course.\n\n' +
           '"You did not ask me that like somebody asking after a story," she says. "You asked ' +
           'me like somebody checking a date."\n\n' +
-          'Fenn has come round the end of the plank and is standing where he can see your face.\n\n' +
-          '"So." Saffra wipes her thumb along the trowel. "Something is coming. That is what you ' +
-          'came down that hill to find out whether we knew." She says it flatly, without any ' +
-          'drama in it at all, which is worse. "What is it, then. What are the words."',
+          'Fenn comes round the end of the plank and stands where he can see your face.\n\n' +
+          'Saffra wipes her thumb along the trowel. "Something is coming, then. What is it. ' +
+          'What are the words."',
         effects: {
           flags: { [FLAGS.askedForWords]: true },
         },
@@ -728,9 +728,9 @@ const PERSON_LIST: PersonDef[] = [
           'to anybody.\n\n' +
           'Saffra listens to all of it with her arms folded.\n\n' +
           '"Right," she says. "And do you believe it?"\n\n' +
-          'You do not answer that quickly enough.\n\n' +
-          '"Thought so." She puts the board inside the doorway of the half-built workshop, out ' +
-          'of the weather, where a thing goes that you are keeping. "Then it stays."',
+          'You do not answer quickly enough.\n\n' +
+          '"Thought so." She carries the board into the doorway of the half-built workshop, out ' +
+          'of the weather, and props it face-in. "Then it stays."',
         effects: {
           flags: { [FLAGS.triedToRetract]: true },
           journal: [
@@ -749,17 +749,15 @@ const PERSON_LIST: PersonDef[] = [
         aliases: ['lovage', 'foreman', 'crew', 'get in', 'workings'],
         available: (state) => state.discovered.includes('topic.sabra.cave'),
         response: () =>
-          '"Lovage? He is up there now. He will be up there when it is dark and he will be up ' +
-          'there before I am tomorrow." She says it with the particular tiredness of somebody ' +
-          'describing a man she likes. "You will not get past him into the workings. Not to ' +
-          'look, not to be nosy, and not because you asked nicely."\n\n' +
+          '"He is up there now. He will be up there when it is dark." The trowel goes on ' +
+          'working. "You will not get past him. Not to look, not to be nosy, and not because ' +
+          'you asked nicely."\n\n' +
           'You ask whether anything would.\n\n' +
-          '"Water." She laughs at your face. "I am not being clever. His barrel split four days ' +
-          'ago and he will not send a man down for water because that is a man off the stone, ' +
-          'so they are working a hole in a hill on what they can carry up in the morning, and ' +
-          'they are all in a filthy mood about it."\n\n' +
-          'She nods at the wall behind you, and the yoke of empty skins propped against it. ' +
-          '"Those are nobody\'s. The spring is up past the tree."',
+          '"Water." She laughs at your face. "His barrel split four days ago and he will not ' +
+          'send a man down for more, because that is a man off the stone. They are working a ' +
+          'hole in a hill on what they can carry up at dawn."\n\n' +
+          'She nods at the yoke of empty skins propped against the wall behind you. "Those are ' +
+          'nobody\'s. Spring is up past the tree."',
         effects: {
           flags: { [FLAGS.knowsWaterNeeded]: true },
           journal: [
@@ -780,16 +778,13 @@ const PERSON_LIST: PersonDef[] = [
         available: (state) => f(state, FLAGS.recitedProphecy) && !f(state, FLAGS.worksiteAccess),
         response: () =>
           'She looks at the course she is halfway through, and at the light, and at you.\n\n' +
-          '"You are asking me to leave a wet course and walk up a hill," she says. "On the day ' +
-          'you told me the world has a thing coming for it."\n\n' +
-          'Then she wipes the trowel, lays it on the plank, and climbs down.\n\n' +
-          'The walk up takes no time at all and she does not ask you a single question, which ' +
-          'you understand is deliberate. At the mouth she goes in ahead of you, and there is a ' +
-          'short exchange out of your hearing in which Lovage says something short and she says ' +
-          'something shorter.\n\n' +
-          'She comes back out. "Go on. Touch nothing with an edge on it and come out when he ' +
-          'tells you to." And, over her shoulder, going back down: "He is not wrong about you. ' +
-          'He is just wrong about what you are."',
+          '"You are asking me to leave a wet course and walk up a hill." She wipes the trowel, ' +
+          'lays it on the plank, and climbs down.\n\n' +
+          'She walks up ahead of you and does not ask you one question the whole way. At the ' +
+          'mouth she goes in first, and there is a short exchange out of your hearing in which ' +
+          'Lovage says something short and she says something shorter.\n\n' +
+          'She comes back out. "Touch nothing with an edge on it. Come out when he tells you ' +
+          'to." She is already heading back down. "Go on. Before he changes his mind."',
         effects: {
           flags: {
             [FLAGS.saffraEscort]: true,
@@ -827,9 +822,9 @@ const PERSON_LIST: PersonDef[] = [
         response: () =>
           '"That\'s our tree." Absolute ownership. "There\'s a swing. You can have a go if you ' +
           'put the board down for me."\n\n' +
-          'He says it has always been there, in the tone eleven-year-olds use for *always*, and ' +
-          'then, when you ask again, he says his grandfather climbed it, so it must be older ' +
-          'than his grandfather, which he clearly regards as the outer limit of time.',
+          'He says it has always been there. You ask again, and he thinks about it, and says ' +
+          'his grandfather climbed it, so it must be older than his grandfather.\n\n' +
+          '"So. Ages."',
         effects: {
           flags: { [FLAGS.sawTree]: true },
           journal: [
@@ -864,16 +859,13 @@ const PERSON_LIST: PersonDef[] = [
           !f(state, FLAGS.worksiteAccess) &&
           (f(state, FLAGS.recitedProphecy) || f(state, FLAGS.knowsWaterNeeded)),
         response: () =>
-          'Fenn puts the mortar board down, which he has not done once, and looks at you with ' +
-          'the expression of a boy being asked for the one thing he actually knows.\n\n' +
-          '"You don\'t *get past* him," he says. "That\'s the whole thing about him."\n\n' +
-          'Then, lower: "There\'s a gap behind the spoil. Where they\'ve heaped the waste up ' +
-          'against the north wall, at the bottom, by the basin. It\'s not hidden, it\'s just ' +
-          'behind. Cress got through it and Lovage never knew and Cress is fatter than you."\n\n' +
-          'He picks the board back up. "You go down the stair like you\'re going to look at the ' +
-          'water, because everybody goes to look at the water. Then you go round the heap."\n\n' +
-          'A beat. "If he catches you he will put you out on the track and he will not shout. ' +
-          'That\'s worse."',
+          'Fenn puts the mortar board down. He has not done that once all morning.\n\n' +
+          '"You don\'t *get past* him."\n\n' +
+          'Then, lower: "There\'s a gap behind the spoil. Bottom of the stair, by the basin, ' +
+          'where they\'ve heaped the waste against the north wall. Cress got through and Lovage ' +
+          'never knew, and Cress is fatter than you."\n\n' +
+          'He picks the board back up. "Go down like you\'re looking at the water. Everybody ' +
+          'looks at the water."',
         effects: {
           flags: {
             [FLAGS.fennRoute]: true,
@@ -901,12 +893,12 @@ const PERSON_LIST: PersonDef[] = [
           'you were born in that house, the one that is not built, and that you have sat on the ' +
           'stump that is his tree, and that this morning you were somewhere else entirely and ' +
           'it was the same square.\n\n' +
-          'Fenn does not laugh and he does not run and tell anybody. He thinks about it with ' +
-          'his whole face.\n\n' +
+          'Fenn puts the board down. He does not laugh, and he does not run off to tell ' +
+          'anybody.\n\n' +
           '"Is the swing still there?"\n\n' +
           'You tell him no.\n\n' +
-          '"Oh," says Fenn, and that is the part that lands on him, out of all of it. Then: ' +
-          '"Don\'t tell Saffra the house bit. She\'ll want to know who built it wrong."',
+          '"Oh," says Fenn.\n\n' +
+          'Then: "Don\'t tell Saffra the house bit. She\'ll want to know who built it wrong."',
         effects: {
           flags: { [FLAGS.toldFennTruth]: true },
           journal: [
@@ -934,11 +926,10 @@ const PERSON_LIST: PersonDef[] = [
     appearance: () =>
       'A short, wide man of about fifty with lime burns on both forearms and stone dust in ' +
       'every crease of him. He is sitting on an upturned basket in the mouth of his own ' +
-      'workings doing absolutely nothing, which is clearly costing him more than the work ' +
-      'would.',
+      'workings, doing nothing, with his hands on his knees.',
     greeting: (state) =>
       f(state, FLAGS.lovageDistrust)
-        ? 'He sees you coming up the track and gets off the basket, which is not a welcome.\n\n' +
+        ? 'He sees you coming up the track and gets off the basket.\n\n' +
           '"No," says Lovage, before you have said anything at all.'
         : 'He watches you come up the last of the track without moving his head.\n\n' +
           '"You are the one from the ford," he says. "You have had a look. Good. That is the ' +
@@ -977,13 +968,11 @@ const PERSON_LIST: PersonDef[] = [
         response: (state) =>
           f(state, FLAGS.lovageDistrust)
             ? '"I said no, and you have made me say it twice."\n\n' +
-              'He is not angry. That is the difficulty. He is standing in his own doorway being ' +
-              'reasonable at you.\n\n' +
               '"Four days we have been dry and nothing else has been wrong. You come up the ' +
               'track, you stand in my square telling people what is going to happen to them, ' +
               'and now my line has moved and Caraway heard a door shut before the wind came."\n\n' +
-              '"I do not say you did it. I say I do not want you in my hole." He sits back down. ' +
-              '"Go and be somebody else\'s weather."'
+              '"I do not say you did it. I say I do not want you in my hole." He sits back ' +
+              'down. "Go and be somebody else\'s weather."'
             : '"No." He says it without heat, the way you would say *east*.\n\n' +
               '"It is not a cave down there yet, it is a job. There are chalk lines that mean ' +
               'something and a panel I have got down to a finger thick and a pillar I would ' +
@@ -996,16 +985,13 @@ const PERSON_LIST: PersonDef[] = [
         label: 'the pillar he mentioned',
         aliases: ['pillar', 'column', 'support', 'roof'],
         response: () =>
-          'The question gets you the first thing resembling approval you have had off him.\n\n' +
-          '"That," he says, "is the roof."\n\n' +
+          '"That," says Lovage, "is the roof."\n\n' +
           'He points up at the hill over both your heads with one blunt finger. "Not the stone ' +
-          'over your head. *That.* We took the room out from round it and we left it standing ' +
-          'and everything above us is on it. One pillar, because that is what the rock gave ' +
-          'us."\n\n' +
-          '"Keep your mallet off it. Keep your elbows off it. If I see a chisel within a hand ' +
-          'of it I will take the chisel and the hand." He is entirely serious and then, ' +
-          'abruptly, less so. "I do not like it. I have told people I do not like it. I have ' +
-          'been told that the hill has had an opinion about this for longer than I have."',
+          'over your head. *That.* We took the room out from round it and left it standing, and ' +
+          'everything above us is on it. One pillar, because one is what the rock gave us."\n\n' +
+          '"Keep your mallet off it. If I see a chisel within a hand of it I take the chisel ' +
+          'and the hand."\n\n' +
+          'He sits back down. "I do not like it. I have said so."',
         effects: {
           flags: { [FLAGS.pillarWarning]: true },
           journal: [
@@ -1025,18 +1011,11 @@ const PERSON_LIST: PersonDef[] = [
         aliases: ['cut', 'dish', 'middle', 'outline', 'second'],
         available: (state) => f(state, FLAGS.knowsSettings),
         response: () =>
-          'You ask him for the middle one. The chalk ellipse with the cross in it, at the ' +
-          'height of your chest. You ask whether it could be cut.\n\n' +
-          'He looks at you for a long moment, and what is in his face is not suspicion. It is a ' +
-          'man doing a sum.\n\n' +
-          '"That is a week," he says. "Two men, a week, on a dressed seat in a panel I have ' +
-          'already got down to a finger thick, which is the most dangerous bit of stone in the ' +
-          'hill. And it is the last thing on the job, and it is the last thing on the job ' +
-          'because when it is cut we are finished and the scaffold comes down."\n\n' +
-          '"So. A week with two men." He lets that sit. "And I would not give you an hour."\n\n' +
-          'Then, because he is not a cruel man and he has watched you look at that wall: "What ' +
-          'is it you think is in there?"\n\n' +
-          'You find you have no answer that would survive being said out loud.',
+          'You ask him for the middle one. The chalk ellipse at the height of your chest.\n\n' +
+          '"Two men. A week." Lovage rubs stone dust off his thumb. "On that panel? That is the ' +
+          'last job we do."\n\n' +
+          '"And I would not give you an hour."\n\n' +
+          'He turns back towards the stair. "Find another way."',
         effects: {
           journal: [
             {
@@ -1049,24 +1028,45 @@ const PERSON_LIST: PersonDef[] = [
         },
       },
       {
+        id: 'the_panel',
+        label: 'why that panel is the last job',
+        aliases: ['panel', 'thin', 'finger thick', 'scaffold', 'last job'],
+        available: (state) => state.discovered.includes('topic.lovage.cut_the_dish'),
+        response: () =>
+          '"Because I have got it down to a finger thick." He holds up a thumb and forefinger ' +
+          'with almost nothing between them. "A dressed seat wants a mallet and a mallet wants ' +
+          'something to work against. There is nothing behind that stone but more hill, and ' +
+          'not much of it."\n\n' +
+          '"So it goes last. Cut it, we are done, the scaffold comes down and I take five men ' +
+          'off this hill." He looks at the panel rather than at you. "What is it you think is ' +
+          'in there?"',
+        effects: {
+          journal: [
+            {
+              id: 'j.lovage_panel',
+              text:
+                'The panel with the dishes is worked down to a finger thick. Lovage leaves the ' +
+                'middle seat until last because cutting it finishes the job.',
+            },
+          ],
+        },
+      },
+      {
         id: 'wrongnesses',
         label: 'the things that have been going wrong',
         aliases: ['wrong', 'line', 'strange', 'moved', 'door'],
         available: (state) =>
           f(state, FLAGS.symptomSound) || f(state, FLAGS.symptomMark) || f(state, FLAGS.symptomWeather),
         response: () =>
-          'He does not pretend not to know what you mean, which you had been counting on.\n\n' +
-          '"My line has moved," says Lovage. "A line I snapped myself, and I checked it, and ' +
-          'then I checked it with a different string because I thought I had gone soft. It has ' +
-          'moved a hand."\n\n' +
-          '"Caraway heard a door shut and then felt the wind that shut it. He is not a fanciful ' +
-          'man. He is barely a talkative one."\n\n' +
-          'He spits, neatly, off to the side. "Now. I have been in holes in the ground for ' +
-          'thirty-one years and holes in the ground do strange things and most of them are ' +
-          'water. I have had a working breathe at me. I have had one knock."\n\n' +
-          '"I have not had one be in the wrong order." He looks out and down the track, at the ' +
-          'roofs. "I do not know what that is. I am not going to pretend I do, and I would not ' +
-          'believe a man who said he did."',
+          '"My line has moved." He says it before you have finished asking. "A line I snapped ' +
+          'myself. I checked it with a different string because I thought I had gone soft. It ' +
+          'has moved a hand."\n\n' +
+          '"Caraway heard a door shut and then felt the wind that shut it. He is barely a ' +
+          'talkative man."\n\n' +
+          'He spits, neatly, off to the side. "Thirty-one years in holes in the ground. They do ' +
+          'strange things and most of them are water. I have had a working breathe at me."\n\n' +
+          '"I have not had one be in the wrong order." He looks down the track at the roofs. "I ' +
+          'do not know what that is, and I would not believe a man who said he did."',
         effects: {
           journal: [
             {

@@ -104,9 +104,9 @@ You can tell them whenever you want. They are not going anywhere, and neither, i
 
 export const RECITE_PREAMBLE = `You tell them.
 
-Not all of it — not the lanterns on the cord or the salt on the well-cap or the eleven days or the fact that you have known these four lines since you were small enough to be lifted up to see the plank. You tell them the words, because the words are what they asked for, and because the only answer you have to *what is coming* is a thing you were taught in a room with a slate in it.
+Not all of it. Not the lanterns on the cord, or the salt on the well-cap, or the eleven days. Just the words, because the words are what they asked for.
 
-You get it right. You could not get it wrong. It has been in your mouth your whole life, the way a step you have climbed ten thousand times is in your knee.`;
+You get it right. You have never once had to try.`;
 
 export const RECITE_SPOKEN = `${prophecyBlock()}`;
 
@@ -114,15 +114,15 @@ export const RECITE_AFTER = `Nobody says anything for long enough that you hear 
 
 Fenn says, "Is it a *poem*?"
 
-Saffra does not answer him. She is still up on the plank with the trowel in her hand and she has not moved it, and she is looking at you the way you look at a thing you are going to have to deal with later.
+Saffra does not answer him. The trowel is still in her hand and she has not moved it.
 
 Then she comes down off the plank, wipes her hands on her apron, goes into the shell of the workshop, and comes back out with an offcut of board and a stub of char.
 
 "Again," she says. "Slower."
 
-You say it again. Slower. She writes it on the back of the board, in a careful hand, ${m('with her tongue between her teeth')}, and goes over two of the lines twice where the char has worn thin.
+You say it again. Slower. She writes it on the back of the board, ${m('with her tongue between her teeth')}, and goes over two of the lines twice where the char has worn thin.
 
-When she is done she holds the board at arm's length and reads it to herself, and her face does a thing you have seen on exactly one other face: your own, every midwinter, standing in a cold square while somebody reads this out.
+Then she holds the board out at arm's length and reads it to herself, and does not put it down.
 
 "Right," says Saffra. "Well. That is not a poem."`;
 

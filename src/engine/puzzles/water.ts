@@ -122,7 +122,7 @@ export function giveWater(draft: Draft, events: NarrativeEvent[]): ResolveResult
       'minutes nobody says anything to anybody because they are all drinking.\n\n' +
       'The oldest of them tips a capful over the back of his own neck and laughs at nothing.\n\n' +
       'Lovage hangs the last skin on a peg beside the split barrel and wipes his mouth with the ' +
-      'back of his wrist and looks at you with an expression of frank reassessment.\n\n' +
+      'back of his wrist.\n\n' +
       '"Right," he says. "Go on, then. Down the stair, round the heap, and you can put your ' +
       'head in and see what a job looks like."\n\n' +
       '"Touch nothing with an edge on it. Stand where I put you. And if I say out, you are out, ' +
