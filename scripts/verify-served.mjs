@@ -139,10 +139,20 @@ try {
     : bad('an asset is pinned to an absolute URL', absolute.join(' '));
 
   /* ---------- 3. Transfer size, measured rather than guessed ---------- */
+  /*
+   * Everything the page actually fetched from this origin, not just what the
+   * HTML links. Images pulled in by a component — the title wordmark — are
+   * part of what a visitor downloads and have to be counted.
+   */
+  const fetched = [
+    ...new Set(
+      served
+        .filter((r) => r.status === 200 && r.rel !== 'index.html')
+        .map((r) => r.rel)
+    ),
+  ];
   const sizes = [];
-  for (const h of hrefs) {
-    if (!h) continue;
-    const rel = h.replace(/^[./]+/, '');
+  for (const rel of fetched) {
     try {
       const body = await readFile(path.join(DIST, rel));
       sizes.push({

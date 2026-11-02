@@ -7,7 +7,11 @@ content/      authored data and prose          (knows about engine types only)
 engine/       pure game logic                  (knows about content; no React, no DOM)
 persistence/  localStorage + save validation   (knows about engine + content ids)
 ui/           React                            (knows about everything; owns nothing)
+assets/       the one image in the build       (imported, so Vite hashes it)
 ```
+
+`art/` at the repository root holds source art and is **not** bundled — Vite
+emits only what `src/` imports.
 
 The engine never imports from `ui/`. The UI never writes to game state except
 through `resolve`.

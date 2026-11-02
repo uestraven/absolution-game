@@ -43,7 +43,7 @@ own last response at entry 24, fully visible, with the stale mark's entry 7 now
 | `npm run typecheck` (`tsc --noEmit`) | clean, no diagnostics |
 | `npm run test` (vitest) | **441 passed / 441**, 14 files, 5.6s |
 | `npm run build:only` (vite) | built; emits the 500kB chunk-size advisory, [discussed below](#5-bundle-and-packaging) |
-| `node scripts/verify-browser.mjs dist` | **123 passed / 123** |
+| `node scripts/verify-browser.mjs dist` | **125 passed / 125** |
 | `node scripts/verify-served.mjs dist` | **15 passed / 15** |
 
 `npm run verify` runs the build and both browser passes in sequence.
@@ -208,11 +208,16 @@ Measured on 2026-11-02:
 | | raw | gzip | brotli |
 | --- | --- | --- | --- |
 | `index.html` | 1.3kB | 0.7kB | — |
-| `assets/index-*.css` | 9.7kB | 2.7kB | 2.3kB |
-| `assets/index-*.js` | 561.9kB | 173.3kB | 141.4kB |
-| **total transfer** | **559.4kB** | **171.6kB** | **144.9kB** |
+| `assets/index-*.css` | 9.6kB | 2.7kB | 2.3kB |
+| `assets/index-*.js` | 549.6kB | — | 141.9kB |
+| `assets/title-*.png` | 17.5kB | — | 17.3kB |
+| **total transfer** | **577.9kB** | **189.4kB** | **162.7kB** |
 
-Startup on a served loopback origin: `domContentLoaded` 59ms, `load` 59ms, first
+The PNG is the title wordmark, and it is counted here because the page fetches
+it: the served harness now measures every same-origin response rather than only
+what the HTML links. It is already deflate-compressed, so brotli buys 0.2kB.
+
+Startup on a served loopback origin: `domContentLoaded` 58ms, `load` 58ms, first
 contentful paint 84ms. The install, typecheck, test and build figures came from
 a run after `npm ci` on a clean `node_modules`; the bundle and startup figures
 were re-measured after the review fixes (raw 560.1kB, gzip 171.9kB, brotli

@@ -1,7 +1,7 @@
 # Deploying to Cloudflare Pages
 
-The build is a static site: one HTML file, one JS bundle, one stylesheet, and an
-inline SVG favicon. No backend, no Pages Functions, no environment secrets, no
+The build is a static site: one HTML file, one JS bundle, one stylesheet, one
+PNG wordmark, and an inline SVG favicon. No backend, no Pages Functions, no environment secrets, no
 runtime network access of any kind — verified on the wire, see
 [Verified on a served build](#verified-on-a-served-build).
 
@@ -124,9 +124,10 @@ does not carry counts or timings that go stale.
 ### On the bundle-size warning
 
 `vite build` warns that the JS chunk is over 500kB. Measured on 2026-11-02, that
-chunk is **549kB raw / 141kB brotli**, which is what a browser actually
+chunk is **549kB raw / 142kB brotli**, which is what a browser actually
 downloads from Cloudflare — Pages compresses automatically. The warning is about
-a raw byte count that nobody transfers.
+a raw byte count that nobody transfers. With the stylesheet and the title
+wordmark the whole page is **163kB brotli**.
 
 So the warning is **left in place and not suppressed**, and no code splitting
 was introduced. Splitting would buy nothing measurable here and would cost
@@ -134,6 +135,18 @@ something real: the save-compatibility and migration paths assume the whole
 content module graph is present when a save loads, and chapter-level lazy chunks
 would put an await in front of that. If the bundle grows materially — say past
 250kB brotli — revisit it then, with a measurement rather than the warning.
+
+## Images
+
+The only image in the build is `src/assets/title.png`, the title wordmark:
+530×179, 55 colours, 17.5kB, imported as a module so Vite content-hashes the
+emitted filename. It is pixel art shown with `image-rendering: pixelated`, so
+the browser scales it up with hard edges instead of the build shipping a large
+smooth bitmap — the master it came from is 870kB for the same word.
+
+The master lives in [`art/`](../art/README.md), which is **not** bundled: Vite
+emits only what `src/` imports. Regeneration is one ImageMagick command,
+documented there.
 
 ## Save storage across addresses
 

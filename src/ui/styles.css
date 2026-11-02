@@ -181,12 +181,38 @@ body {
   padding: 3rem 1rem 4rem;
 }
 .start-title {
+  /*
+   * Holds the wordmark. The type styling stays because it is what the `alt`
+   * text falls back to if the image does not load.
+   */
   font-size: 1.5rem;
   font-weight: 400;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--magenta);
   margin: 0;
+  line-height: 1;
+}
+.start-logo {
+  /*
+   * Pixel art, shipped at its own grid and scaled up by the browser. Nearest
+   * neighbour keeps the blocks hard at any size and on any display density —
+   * smooth scaling would turn a crisp 530px asset into a soft one, and a
+   * bitmap large enough to look sharp when smoothed would be forty times the
+   * weight.
+   */
+  image-rendering: pixelated;
+  display: block;
+  width: min(100%, 30rem);
+  height: auto;
+  /* Scaled by width; the intrinsic ratio keeps the box from jumping on load. */
+  aspect-ratio: 530 / 179;
+  margin: 0 0 0 -0.15rem;
+}
+@media (min-width: 48rem) {
+  .start-logo {
+    width: min(100%, 34rem);
+  }
 }
 .start-sub {
   color: var(--ink-dim);

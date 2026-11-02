@@ -58,7 +58,45 @@ async function newPage(viewport) {
 /* ---------- 1. Mobile layout at 360px, selectable mode ---------- */
 {
   const { context, page, errors } = await newPage({ width: 360, height: 740 });
+  /*
+   * The title wordmark. It is pixel art shipped at its own grid and scaled up
+   * by the browser, so the checks are: it actually loaded, it is being scaled
+   * with nearest neighbour rather than smoothed, it still gives the heading an
+   * accessible name, and it does not push the narrowest screen sideways.
+   */
+  const wordmark = await page.evaluate(() => {
+    const img = document.querySelector('.start-logo');
+    if (!img) return { missing: true };
+    const h1 = img.closest('h1');
+    const box = img.getBoundingClientRect();
+    return {
+      loaded: img.complete && img.naturalWidth > 0,
+      natural: `${img.naturalWidth}x${img.naturalHeight}`,
+      css: `${Math.round(box.width)}x${Math.round(box.height)}`,
+      rendering: getComputedStyle(img).imageRendering,
+      alt: img.getAttribute('alt'),
+      inHeading: h1 !== null,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      withinViewport: box.right <= window.innerWidth + 1,
+    };
+  });
+  wordmark.loaded &&
+  wordmark.rendering === 'pixelated' &&
+  wordmark.alt === 'Absolution' &&
+  wordmark.inHeading &&
+  wordmark.overflow <= 0 &&
+  wordmark.withinViewport
+    ? ok('360px: the title wordmark loads, stays crisp, and names the heading', `${wordmark.natural} shown at ${wordmark.css}`)
+    : bad('the title wordmark', JSON.stringify(wordmark));
+
   await page.getByRole('button', { name: 'New Game' }).click();
+  const onSetup = await page.evaluate(() => ({
+    logo: document.querySelectorAll('.start-logo').length,
+    heading: document.querySelector('h1')?.textContent ?? '',
+  }));
+  onSetup.logo === 1 && onSetup.heading === ''
+    ? ok('the character screen carries the same wordmark')
+    : bad('the character screen heading', JSON.stringify(onSetup));
   await page.getByRole('button', { name: 'Play as Basilia' }).click();
 
   // A new game opens at the first word of the opening, not at the end of it.

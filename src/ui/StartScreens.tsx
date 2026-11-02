@@ -2,6 +2,24 @@ import type { CharacterId } from '../engine/types';
 import { CHARACTERS, CHARACTER_ORDER } from '../content/characters';
 import { SELECT_PROMPT, SUBTITLE, TITLE } from '../content/text';
 import type { InputMode } from '../persistence/storage';
+// Imported rather than referenced from a public directory, so the build fails
+// loudly if it goes missing and the emitted filename is content-hashed.
+import titleArt from '../assets/title.png';
+
+/**
+ * The wordmark, as the page's heading.
+ *
+ * The `h1` stays an `h1` and takes its accessible name from the `alt`, so the
+ * document outline and a screen reader read "Absolution" exactly as they did
+ * when this was text. If the image fails to load, the alt text is what shows.
+ */
+function Wordmark() {
+  return (
+    <h1 className="start-title">
+      <img className="start-logo" src={titleArt} alt={TITLE} width={530} height={179} />
+    </h1>
+  );
+}
 
 export interface TitleScreenProps {
   canContinue: boolean;
@@ -20,7 +38,7 @@ export function TitleScreen({
 }: TitleScreenProps) {
   return (
     <main className="start">
-      <h1 className="start-title">{TITLE}</h1>
+      <Wordmark />
       <p className="start-sub">{SUBTITLE}</p>
       <div className="start-actions">
         {canContinue ? (
@@ -64,7 +82,7 @@ export interface SetupScreenProps {
 export function SetupScreen({ inputMode, onSetMode, onChoose, onBack }: SetupScreenProps) {
   return (
     <main className="start">
-      <h1 className="start-title">{TITLE}</h1>
+      <Wordmark />
       <div className="setup-block">
         <h2 className="setup-head">{SELECT_PROMPT.split('\n\n')[0]}</h2>
         <p className="setup-prompt">Who are you?</p>
