@@ -514,6 +514,18 @@ or the wedge under a shutter costs nothing.
 `PLACE LANTERN IN MIDDLE DISH`, light it, then `ENTER APERTURE` — three separate
 acts. Standing the lamp moves nobody and neither does lighting it.
 
+**And the hero will not go back without something heavy.** The last refusal
+fires with the panel already answering, which is when a person actually thinks
+about what they are carrying: they have been in that chamber twice today, once
+with a roof on it and once with the roof on the floor, and they know what took
+it down. The refusal is the hero's own reasoning and it names what the tool is
+for, and the hint ladder says so too.
+
+It cannot strand anybody. Dropped anywhere in this century the mallet is a room
+item and every room here reaches every other; left a century earlier, the shell
+where the workshop used to be has a maul in it. The drop-it-in-this-room case,
+the leave-it-three-rooms-away case and the browser path are all tested.
+
 The hero still presents the destination as a guess in their own voice: *low went
 back, high came here, and so the middle one is the one that is left, and left is
 not the same as home.* Nothing confirms the rule for them, in this chapter or at
@@ -543,12 +555,15 @@ save and it is the hero's, carried.
 
 **Blocked, truthfully:** violence (*what happens next is the last chapter of
 this story, and it is not written yet*), leaving the room, and reopening the
-portal. Allowed: `LOOK`, `EXAMINE`, `JOURNAL`, `INVENTORY`, settings,
-export, checkpoint restart, and one exchange with the person in front of them.
+portal. The marker is specific about which it is: the ending is decided and
+written down in the design, and the chapter that gets there is not implemented,
+so the build stops in front of it rather than guessing.
 
-The marker says *End of the current content*, then *This is not the ending*,
-then *nothing here has been decided*. The checkpoint holds the return with the
-eye and the reason intact, which is what the last chapter would continue from.
+Allowed: `LOOK`, `EXAMINE`, `JOURNAL`, `INVENTORY`, settings, export, checkpoint
+restart, and one exchange with the person in front of them.
+
+The checkpoint holds the return with the eye, the reason and the mallet intact,
+which is what the last chapter would continue from.
 
 ## Everything worth seeing
 
@@ -616,7 +631,7 @@ asserts that no command in the run was rejected.
 ## Manual and browser verification
 
 `scripts/verify-browser.mjs` drives the built bundle in Chromium (see the README
-for how to run it). Last run: **87 of 87 checks passed.**
+for how to run it). Last run: **88 of 88 checks passed.**
 
 **Layout and input.** 360px with no horizontal scrolling, before and during play
 · touch targets at least 40px tall · buttons alone move the story · the
@@ -627,7 +642,9 @@ glide with a jump · Settings is a real modal: focus moves inside, Tab and
 Shift+Tab stay inside, Escape closes and returns focus.
 
 **All three chapters, both modes.** The whole game completed with the keyboard
-alone, ending in the sealed chamber facing the earlier self · the recitation
+alone, ending in the sealed chamber facing the earlier self · crossing back
+refused while the tool the last chapter needs is on the floor, and allowed once
+it is picked up again · the recitation
 saying the canonical text · the end-of-current-content marker shown, and not
 claiming to be the ending · the confrontation blocked with a reason · objective
 updated · inspection still possible afterwards · the whole game completed by

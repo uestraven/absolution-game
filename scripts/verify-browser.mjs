@@ -1231,9 +1231,17 @@ async function newPage(viewport) {
     ? ok('360px after the injury: no filter, no mask, no accessibility penalty')
     : bad('360px after the injury', JSON.stringify(chrome));
 
-  await run([
-    'west','examine fill','clear fill','place lantern in middle dish','enter aperture',
-  ]);
+  await run(['west','examine fill','clear fill','place lantern in middle dish']);
+
+  // The hero will not go back without something heavy, and says why.
+  await run(['drop mallet', 'enter aperture']);
+  const withoutTool = await page.locator('.transcript').innerText();
+  const stillHere = (await page.locator('.topbar-place').innerText()).toLowerCase();
+  withoutTool.includes('Go and get something heavy') && stillHere === 'the crushed chamber'
+    ? ok('crossing back is refused without the tool the last chapter needs')
+    : bad('mallet gate', `${stillHere}`);
+
+  await run(['take mallet', 'enter aperture']);
 
   // At the return.
   const atReturn = await reloadAndContinue();

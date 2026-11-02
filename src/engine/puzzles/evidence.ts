@@ -107,32 +107,32 @@ export function doReflect(draft: Draft, events: NarrativeEvent[]): ResolveResult
   }
 
   draft.flags[FLAGS.knowsResponsibility] = true;
+  /*
+   * Short, and only the joins.
+   *
+   * The four sources have each already been read, in their own prose, in their
+   * own rooms. Recapping them here would be telling the player a fourth time
+   * what they have been told three times. What is actually new is which two
+   * things touch: the child in Rue's story is the hero, and the words at the
+   * middle of the Account are theirs. The rest of it stays in the journal
+   * entry, where a player who wants the chain laid out can go and read it.
+   *
+   * No location in it either. Reflecting is allowed anywhere in this century,
+   * so nothing here can put the hero against a particular wall.
+   */
   events.push({
     kind: 'narration',
     text:
-      'You sit down on the end of the long shed with your back against the metal and you put ' +
-      'it in an order.\n\n' +
-      'The stone by the well says the year. Not a season, not *in living memory* — a year, cut ' +
-      'by somebody who wanted it to be exact, in the notation you were taught at a slate. It ' +
-      'is the year you turned sixteen.\n\n' +
-      'Rue has it off her mother off hers: a child of this village went up to that hill on ' +
-      'that night to do the rite, went in, and did not come out. They argue about whether it ' +
-      'was a boy or a girl. They do not argue about the going in.\n\n' +
-      'Your journal says you went in. It says the date. It says what you did on the other side ' +
-      'of it, in a square with a half-built wall in it, in front of a woman on a plank who ' +
-      'asked you a straight question and wrote your answer on the back of a board.\n\n' +
-      'And the Account — the thing this whole settlement has been arguing with for a hundred ' +
-      'years, the thing they shut the hill because of — has that answer in the middle of it, ' +
-      'word for word, in the oldest hand on the roll, copied from a board.\n\n' +
-      'There is nobody else it can have come from. There was nowhere for it to come from before ' +
-      'you said it.\n\n' +
-      'You do not know what you broke. You do not know how a thing like that breaks, or why a ' +
-      'door shuts before the wind arrives, or what the sky is doing, and nobody here knows ' +
-      'either and the four people who wrote down why on Rue\'s roll are all wrong in different ' +
-      'directions.\n\n' +
-      'What you know is the shape of your own part in it, and the shape is this: it started in ' +
-      'your year, at your hill, on the night you went in, and the words they live by are in ' +
-      'your voice.',
+      'You stop walking and put it in an order, and it goes into an order on the second try.\n\n' +
+      'The year on that stone is the year you turned sixteen. The child who went up to the ' +
+      'hill that night and did not come out is in your journal, with the date, because it is ' +
+      'you.\n\n' +
+      'And the words in the middle of their Account — the thing a hundred years of this ' +
+      'settlement has argued with, the thing they shut the hill because of — are the ones you ' +
+      'said out loud in that square, to a woman who went and found a board to write them on.\n\n' +
+      'There was nowhere for them to come from before you said them.\n\n' +
+      'You do not know what you broke, or how, and nobody here does either. You know whose it ' +
+      'is.',
   });
 
   journalEvents(
@@ -140,10 +140,14 @@ export function doReflect(draft: Draft, events: NarrativeEvent[]): ResolveResult
       {
         id: 'j.responsibility',
         text:
-          'The memorial dates it to my year. Rue\'s story is a child who went in that night ' +
-          'and did not come out. My journal is that child. And the words at the middle of the ' +
-          'Account are the ones I said in the square a hundred years before, copied off a ' +
-          'board. I do not know what I broke or how. I know it was me.',
+          'Putting it together: the memorial dates the beginning to the year I turned sixteen. ' +
+          'Rue has it off her mother that a child of this village went up to the rite that ' +
+          'night, went in, and did not come out — they argue about whether it was a boy or a ' +
+          'girl and not about the going in. My own journal has that date and that child. And ' +
+          'the words set apart in the middle of the Account, in the oldest hand on the roll, ' +
+          'copied from a board that is named and is gone, are word for word the ones I recited ' +
+          'in the square a hundred years before. Nobody wrote four explanations of why on that ' +
+          'roll and got it right. I do not know what I broke or how. I know it was me.',
       },
     ]),
     events

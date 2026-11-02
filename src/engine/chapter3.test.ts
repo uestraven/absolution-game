@@ -416,6 +416,58 @@ describe('the seal comes down once, and takes an eye with it', () => {
     expect(ordinary.transcript.map((e) => e.text).join('\n')).toContain('Eleven places');
   });
 
+  it('will not let the hero go back without something heavy', () => {
+    const ready = typeAll(informed(), [
+      'reflect',
+      ...OPEN_THE_SEAL,
+      'west',
+      'examine fill',
+      'clear fill',
+      'place lantern in middle dish',
+    ]);
+    expect(ready.inventory).toContain('mallet');
+
+    // Put it down in this very room and try to leave.
+    const empty = typeAll(ready, ['drop mallet']);
+    expect(empty.inventory).not.toContain('mallet');
+    const refused = type(empty, 'enter aperture');
+    expect(refused.accepted).toBe(false);
+    expect(refused.state.chapter).toBe('future');
+    // Motivated, and specific about what it is for.
+    expect(lastText(refused)).toContain('One worked pillar');
+    expect(lastText(refused)).toContain('Go and get something heavy');
+
+    // Recoverable where it was dropped, in both modes.
+    const listed = getAffordances(empty).objects.find((o) => o.id === 'mallet');
+    expect(listed).toBeDefined();
+    const back = resolve(empty, listed!.actions.find((a) => a.label === 'Take')!.action);
+    expect(back.state.inventory).toContain('mallet');
+    expect(type(back.state, 'enter aperture').accepted).toBe(true);
+  });
+
+  it('lets the hero fetch it back from anywhere in the century', () => {
+    const ready = typeAll(informed(), [
+      'reflect',
+      ...OPEN_THE_SEAL,
+      'west',
+      'examine fill',
+      'clear fill',
+      'place lantern in middle dish',
+    ]);
+    // Left on the floor of the basin chamber, three rooms and a climb away.
+    const stranded = typeAll(ready, ['east', 'east', 'in', 'drop mallet']);
+    expect(stranded.locationId).toBe('future.deep_chamber');
+    const walked = typeAll(stranded, ['up', 'west', 'west']);
+    expect(type(walked, 'enter aperture').accepted).toBe(false);
+
+    const fetched = typeAll(walked, ['east', 'east', 'in', 'take mallet', 'up', 'west', 'west']);
+    expect(fetched.inventory).toContain('mallet');
+    expect(fetched.locationId).toBe('future.sealed_chamber');
+    const gone = type(fetched, 'enter aperture');
+    expect(gone.accepted).toBe(true);
+    expect(gone.state.chapter).toBe('return');
+  });
+
   it('substitutes both tools for a hero who left them behind', () => {
     // Crossing with neither the mallet nor the wedge in hand.
     const bare = typeAll(begin(), [
@@ -586,7 +638,9 @@ describe('the return is an arrival and the end of what is built', () => {
     const marker = state.transcript.filter((e) => e.kind === 'system').map((e) => e.text).join('\n');
     expect(marker).toContain('End of the current content');
     expect(marker).toContain('This is not the ending');
-    expect(marker).toContain('nothing here has been decided');
+    // Honest about which it is: the ending is decided, the chapter is not built.
+    expect(marker).toContain('not implemented yet');
+    expect(marker).not.toContain('has been decided');
 
     // Violence is refused, and the refusal is about the writing and not the rules.
     const swing = type(state, 'break them');

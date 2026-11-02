@@ -130,8 +130,8 @@ export function placeLanternInMiddleDish(draft: Draft, events: NarrativeEvent[])
       'small rock you have now felt three times in your life, in three centuries, in the same ' +
       'four square paces of rock.' +
       (f(draft, FLAGS.lanternLit)
-        ? '\n\nThe panel answers. The pressure arrives in the hinge of your jaw, on the side ' +
-          'that still has one.'
+        ? '\n\nThe panel answers. The pressure arrives in the hinges of your jaw, and under ' +
+          'the linen as well, which it has no business doing.'
         : '\n\nThe wick is cold, and the panel is a panel, and nothing is going to happen ' +
           'until there is a light in it.'),
   });
@@ -163,6 +163,33 @@ export function returnRefusal(state: GameState): string | null {
       'a wall with rock behind it.\n\n' +
       'It was never the lamp. It was the light. You have known that since you were kneeling at ' +
       'an alcove with a striker in your hand.'
+    );
+  }
+  /*
+   * The one thing the hero cannot go back without.
+   *
+   * It is deliberately the last refusal, with the panel already answering,
+   * because that is the point at which a person actually thinks about what
+   * they are carrying. The reason is the hero's own and it is specific: they
+   * have stood under that chamber and watched its one support crush itself,
+   * and they know what it is going to take.
+   *
+   * It cannot strand anybody. Dropped anywhere in this century it is a room
+   * item, and every room here reaches every other; left a century earlier,
+   * the shell where the workshop used to be has a maul in it.
+   */
+  if (!state.inventory.includes('mallet')) {
+    return (
+      'You are a step from it and you stop, with one hand on the stone, because your hands are ' +
+      'the wrong weight.\n\n' +
+      'You have been in that chamber twice today — once with a roof on it and once with the ' +
+      'roof on the floor — and you have seen what took it down. One worked pillar, cracked at ' +
+      'the foot, crushing from the base up because it had been carrying more than it should ' +
+      'for a hundred years.\n\n' +
+      'You are not going back there to have a conversation. You are going back to make sure ' +
+      'that nobody ever walks into that hill again, and that is not a thing you do with your ' +
+      'hands and a lantern.\n\n' +
+      'Go and get something heavy.'
     );
   }
   return null;

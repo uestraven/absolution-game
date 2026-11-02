@@ -256,7 +256,7 @@ Sorrel says, "Don't." But she says it to him and not to you, and she does not sa
 
 export const CROSSING_BACK = `The middle dish takes the lantern the way the others took it. Of course it does. They were all cut by the same hands in the same week, by men who did not know what they were cutting.
 
-The panel answers. The pressure arrives in your jaw, in the hinge of it, on the side of your face that still has a hinge.
+The panel answers. The pressure arrives in your back teeth and the hinges of your jaw, exactly where it always does, and under the linen on the left side of your face it arrives too, which is new and which you would rather it did not.
 
 You stand there a long time with your hand flat on stone that is a hundred years from both the places you have been.
 
@@ -280,9 +280,9 @@ The light from it goes up through the carved eye above the alcove and lands on t
 
 Somebody is kneeling in front of that wall with their back to you.
 
-They are sixteen years old. They have been sixteen for about as long as they have been awake. There is lime dust on the shoulder of their shirt from a wall they will not see built for a hundred years, and they are leaning forward with one hand half-raised towards the seam, and they have not turned round yet, because the room is doing something to sound that it has never done before and they have not worked out what.
+They are sixteen years old. They have been sixteen for about as long as they have been awake. Both knees are grey from the gallery floor and there is cave dust in the creases of one elbow, and they are leaning forward with one hand half-raised towards the seam, and they have not turned round yet, because the room is doing something to sound that it has never done before and they have not worked out what.
 
-You are not quiet. You land badly and you are breathing like a man who has carried a mallet up a hill with one eye.
+You are not quiet. You land badly, and your breathing is the breathing of somebody who has carried a mason's mallet up a hill with one eye.
 
 They turn round.`;
 
@@ -290,6 +290,6 @@ export const END_OF_CONTENT_RETURN = `— End of the current content —
 
 Everything after this — what the two of you say, what you do about it, and what it costs — is the last chapter, and it is not written yet.
 
-This is not the ending. Nothing here is the end of the story, and nothing here has been decided.
+This is not the ending. Nothing here is the end of the story — the last chapter is written down in the design and is not implemented yet, so this build stops in front of it rather than guessing at it.
 
 You can look, read your JOURNAL, check your INVENTORY, or use Settings to restart from the checkpoint at the start of this chapter. Export Save works whether or not this browser is keeping your progress.`;

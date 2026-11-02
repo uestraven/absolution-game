@@ -1427,9 +1427,9 @@ const PERSON_LIST: PersonDef[] = [
     available: (state) => state.chapter === 'return',
     listAs: c('somebody kneeling at the patterned wall'),
     appearance: () =>
-      'Sixteen. Lime dust on one shoulder. A wedge-shaped bulge in one pocket and both knees ' +
-      'grey from the gallery floor, and a face you have seen every day of your life in the ' +
-      'bottom of a water bucket and have never once seen from the outside.\n\n' +
+      'Sixteen. A wedge-shaped bulge in one pocket, both knees grey from the gallery floor, ' +
+      'and a face you have seen every day of your life in the bottom of a water bucket and ' +
+      'have never once seen from the outside.\n\n' +
       'Two eyes.\n\n' +
       'They are on their knees with one hand half-raised towards the wall, and they have ' +
       'turned their head to look at you, and they have not moved anything else.\n\n' +

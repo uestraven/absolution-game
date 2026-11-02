@@ -319,9 +319,13 @@ const HOME_LADDER: Array<(state: GameState) => string> = [
   () =>
     'Three positions up that panel. Two of them are plastered flat and solid. The third is ' +
     'cracked.',
-  () =>
+  (state) =>
     'EXAMINE FILL, then CLEAR FILL. Then the dish behind it takes a lamp like the other two ' +
-    'did, and the lamp has to be lit, and going through is its own separate decision.',
+    'did, and the lamp has to be lit, and going through is its own separate decision.' +
+    (state.inventory.includes('mallet')
+      ? ''
+      : '\n\nAnd take something heavy with you. You will not step through without it, and the ' +
+        'hero will tell you why.'),
   (state) => {
     const steps: string[] = [];
     if (!f(state, FLAGS.examinedFill)) steps.push('EXAMINE FILL.');
@@ -331,6 +335,12 @@ const HOME_LADDER: Array<(state: GameState) => string> = [
     }
     if (!f(state, FLAGS.lanternInMiddleDish)) steps.push('PLACE LANTERN IN MIDDLE DISH.');
     if (!f(state, FLAGS.lanternLit)) steps.push('LIGHT LANTERN.');
+    if (!state.inventory.includes('mallet')) {
+      steps.push(
+        'Get the mallet or the maul back in your hand — INVENTORY will say where it is. The ' +
+          'hero will not go back without it.'
+      );
+    }
     steps.push('ENTER APERTURE.');
     return 'The full solution:\n\n' + steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
   },
