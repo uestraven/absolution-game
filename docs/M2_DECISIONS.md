@@ -15,6 +15,7 @@ revised accordingly. See `FULL_GAME_WALKTHROUGH.md` → *What revision 4 closed*
 - [`docs/FULL_GAME_DESIGN.md`](FULL_GAME_DESIGN.md) — the full design.
 - [`docs/FULL_GAME_WALKTHROUGH.md`](FULL_GAME_WALKTHROUGH.md) — critical path and audit.
 - [`docs/CANON.md`](CANON.md) — what is settled, with the boundary around what is not.
+- [`docs/M3_BRIEF.md`](M3_BRIEF.md) — the Milestone 3 build brief, carrying these decisions as fixed constraints.
 
 **The five below are settled.** They are the owner's instruction and are not
 asked about again.
@@ -70,11 +71,11 @@ the past, and their role as the prophecy's source, rupture causality.
 **Travelling onward to the future instead of returning home shatters it
 further, and that is what brings the catastrophe.**
 
-This is behind-the-scenes guidance. **The mechanism is never explained to the
-player.** There are no scientists in this setting. People have observations,
-inherited accounts, beliefs and theories — and no mason, inscription,
-narrator, journal or omniscient survivor may deliver a technical account in a
-scientist's place.
+This is behind-the-scenes guidance. **Never scientifically explain the
+mechanism; present observations and character theories only.** There are no
+scientists in this setting. People have observations, inherited accounts,
+beliefs and theories — and no mason, inscription, narrator, journal or
+omniscient survivor may deliver a technical account in a scientist's place.
 
 > Supersedes the draft's quantified water-displacement model, the 180-year
 > aquifer leak, the numbered gauge and the ledger-based proof. Water loss
@@ -142,7 +143,7 @@ be read without the whole document.
 
 | # | Question | Recommendation |
 | --- | --- | --- |
-| 1 | **Rupture symptoms** | Three escalating kinds, never explained. *Out of sequence:* a sound before its cause, weather that un-happens. *Will not stay put:* a tally that is wrong in a way nobody can account for, a chalk mark that has moved. *Absence:* water, then light, then seasons. The past gets the first faint ones **while the hero is standing in it**, which is what turns the village against them. **Chapter 1 has none** — the tear does not exist until the hero crosses at the end of it. |
+| 1 | **Rupture symptoms** | Three escalating kinds. **Never scientifically explain the mechanism; present observations and character theories only.** *Out of sequence:* a sound before its cause, weather that un-happens. *Will not stay put:* a tally that is wrong in a way nobody can account for, a chalk mark that has moved. *Absence:* water, then light, then seasons. The past gets the first faint ones **while the hero is standing in it**, which is what turns the village against them. **Chapter 1 has none** — the tear does not exist until the hero crosses at the end of it. |
 | 2 | **Future evidence** | Testimony, not measurement. The settlement's own version of the Wanderer-words, now the central account of how the world ended, saying plainly that the Wanderer came *out of the hill*; an inherited family story about **a child who went up to the hill for the rite that night and did not come out**; a cave mouth sealed by the village, with their mark on the seal; a memorial naming the year it started; and the hero's own journal to match names and dates against. **Nothing in the chapter witnesses an event that has not happened:** the one-eyed-stranger account is removed, and the Account's *one-eyed* is inherited from the hero's own recitation rather than from any witness. Responsibility is established. Mechanism is not. |
 | 3 | **Subjective duration** | About **three days**. The hero stays sixteen. Appearance: one eye gone, filthy, thinner, a half-healed face — enough that the earlier self does not know them at once. |
 | 4 | **Eye injury** | In the future, at the sealed cave mouth, struck by a stone from **a rockfall that has not happened yet**. A wound from the rupture rather than from clumsiness. Two sentences, no spectacle, no interface gimmick. |

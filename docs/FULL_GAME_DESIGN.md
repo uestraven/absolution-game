@@ -14,7 +14,7 @@ superseded material is gone, not parked beside the new plan.
 | --- | --- |
 | Universal "anchoring" rule for water, objects and people; the two-rule inscription | **Decision 1.** The protagonist alone is a singularity. Never explained, never ancestral. Object transport is a gameplay rule, not cosmic law |
 | −140 / +40 years; a forty-year ledger; five generations; Parsie alive at 51 | **Decision 2.** Exactly ∓100 years. No opening acquaintance survives the extra century; descendants carry the connection |
-| Quantified water displacement, a 180-year aquifer leak, a numbered gauge, proof by arithmetic | **Decision 3.** A causal rupture that is never explained to the player. Water loss is one symptom among several. Evidence is testimony and inference |
+| Quantified water displacement, a 180-year aquifer leak, a numbered gauge, proof by arithmetic | **Decision 3.** A causal rupture. **Never scientifically explain the mechanism; present observations and character theories only.** Water loss is one symptom among several. Evidence is testimony and inference |
 | Three selectable warning clauses, `warning_text_a/b/c`, the plank rewritten to match player choice | **Decision 4.** One fixed text, recited word for word from memory, after the hero is shocked that nobody has heard it |
 | Cooperative ending; both survive; the sacrificial variant; the walk-home epilogue | **Decision 5.** The hero kills their earlier self, then dies destroying the cave. One ending |
 | The forced mis-aim (an obscured mark) | **Proposed.** An established limitation: three fixed settings, and the dish for the home setting has not been cut yet |
@@ -62,9 +62,12 @@ at the end — begins with a clever child putting a light where it belongs.
 ### Design goals
 
 1. **Observation, never eligibility.** The hero is first because they looked.
-2. **Mystery without mechanism.** The rupture is never explained, because
-   nobody in this world can explain it. The player still gets certainty about
-   *responsibility*.
+2. **Mystery without mechanism.** **Never scientifically explain the
+   mechanism; present observations and character theories only.** Nobody in
+   this world can explain the rupture, so nobody does — not a mason, not an
+   inscription, not the narration, not a journal entry, not an omniscient
+   survivor. The player still gets certainty about *responsibility*, which is
+   a different thing and is never softened to protect the mystery.
 3. **Responsibility, not surprise.** A player who guesses "I am the Wanderer"
    in chapter one still has the real questions ahead: what they did, whether
    it can be undone, and what undoing it costs.
@@ -824,6 +827,9 @@ simplest available: **it rains, and the water stays where it falls.**
 ## 9. Scope and implementation handoff
 
 ### Milestone boundaries — corrected
+
+> Milestone 3's build brief is [`M3_BRIEF.md`](M3_BRIEF.md). It is subordinate
+> to this document: where the two disagree, this one wins.
 
 | Milestone | Chapter | Rooms | People | Puzzles |
 | --- | --- | --- | --- | --- |

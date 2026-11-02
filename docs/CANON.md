@@ -78,10 +78,11 @@ supersede earlier drafting. The reasoning and the detail live in
   space-time: the journey into the past and the hero's role as the prophecy's
   source rupture causality, and **travelling onward to the future instead of
   returning home shatters it further and brings the catastrophe.**
-  **The mechanism is never explained to the player.** There are no scientists
-  in this setting. People have observations, inherited accounts, beliefs and
-  theories — and no mason, inscription, narrator, journal or omniscient
-  survivor may give a technical account in a scientist's place.
+  **Never scientifically explain the mechanism; present observations and
+  character theories only.** There are no scientists in this setting. People
+  have observations, inherited accounts, beliefs and theories — and no mason,
+  inscription, narrator, journal or omniscient survivor may give a technical
+  account in a scientist's place.
 - **A word-for-word recitation.** The prophecy was taught in school and
   discussed all through the hero's childhood. In the past they assume everyone
   knows it, are **shocked** that nobody has heard of it, are asked what it
