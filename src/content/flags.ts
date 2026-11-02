@@ -50,3 +50,33 @@ export const FLAGS = {
 export type FlagKey = (typeof FLAGS)[keyof typeof FLAGS];
 
 export const ALL_FLAG_KEYS: string[] = Object.values(FLAGS);
+
+/**
+ * The type each flag is actually allowed to hold.
+ *
+ * Accepting "any primitive" for every flag let a save put a string where the
+ * engine reads a boolean, or a number where it reads a context name. Save
+ * validation checks against this instead.
+ */
+export const FLAG_TYPES: Record<string, 'boolean' | 'number' | 'string'> = {
+  [FLAGS.hasLantern]: 'boolean',
+  [FLAGS.lanternLit]: 'boolean',
+  [FLAGS.heardProphecy]: 'boolean',
+  [FLAGS.heardFoundNothing]: 'boolean',
+  [FLAGS.heardRescued]: 'boolean',
+  [FLAGS.heardKeeper]: 'boolean',
+  [FLAGS.readFledAccount]: 'boolean',
+  [FLAGS.reliefExamined]: 'boolean',
+  [FLAGS.reliefMatched]: 'boolean',
+  [FLAGS.shutterTried]: 'boolean',
+  [FLAGS.shutterHeld]: 'boolean',
+  [FLAGS.lanternInAlcove]: 'boolean',
+  [FLAGS.seamRevealed]: 'boolean',
+  [FLAGS.passageOpen]: 'boolean',
+  [FLAGS.thresholdExamined]: 'boolean',
+  [FLAGS.crossed]: 'boolean',
+  [FLAGS.sawTree]: 'boolean',
+  [FLAGS.heardNoProphecy]: 'boolean',
+  [FLAGS.hintStage]: 'number',
+  [FLAGS.hintContext]: 'string',
+};

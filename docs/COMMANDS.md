@@ -64,6 +64,10 @@ Conversations are authored topics with numbered replies. Any other command works
 mid-conversation and ends it. An unrecognised topic number says so and changes
 nothing.
 
+People answer to their name — `TALK TO SAGE`, `TALK TO OREG`, `TALK TO DILLY`,
+`TALK TO TYME`. A few also answer to a description, such as `TALK TO BAKER` or
+`TALK TO JOINER`.
+
 ## When the game asks "which one do you mean?"
 
 Answer with the number, or with a name precise enough to pick one option. Typing

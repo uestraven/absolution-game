@@ -1,13 +1,19 @@
 import type { GameState, PersonDef } from '../engine/types';
 import { FLAGS } from './flags';
+import { c, m } from './markup';
 
 /**
  * The village cast.
  *
  * Everyone here is named for a herb or a spice — the convention, not a joke.
  * Nobody remarks on anybody's name, nobody makes a pun, and no behaviour is
- * derived from a name's meaning. Rose and Mary are twins and the page never
- * says so in as many words; they simply arrive together and disagree.
+ * derived from a name's meaning, and nobody makes a pun.
+ *
+ * Internal `id`s are deliberately the earlier provisional ones. Saves store
+ * them — directly in `pending.personId`, and inside the `topic.<person>.<id>`
+ * entries in `discovered` — so keeping them stable means a save made before
+ * the renaming still loads. The display `name` is the only thing that changed.
+ * Old names stay in `nouns`, so a player's typing habits keep working too.
  *
  * All names are provisional content. See docs/CANON.md.
  */
@@ -19,11 +25,11 @@ const PERSON_LIST: PersonDef[] = [
    * The square
    * ================================================================ */
   {
-    id: 'sage',
+    id: 'orla',
     name: 'Sage',
-    nouns: ['sage', 'woman with the chalk', 'chalk woman'],
+    nouns: ['sage', 'orla', 'woman with the chalk', 'chalk woman'],
     locationId: 'present.square',
-    listAs: 'Sage, going over the chalk lines again',
+    listAs: c('Sage, going over the chalk lines again'),
     appearance: () =>
       'Twenty-three or so, with chalk to the wrist on her right hand and none at all on her ' +
       'left. She keeps the plank, the midwinter words, the order of the vigil and which house ' +
@@ -41,14 +47,15 @@ const PERSON_LIST: PersonDef[] = [
         aliases: ['wanderer', 'plank', 'lines', 'chalk'],
         response: () =>
           '"Hyssop put the lines together with the year and came to me about it in the winter, ' +
-          'and she is not a woman who invents things." Sage taps the plank. "A cyclops. One ' +
-          'eye. It comes, and what stands does not stand after."\n\n' +
+          'and she is not a woman who invents things." Sage taps the plank. "A ' + m('cyclops') +
+          '. One eye. It comes, and what stands does not stand after."\n\n' +
           '"Mind, the words only say the one eye. The old carvings put it in the middle of the ' +
           'face, big as a dish, and everyone has had that picture in their head since they were ' +
           'four. That is the carvers\' idea, not the words\'." She shrugs. "Half of what people ' +
-          '*know* about the Wanderer, they know off a wall."\n\n' +
-          '"And the part they do not repeat is the last line. Someone who braves the Cave of ' +
-          'Absolution will have the power to turn it aside." She wipes chalk off her thumb. ' +
+          '*know* about the ' + m('Wanderer') + ', they know off a wall."\n\n' +
+          '"And the part they do not repeat is the last line. Someone who braves the ' +
+          m('Cave of Absolution') + ' will have the power to turn it aside." She wipes chalk ' +
+          'off her thumb. ' +
           '"Which is why the whole village has opinions about you this morning, and why I would ' +
           'rather you heard it from the plank than from Marjoram."',
         effects: {
@@ -57,9 +64,9 @@ const PERSON_LIST: PersonDef[] = [
             {
               id: 'j.prophecy',
               text:
-                'The prophecy on the plank: a one-eyed monster called the Wanderer brings a ' +
-                'cataclysm, and someone who braves the Cave of Absolution will have the power ' +
-                'to turn it aside.',
+                'The ' + m('prophecy') + ' on the plank: a one-eyed monster called the ' +
+                m('Wanderer') + ' brings a ' + m('cataclysm') + ', and someone who braves the ' +
+                m('Cave of Absolution') + ' will have the power to turn it aside.',
             },
           ],
         },
@@ -71,7 +78,7 @@ const PERSON_LIST: PersonDef[] = [
         response: () =>
           '"Older than the plank. Older than the chalk, older than me, older than my aunt, and ' +
           'she had them from hers." Sage says it the way you would recite a list you have been ' +
-          'made to learn. "The Wanderer-words get said at midwinter. They have been said at ' +
+          'made to learn. "The ' + m('Wanderer-words') + ' get said at midwinter. They have been said at ' +
           'midwinter for as long as anybody has been counting midwinters. Nobody ever thought ' +
           'they were about next year."\n\n' +
           '"Then Hyssop read a date out of them — counted it off the lines, the way you would ' +
@@ -83,7 +90,8 @@ const PERSON_LIST: PersonDef[] = [
             {
               id: 'j.prophecy_age',
               text:
-                'The Wanderer-words are generations old and said every midwinter. What is new ' +
+                'The ' + m('Wanderer-words') + ' are generations old and said every ' +
+                'midwinter. What is new ' +
                 'is that Hyssop has counted a date out of them.',
             },
           ],
@@ -108,8 +116,8 @@ const PERSON_LIST: PersonDef[] = [
         response: () =>
           '"You are allowed. That is the whole of it. Sixteen and you are allowed, and you go ' +
           'in and you come out and you are the same person with one more thing in you."\n\n' +
-          'She points the chalk at you. "Three of your year have gone already. Rose went to the ' +
-          'end of the rope and loved every minute. Mary went because you are supposed to and ' +
+          'She points the chalk at you. "Three of your year have gone already. Chervil went to ' +
+          'the end of the rope and loved every minute. Borage went because you are supposed to ' +
           'came back out at the gallery. Mint said no, out loud, in front of everyone." A beat. ' +
           '"None of them came back with a power. Nobody expects you to either."\n\n' +
           '"Go in because you are sixteen. Not because of a plank."',
@@ -117,11 +125,11 @@ const PERSON_LIST: PersonDef[] = [
     ],
   },
   {
-    id: 'marjoram',
+    id: 'marda',
     name: 'Marjoram',
-    nouns: ['marjoram', 'baker'],
+    nouns: ['marjoram', 'marda', 'baker'],
     locationId: 'present.square',
-    listAs: 'Marjoram, with flour to her elbows and views to match',
+    listAs: c('Marjoram, with flour to her elbows and views to match'),
     appearance: () =>
       'Broad, floured, and entirely unhurried. She has the forearms of someone who has worked ' +
       'dough every morning for thirty years and the expression of someone who has heard the ' +
@@ -168,72 +176,11 @@ const PERSON_LIST: PersonDef[] = [
     ],
   },
   {
-    id: 'mint',
-    name: 'Mint',
-    nouns: ['mint'],
-    locationId: 'present.square',
-    listAs: 'Mint, filling a bucket and in no hurry about it',
-    appearance: () =>
-      'Your year, and a hand taller than you since the spring. She works the windlass with one ' +
-      'arm and watches the square over the top of it.\n\n' +
-      'In the eleven days since she turned down the rite in front of forty people, she has not ' +
-      'once looked like someone who is getting away with something.',
-    greeting: () =>
-      'Mint sets the bucket down on the cap. "Today, is it." She says it like a fact she is ' +
-      'glad to have. "Go on then."',
-    topics: [
-      {
-        id: 'declined',
-        label: 'why she said no',
-        aliases: ['no', 'declined', 'refused', 'her rite'],
-        response: () =>
-          '"Because I did not want to." She puts her weight back on the handle. "That is the ' +
-          'whole reason and people keep waiting for a better one."\n\n' +
-          '"Sage asked me at the door, the way she has to, and I said no thank you, and she ' +
-          'wrote it down and that was that. Nobody has thrown anything at me. My mother was ' +
-          'disappointed for about a day." She shrugs. "It turns out you are allowed to simply ' +
-          'not."\n\n' +
-          '"I am saying it to you because somebody said it to me and it helped."',
-        effects: {
-          journal: [
-            {
-              id: 'j.mint',
-              text:
-                'Mint declined the rite out loud in front of everyone, and nothing happened to ' +
-                'her. Saying no is genuinely allowed.',
-            },
-          ],
-        },
-      },
-      {
-        id: 'prophecy',
-        label: 'whether the prophecy changes it',
-        aliases: ['wanderer', 'plank', 'power'],
-        response: () =>
-          '"You mean does the plank mean I should have gone." She considers the bucket. "I ' +
-          'thought about that for a night and then I stopped."\n\n' +
-          '"If a hole in a hill hands out a power to whoever is brave enough to walk into it, ' +
-          'then the hole can come and ask me. I live here. I am not hard to find." She gets the ' +
-          'bucket up onto her hip. "And if it only works on people who wanted to go, then it ' +
-          'was never about being brave, was it."',
-      },
-      {
-        id: 'you',
-        label: 'what she thinks you should do',
-        aliases: ['advice', 'me'],
-        response: () =>
-          '"Go, if you want to go. You have wanted to go since you were nine." No edge on it at ' +
-          'all. "I am not the argument against it. I am just the proof that it is a choice."\n\n' +
-          '"Come and find me after. I want to hear it from someone who is not performing."',
-      },
-    ],
-  },
-  {
-    id: 'parsie',
+    id: 'hesk',
     name: 'Parsie',
-    nouns: ['parsie', 'child', 'kid'],
+    nouns: ['parsie', 'hesk', 'child', 'kid'],
     locationId: 'present.square',
-    listAs: 'Parsie, eleven and vibrating',
+    listAs: c('Parsie, eleven and vibrating'),
     appearance: () =>
       'Eleven, with a stick he has not decided the purpose of yet. He has clearly been told to ' +
       'leave you alone today and has interpreted this generously.',
@@ -258,9 +205,9 @@ const PERSON_LIST: PersonDef[] = [
       {
         id: 'others',
         label: 'the others who went in',
-        aliases: ['rose', 'mary', 'mint', 'who else'],
+        aliases: ['chervil', 'borage', 'mint', 'who else'],
         response: () =>
-          '"Rose went right to the end of the rope and said it was *brilliant*. Mary went in ' +
+          '"Chervil went right to the end of the rope and said it was *brilliant*. Borage went in ' +
           'after her and came back out at the gallery and said it was *atmospheric*." Parsie\'s ' +
           'opinion of this word is total. "They were in there together and they came out with ' +
           'two completely different caves."\n\n' +
@@ -290,11 +237,11 @@ const PERSON_LIST: PersonDef[] = [
    * The workshop
    * ================================================================ */
   {
-    id: 'oreg',
+    id: 'tolv',
     name: 'Oreg',
-    nouns: ['oreg', 'joiner'],
+    nouns: ['oreg', 'tolv', 'joiner'],
     locationId: 'present.workshop',
-    listAs: 'Oreg at the bench',
+    listAs: c('Oreg at the bench'),
     appearance: () =>
       'Forty, maybe. Sawdust in the creases of his knuckles, a pencil behind his ear that he ' +
       'will not need because he has already measured it. He talks while he works and the work ' +
@@ -393,11 +340,11 @@ const PERSON_LIST: PersonDef[] = [
    * The cave path
    * ================================================================ */
   {
-    id: 'dilly',
+    id: 'nessa',
     name: 'Dilly',
-    nouns: ['dilly'],
+    nouns: ['dilly', 'nessa'],
     locationId: 'present.cave_path',
-    listAs: 'Dilly on the stump, boots off',
+    listAs: c('Dilly on the stump, boots off'),
     appearance: () =>
       'A few years older than you, sitting with her boots beside her and her heels in the ' +
       'grass. She is not waiting for anything. She comes up here and sits on the stump, and ' +
@@ -416,7 +363,7 @@ const PERSON_LIST: PersonDef[] = [
           'I would rather you had not."\n\n' +
           '"In the square version I am screaming, and there are four men with ropes, and ' +
           'somebody\'s dog finds me. There was no dog. There were two people, one of them was ' +
-          'Bay, and I was sitting down with my back against a wall being extremely quiet ' +
+          'Tyme, and I was sitting down with my back against a wall being extremely quiet ' +
           'because I had worked out that shouting was using me up."\n\n' +
           'She picks at the stump. "I do not mind it being told. I mind it being told wrong, ' +
           'because the wrong version is about being frightened, and the true one is about ' +
@@ -497,17 +444,17 @@ const PERSON_LIST: PersonDef[] = [
     ],
   },
   {
-    id: 'bay',
-    name: 'Bay',
-    nouns: ['bay', 'man with the rope', 'keeper'],
+    id: 'aldren',
+    name: 'Tyme',
+    nouns: ['tyme', 'bay', 'aldren', 'man with the rope', 'keeper'],
     locationId: 'present.cave_path',
-    listAs: 'Bay, coiling rope and watching the sky',
+    listAs: c('Tyme, coiling rope and watching the sky'),
     appearance: () =>
       'Weathered, deliberate, with a coil of hemp over one shoulder and the stance of a man who ' +
       'has stood on this path in every kind of weather. He keeps the entrance. It is not a ' +
       'title anyone gave him.',
     greeting: () =>
-      'Bay finishes the coil before he speaks, which takes a while. "Right. Lantern. Good. ' +
+      'Tyme finishes the coil before he speaks, which takes a while. "Right. Lantern. Good. ' +
       'Show me it lights."',
     topics: [
       {
@@ -528,7 +475,7 @@ const PERSON_LIST: PersonDef[] = [
             {
               id: 'j.bay',
               text:
-                'Bay: past the gallery pillar there is no rope, but both ways on come back to ' +
+                'Tyme: past the gallery pillar there is no rope, but both ways on come back to ' +
                 'the pillar, and the cave mouth stays visible from the gallery.',
             },
           ],
@@ -543,7 +490,7 @@ const PERSON_LIST: PersonDef[] = [
           'Then the crawl north into the round room that throws your voice at you, which is ' +
           'where people get a fright and that is all it is. Then the squeeze east into the ' +
           'little square cut room."\n\n' +
-          '"Thirty-odd years I have kept this path. Nobody has ever found a fifth room. I will ' +
+          '"For most of my life I have kept this path. Nobody has ever found a fifth room. I will ' +
           'say that plainly so nobody has to go looking for one on my account."',
         effects: {
           journal: [
@@ -551,7 +498,7 @@ const PERSON_LIST: PersonDef[] = [
               id: 'j.layout',
               text:
                 'Known layout: mouth, gallery, the echoing round room north, the small cut ' +
-                'chamber east. Bay says nobody has ever found a fifth room.',
+                'chamber east. Tyme says nobody has ever found a fifth room.',
             },
           ],
         },
@@ -565,7 +512,8 @@ const PERSON_LIST: PersonDef[] = [
           'He stops coiling. "Two of us. Not four, whatever the square says."\n\n' +
           '"She had done the one sensible thing available to her, which was to sit down and ' +
           'stop spending herself. Found her with her back to a wall and her hands in her ' +
-          'sleeves, and she said *took your time* at me, which under the circumstances I ' +
+          'sleeves, and she said *you took the scenic route* at me, which under the ' +
+          'circumstances I ' +
           'thought was fair."\n\n' +
           'He starts coiling again. "She comes up and sits on that stump most weeks. I have ' +
           'never once asked her why and I would advise you to extend her the same courtesy."',
@@ -575,9 +523,9 @@ const PERSON_LIST: PersonDef[] = [
         label: 'coming back out for more gear',
         aliases: ['gear', 'supplies', 'return', 'preparation'],
         response: () =>
-          '"You can come and go as you like. It is not a trial and nobody is timing you." He ' +
+          '"You can come and go as you like. It is not a trial and nobody is counting." He ' +
           'nods down the hill. "People walk back down for a second lantern, a coat, their ' +
-          'dinner. Rose went back for her dinner and nobody thinks less of her."\n\n' +
+          'dinner. Chervil went back for her dinner and nobody thinks less of her."\n\n' +
           '"The only rule I keep is this one: tell me when you go in, and I will be here when ' +
           'you come out. That is the job."',
         effects: {
@@ -585,7 +533,7 @@ const PERSON_LIST: PersonDef[] = [
             {
               id: 'j.comeback',
               text:
-                'Bay: you can leave the cave and come back as often as you like. It is not ' +
+                'Tyme: you can leave the cave and come back as often as you like. It is not ' +
                 'timed.',
             },
           ],
@@ -596,7 +544,7 @@ const PERSON_LIST: PersonDef[] = [
         label: 'the prophecy',
         aliases: ['wanderer', 'plank', 'power'],
         response: () =>
-          '"Thirty years I have handed people a rope at that mouth, and not one of them has ' +
+          '"I have handed people a rope at that mouth for most of my life, and not one of them has ' +
           'come out of it with a power." He says it without any edge. "I am not telling you ' +
           'there is nothing. I am telling you I have never seen it, and I have had the best ' +
           'seat."\n\n' +
@@ -605,218 +553,20 @@ const PERSON_LIST: PersonDef[] = [
       },
     ],
   },
-  {
-    /*
-     * One conversation, two voices. Every answer comes back twice and
-     * disagrees with itself, which is the contrasting-accounts requirement
-     * built into a single interaction rather than spread across two.
-     */
-    id: 'rose_and_mary',
-    name: 'Rose and Mary',
-    nouns: ['rose and mary', 'rose', 'mary', 'twins', 'sisters'],
-    locationId: 'present.cave_path',
-    listAs: 'Rose and Mary, sharing one coat against the wind',
-    appearance: () =>
-      'Your year, both of them, and they have come up the hill to watch somebody else do it.\n\n' +
-      'They have the same chin and the same way of standing with their weight on one hip, and ' +
-      'they are wearing one coat between them in a manner that suggests a long and unresolved ' +
-      'negotiation. Rose has the sleeves.',
-    greeting: () =>
-      '"There {they} is," says Rose, delighted. "Go on, go in, go all the way to the back."\n\n' +
-      '"Or do not," says Mary. "It is a hole."',
-    topics: [
-      {
-        id: 'what_its_like',
-        label: 'what it was actually like',
-        aliases: ['inside', 'what is it like', 'their rite'],
-        response: () =>
-          '"Enormous," says Rose. "You get past the pillar and the ceiling just goes, and your ' +
-          'voice comes down at you out of nowhere, and there is a room back there that somebody ' +
-          '*made*, with the walls done in scales like a fish, and nobody knows why. Nobody ' +
-          'knows why! It is the best thing in the valley and we keep it in a hill."\n\n' +
-          '"It is cold and it is wet and it smells of pennies," says Mary. "The ceiling comes ' +
-          'down, not goes. We were in there the same afternoon."\n\n' +
-          '"We were in there the same afternoon," Rose agrees, happily.',
-        effects: {
-          journal: [
-            {
-              id: 'j.twins',
-              text:
-                'Rose and Mary went into the cave the same afternoon and came out with ' +
-                'completely different accounts of it. Both mention the scale-walled room.',
-            },
-          ],
-        },
-      },
-      {
-        id: 'how_far',
-        label: 'how far each of them got',
-        aliases: ['far', 'deep', 'gallery'],
-        response: () =>
-          '"End of the rope," says Rose. "Then past it, both ways, and then back to the pillar ' +
-          'and out, and then I went back down for my dinner and came up and did it again."\n\n' +
-          '"Gallery," says Mary. "I read the names on the wall, which is the only interesting ' +
-          'thing in there, and then I came out and sat on the bench in the sun."\n\n' +
-          '"She did not even look at the picture."\n\n' +
-          '"I looked at the picture. It is a worn-out carving of a man kneeling down. You have ' +
-          'built a cathedral out of a man kneeling down."',
-        effects: {
-          journal: [
-            {
-              id: 'j.twins_depth',
-              text:
-                'Rose went past the end of the rope both ways; Mary stopped at the gallery and ' +
-                'read the names.',
-            },
-          ],
-        },
-      },
-      {
-        id: 'nothing',
-        label: 'whether they found anything',
-        aliases: ['found', 'power', 'anything'],
-        response: () =>
-          'They answer at the same time, which they clearly do often enough to have stopped ' +
-          'noticing.\n\n' +
-          '"No," says Mary.\n\n' +
-          '"Not *yet*," says Rose.\n\n' +
-          'Mary turns to look at her. "You have been. Twice. In one day."\n\n' +
-          '"And I did not look properly, because I was busy being happy." Rose says this ' +
-          'without the slightest embarrassment. "Somebody is going to look properly one day and ' +
-          'I would like it very much if it were you."',
-      },
-      {
-        id: 'prophecy',
-        label: 'the plank, and whether it matters',
-        aliases: ['wanderer', 'plank', 'prophecy'],
-        response: () =>
-          '"It matters to Hyssop and it matters to Sage and it does not matter to me," says ' +
-          'Mary. "The words are old. The year is new. One of those is doing the work and it is ' +
-          'not the words."\n\n' +
-          'Rose has gone quiet, which is apparently unusual, because Mary looks at her.\n\n' +
-          '"I would go anyway," Rose says. "That is all. I would go anyway, so it does not ' +
-          'count for anything when I say go."\n\n' +
-          '"That," says Mary, "is the first sensible thing you have said about it."',
-      },
-    ],
-  },
 
   /* ================================================================ *
    * The cave mouth
    * ================================================================ */
-  {
-    /*
-     * The hero's oldest friend. Their dialogue is kept clear of anything
-     * time-flavoured — no waiting, no clocks, no "about time", no years — so
-     * that the name never reads as a signal.
-     */
-    id: 'tyme',
-    name: 'Tyme',
-    nouns: ['tyme', 'friend'],
-    locationId: 'present.entrance',
-    listAs: 'Tyme, sitting on the bench and pretending to have come up for the walk',
-    appearance: () =>
-      'Your friend since both of you were too small to be trusted near the well. Sitting on the ' +
-      'bench with their boots crossed at the ankle, having very obviously walked up the hill on ' +
-      'purpose and intending to claim otherwise.\n\n' +
-      'They went in themselves, back in the spring, and came out, and told you the truth about ' +
-      'it instead of the story, which is the whole reason you are not frightened this morning.',
-    greeting: () =>
-      '"Do not make anything of this," Tyme says, from the bench. "I came up for the walk."\n\n' +
-      'They have brought two apples. They are not eating either of them.',
-    topics: [
-      {
-        id: 'why_here',
-        label: 'why they came up',
-        aliases: ['here', 'bench', 'apples', 'walk'],
-        response: () =>
-          '"Because Bay sits out here on his own and it seemed rude." Tyme looks at the slot of ' +
-          'the mouth rather than at you. "And because I know what the bit just before it feels ' +
-          'like, and I did not have anyone on the bench, and it would have been better if I ' +
-          'had."\n\n' +
-          'They hand you an apple without turning round. "Do not eat it in there, it will go ' +
-          'everywhere. Eat it when you come out and tell me I was right about the dark."',
-        effects: {
-          journal: [
-            {
-              id: 'j.tyme_bench',
-              text:
-                'Tyme walked up to sit on the bench at the mouth, because nobody was on it the ' +
-                'morning they went in.',
-            },
-          ],
-        },
-      },
-      {
-        id: 'their_rite',
-        label: 'what it was like for them',
-        aliases: ['their rite', 'spring', 'when they went'],
-        response: () =>
-          '"Honestly? Boring, and then not boring, and then boring again." They turn the apple ' +
-          'over. "You walk in and it is a hole and you feel slightly stupid. Then the daylight ' +
-          'goes small behind you and your ears get very good, and you stand there listening to ' +
-          'a cave do nothing at you for a while, and something in your chest sits down."\n\n' +
-          '"And then it is a hole again, and you come out, and the sun is appalling."\n\n' +
-          '"Nobody says the last part. Everybody says the frightening part or the ' +
-          'nothing-happened part. The useful part is in between and it does not make a story."',
-        effects: {
-          journal: [
-            {
-              id: 'j.tyme_rite',
-              text:
-                'Tyme on the rite: boring, then not boring, then boring again. The useful part ' +
-                'is in the middle and does not make a story.',
-            },
-          ],
-        },
-      },
-      {
-        id: 'prophecy',
-        label: 'the prophecy',
-        aliases: ['wanderer', 'plank', 'power', 'vigil'],
-        response: () =>
-          'Tyme is quiet for a bit.\n\n' +
-          '"I do not believe the plank," they say. "And I have been sleeping badly, and I have ' +
-          'checked the shutters twice a night for eleven nights, and both of those things are ' +
-          'true at once and I have stopped trying to make them agree."\n\n' +
-          'They turn on the bench and look at you properly. "If you go in there and find ' +
-          'absolutely nothing, which is what will happen, come and tell me, and I will sleep. ' +
-          'That is a real thing you can do for me and it has nothing to do with any power."',
-        effects: {
-          journal: [
-            {
-              id: 'j.tyme_prophecy',
-              text:
-                'Tyme does not believe the plank and has been checking the shutters twice a ' +
-                'night for eleven nights anyway.',
-            },
-          ],
-        },
-      },
-      {
-        id: 'advice',
-        label: 'anything you should know',
-        aliases: ['advice', 'warning', 'tips'],
-        response: () =>
-          '"Two things." They hold up fingers. "One: the round room north of the gallery throws ' +
-          'your voice at you from above and it will get you once, properly, in the stomach. It ' +
-          'is only the shape of the room. Knowing that in advance does not stop it, but it ' +
-          'shortens it."\n\n' +
-          '"Two: when you want to come out, come out. Do not finish anything first." They ' +
-          'finally bite the apple. "That is Dilly\'s, not mine. I am passing it on."',
-      },
-    ],
-  },
 
   /* ================================================================ *
    * The square, earlier
    * ================================================================ */
   {
-    id: 'saffra',
+    id: 'sabra',
     name: 'Saffra',
-    nouns: ['saffra', 'mason', 'woman', 'woman on the plank'],
+    nouns: ['saffra', 'sabra', 'mason', 'woman', 'woman on the plank'],
     locationId: 'past.square',
-    listAs: 'Saffra on the plank with a trowel',
+    listAs: c('Saffra on the plank with a trowel'),
     appearance: () =>
       'A mason, up on a scaffold plank with her sleeves rolled and lime dust to the elbow. She ' +
       'works and talks at the same pace. You have never seen her before in your life and you ' +
@@ -863,7 +613,7 @@ const PERSON_LIST: PersonDef[] = [
         id: 'absolution',
         label: 'whether the cave has a name',
         aliases: ['name of the cave', 'called'],
-        available: (state) => state.discovered.includes('topic.saffra.cave'),
+        available: (state) => state.discovered.includes('topic.sabra.cave'),
         response: () =>
           '"A name? It is the cave." She squints at you. "Up the hill there. What would we call ' +
           'it, the other cave?"\n\n' +
@@ -882,7 +632,7 @@ const PERSON_LIST: PersonDef[] = [
         id: 'wanderer',
         label: 'whether anything is coming',
         aliases: ['wanderer', 'prophecy', 'vigil', 'lanterns', 'warning', 'danger'],
-        available: (state) => state.discovered.includes('topic.saffra.cave'),
+        available: (state) => state.discovered.includes('topic.sabra.cave'),
         response: () =>
           'You try to ask it without asking it. Whether they keep a vigil, in this village. ' +
           'Whether they string the lanterns up on a cord between the eaves and sit out a night, ' +
@@ -890,7 +640,8 @@ const PERSON_LIST: PersonDef[] = [
           'Saffra looks at you with the patience of a woman on a plank.\n\n' +
           '"Lanterns on a cord? Over the square? In this wind?" She laughs once. "Whose ' +
           'lanterns?"\n\n' +
-          'You ask, more carefully, whether she has ever heard of the Wanderer.\n\n' +
+          'You ask, more carefully, whether she has ever heard of the ' + m('Wanderer') +
+          '.\n\n' +
           'It lands on nothing at all. Not fear, not caution, not the flicker people in your ' +
           'square get when the word comes up. She turns it over as a word she has not been ' +
           'given before, decides it is probably a ford-village thing, and hands it back.\n\n' +
@@ -902,7 +653,7 @@ const PERSON_LIST: PersonDef[] = [
             {
               id: 'j.no_prophecy',
               text:
-                'Nobody here has heard the word Wanderer. There is no vigil, no cord of ' +
+                'Nobody here has heard the word ' + m('Wanderer') + '. There is no vigil, no cord of ' +
                 'lanterns, no plank by the well.',
             },
           ],
@@ -911,11 +662,11 @@ const PERSON_LIST: PersonDef[] = [
     ],
   },
   {
-    id: 'fenn',
+    id: 'pell',
     name: 'Fenn',
-    nouns: ['fenn', 'boy'],
+    nouns: ['fenn', 'pell', 'boy'],
     locationId: 'past.square',
-    listAs: 'Fenn, holding the mortar board badly',
+    listAs: c('Fenn, holding the mortar board badly'),
     appearance: () =>
       'Eleven or twelve, barefoot, with mortar on one foot and no awareness of it. He is ' +
       'holding the board at the exact angle that will cost him, and watching you instead.',

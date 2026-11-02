@@ -4,6 +4,7 @@ import { begin, lastText, type, typeAll } from '../testing/harness';
 import { PEOPLE } from './dialogue';
 import { OBJECTS } from './objects';
 import { LOCATIONS } from './locations';
+import { stripMarkup } from './markup';
 
 describe('both characters', () => {
   it('are named correctly in the interface and the prose', () => {
@@ -33,8 +34,10 @@ describe('both characters', () => {
     const girl = type(typeAll(begin('basilia'), boyPath.slice(0, -1)), 'talk to parsie');
     expect(lastText(boy)).toContain('he read the plank');
     expect(lastText(girl)).toContain('she read the plank');
-    expect(lastText(boy)).not.toContain('{');
-    expect(lastText(girl)).not.toContain('{');
+    // No unrendered pronoun placeholder. Semantic annotations legitimately
+    // use doubled braces, so check for the single-brace template form.
+    expect(lastText(boy)).not.toMatch(/\{[A-Za-z]+\}/);
+    expect(lastText(girl)).not.toMatch(/\{[A-Za-z]+\}/);
   });
 
   it('plays the same chapter either way', () => {
@@ -86,8 +89,8 @@ describe('no unrendered placeholders anywhere', () => {
   it('in location descriptions and subtitles', () => {
     for (const state of states) {
       for (const def of Object.values(LOCATIONS)) {
-        expect(renderText(def.description(state), state), def.id).not.toMatch(/\{[A-Za-z]+\}/);
-        expect(renderText(def.subtitle(state), state), def.id).not.toMatch(/\{[A-Za-z]+\}/);
+        expect(stripMarkup(renderText(def.description(state), state)), def.id).not.toMatch(/\{[A-Za-z]+\}/);
+        expect(stripMarkup(renderText(def.subtitle(state), state)), def.id).not.toMatch(/\{[A-Za-z]+\}/);
       }
     }
   });
@@ -95,10 +98,10 @@ describe('no unrendered placeholders anywhere', () => {
   it('in greetings, appearances and every topic response', () => {
     for (const state of states) {
       for (const person of Object.values(PEOPLE)) {
-        expect(renderText(person.greeting(state), state), person.id).not.toMatch(
+        expect(stripMarkup(renderText(person.greeting(state), state)), person.id).not.toMatch(
           /\{[A-Za-z]+\}/
         );
-        expect(renderText(person.appearance(state), state), person.id).not.toMatch(
+        expect(stripMarkup(renderText(person.appearance(state), state)), person.id).not.toMatch(
           /\{[A-Za-z]+\}/
         );
         for (const topic of person.topics) {

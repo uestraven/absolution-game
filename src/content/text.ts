@@ -5,7 +5,7 @@
  * written to be read by someone who knows only what the village knows.
  */
 
-export const TITLE = 'Cave of Absolution';
+export const TITLE = 'Absolution';
 export const SUBTITLE = 'An opening chapter';
 
 export const SELECT_PROMPT = `You turned sixteen at some point in the night, which means that today you are allowed into the cave.
@@ -73,4 +73,4 @@ export const END_OF_PROTOTYPE = `— End of the opening chapter —
 
 This is as far as the prototype goes. The story does not continue past this point yet.
 
-You can keep looking around, read your JOURNAL, or use Settings to restart from the checkpoint at the start of the chapter. Your progress is saved.`;
+You can keep looking around, read your JOURNAL, or use Settings to restart from the checkpoint at the start of the chapter. Settings will tell you whether this browser is keeping your progress, and Export Save works either way.`;

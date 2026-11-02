@@ -3,8 +3,8 @@ import type { CharacterId, GameAction, GameState } from '../engine/types';
 import { echoCommand, resolve } from '../engine/reducer';
 import { getAffordances, type Affordances } from '../engine/affordances';
 import { parse } from '../engine/parser';
+import { stripMarkup } from '../content/markup';
 import { activeTopics, currentLocation } from '../engine/selectors';
-import { vocabulary } from '../engine/highlighting';
 import {
   DEFAULT_PREFS,
   EXPORT_FILENAME,
@@ -22,6 +22,7 @@ import {
   type Prefs,
   type StorageStatus,
 } from '../persistence/storage';
+import { MAX_SAVE_BYTES } from '../persistence/validate';
 import { Transcript } from './Transcript';
 import { TypeInput } from './TypeInput';
 import { SelectPanel } from './SelectPanel';
@@ -49,6 +50,9 @@ export function App() {
   const [announcement, setAnnouncement] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
   const loaded = useRef(false);
+  /** Mirrors `state` for synchronous reads inside `act`. */
+  const stateRef = useRef<GameState | null>(null);
+  stateRef.current = state;
 
   /* --- Boot ------------------------------------------------------- */
   useEffect(() => {
@@ -61,7 +65,10 @@ export function App() {
     // loadable even on a store that can no longer be written to.
     setCanContinue(outcome.state !== null);
     setHasCheckpoint(readSlot('checkpoint').state !== null);
-    if (outcome.state) setState(outcome.state);
+    if (outcome.state) {
+      stateRef.current = outcome.state;
+      setState(outcome.state);
+    }
     // Say so before the first action is lost, not after.
     if (!storageAvailable()) {
       setStorage({
@@ -81,37 +88,61 @@ export function App() {
   }, []);
 
   /* --- Persistence ------------------------------------------------ */
+  /**
+   * Writes a state and reports honestly on both slots.
+   *
+   * A successful autosave must not hide a failed chapter checkpoint, so the two
+   * results are combined rather than the later one winning.
+   */
   const persist = useCallback((next: GameState, chapterChanged: boolean) => {
-    if (chapterChanged) {
-      const result = writeCheckpoint(next);
-      if (result.working) setHasCheckpoint(true);
+    const checkpoint = chapterChanged ? writeCheckpoint(next) : null;
+    if (checkpoint?.working) setHasCheckpoint(true);
+
+    const autosave = writeAutosave(next);
+    if (autosave.working) setCanContinue(true);
+
+    if (!autosave.working) {
+      setStorage(autosave);
+    } else if (checkpoint && !checkpoint.working) {
+      setStorage({
+        working: false,
+        message:
+          'Your position is being saved, but the checkpoint for the start of this chapter ' +
+          'could not be written, so Restart from checkpoint may be unavailable or stale. ' +
+          (checkpoint.message ?? ''),
+      });
+    } else {
+      setStorage(autosave);
     }
-    const result = writeAutosave(next);
-    setStorage(result);
-    if (result.working) setCanContinue(true);
   }, []);
 
   /* --- Dispatch --------------------------------------------------- */
+  /**
+   * The only path from an interaction to the engine.
+   *
+   * `resolve` is pure, so the next state is computed here — once — and the
+   * side effects (persisting, announcing) happen after it, outside any
+   * updater function. React is free to re-render, and StrictMode is free to
+   * double-invoke renders, without that turning into two saves or two
+   * transcript entries.
+   */
   const act = useCallback(
     (action: GameAction, echo?: string) => {
-      setState((current) => {
-        if (!current) return current;
-        const base = echo ? echoCommand(current, echo) : current;
-        const result = resolve(base, action);
-        const chapterChanged = result.state.chapter !== current.chapter;
-        persist(result.state, chapterChanged);
-        setAnnouncement(result.events.map((e) => e.text).join('\n\n'));
-        return result.state;
-      });
+      const current = stateRef.current;
+      if (!current) return;
+      const base = echo ? echoCommand(current, echo) : current;
+      const result = resolve(base, action);
+      // Keep the ref in step immediately, so a second command dispatched
+      // before React re-renders still resolves against the newest state.
+      stateRef.current = result.state;
+      setState(result.state);
+      persist(result.state, result.state.chapter !== current.chapter);
+      setAnnouncement(result.events.map((e) => stripMarkup(e.text)).join('\n\n'));
     },
     [persist]
   );
 
   const topics = useMemo(() => (state ? activeTopics(state) : []), [state]);
-  const terms = useMemo(
-    () => (state ? vocabulary(state) : { mystery: [], interactive: [], people: [] }),
-    [state]
-  );
 
   const submitTyped = useCallback(
     (raw: string) => {
@@ -131,9 +162,10 @@ export function App() {
   /* --- Starting and restarting ------------------------------------ */
   const chooseCharacter = useCallback((character: CharacterId) => {
     const result = resolve(blankSelectState(), { type: 'SELECT_CHARACTER', character });
+    stateRef.current = result.state;
     setState(result.state);
     setScreen('play');
-    setAnnouncement(result.events.map((e) => e.text).join('\n\n'));
+    setAnnouncement(result.events.map((e) => stripMarkup(e.text)).join('\n\n'));
     const checkpoint = writeCheckpoint(result.state);
     if (checkpoint.working) setHasCheckpoint(true);
     const saved = writeAutosave(result.state);
@@ -152,6 +184,7 @@ export function App() {
     clearProgress();
     setCanContinue(false);
     setHasCheckpoint(false);
+    stateRef.current = null;
     setState(null);
     setStartNotes([]);
     setSettingsOpen(false);
@@ -168,6 +201,7 @@ export function App() {
       'Restart from the start of the chapter? Anything you have done since will be lost.'
     );
     if (!ok) return;
+    stateRef.current = checkpoint;
     setState(checkpoint);
     setScreen('play');
     setSettingsOpen(false);
@@ -192,6 +226,15 @@ export function App() {
   const onFileChosen = useCallback(
     async (file: File | undefined) => {
       if (!file) return;
+      // Check the declared size before reading any of it, using the same byte
+      // limit the validator applies to the parsed text.
+      if (file.size > MAX_SAVE_BYTES) {
+        setNotice(
+          `Import refused. That file is ${Math.round(file.size / 1024)} KB; a save for this ` +
+            `story cannot be larger than ${MAX_SAVE_BYTES / 1024} KB.`
+        );
+        return;
+      }
       let text: string;
       try {
         text = await file.text();
@@ -211,6 +254,7 @@ export function App() {
         );
         if (!ok) return;
       }
+      stateRef.current = result.state;
       setState(result.state);
       setScreen('play');
       setSettingsOpen(false);
@@ -314,11 +358,7 @@ export function App() {
       ) : null}
 
       <main className="main">
-        <Transcript
-          entries={state.transcript}
-          vocabulary={terms}
-          showOptionLists={prefs.inputMode === 'type'}
-        />
+        <Transcript entries={state.transcript} showOptionLists={prefs.inputMode === 'type'} />
       </main>
 
       <div className="sr-only" aria-live="polite" aria-atomic="true">

@@ -22,6 +22,11 @@ const bad = (name, detail = '') => {
   console.log(`FAIL  ${name}${detail ? `  — ${detail}` : ''}`);
 };
 
+/*
+ * Playwright is a declared devDependency. Install its browser once with
+ *   npx playwright install chromium
+ * CHROME_PATH is only an escape hatch for a pre-existing local build.
+ */
 const EXECUTABLE = process.env.CHROME_PATH;
 const browser = await chromium.launch(EXECUTABLE ? { executablePath: EXECUTABLE } : {});
 
@@ -222,6 +227,14 @@ async function newPage(viewport) {
     ? ok('colour stays on short spans', `${(tinted.share * 100).toFixed(1)}% of the transcript`)
     : bad('colour stays on short spans', JSON.stringify(tinted));
 
+  const rawMarkup = await page.evaluate(() => {
+    const text = document.body.innerText || '';
+    return { braces: text.includes('{{'), pipes: /\{\{[mcg]\|/.test(text) };
+  });
+  !rawMarkup.braces && !rawMarkup.pipes
+    ? ok('annotation syntax is never shown to the player')
+    : bad('annotation syntax leaked into the page', JSON.stringify(rawMarkup));
+
   const hidden = await page.evaluate(() =>
     [...document.querySelectorAll('.transcript [class^=tint-]')].map((el) => el.textContent));
   hidden.every((t) => !/alcove|seam|passage/i.test(t || ''))
@@ -293,6 +306,43 @@ async function newPage(viewport) {
   place3 === 'the basin chamber'
     ? ok('checkpoint restart: back at the start of the current chapter', place3)
     : bad('checkpoint restart: back at the start of the current chapter', place3);
+
+  /* ---------- 5b. Settings is a real keyboard modal ---------- */
+  await page.keyboard.press('Escape').catch(() => {});
+  const settingsButton = page.getByRole('button', { name: 'Settings' });
+  await settingsButton.focus();
+  await page.keyboard.press('Enter');
+  const dialogOpen = await page.getByRole('dialog', { name: 'Settings' }).count();
+  const focusInside = await page.evaluate(() =>
+    document.querySelector('.dialog')?.contains(document.activeElement) ?? false);
+  dialogOpen === 1 && focusInside
+    ? ok('settings: opens with focus inside the dialog')
+    : bad('settings: focus on open', `open=${dialogOpen} inside=${focusInside}`);
+
+  // Tab many times: focus must never escape the dialog.
+  let escaped = false;
+  for (let i = 0; i < 40; i += 1) {
+    await page.keyboard.press('Tab');
+    const inside = await page.evaluate(() =>
+      document.querySelector('.dialog')?.contains(document.activeElement) ?? false);
+    if (!inside) { escaped = true; break; }
+  }
+  !escaped ? ok('settings: Tab stays inside the dialog')
+           : bad('settings: focus escaped the dialog');
+
+  await page.keyboard.press('Shift+Tab');
+  const stillInside = await page.evaluate(() =>
+    document.querySelector('.dialog')?.contains(document.activeElement) ?? false);
+  stillInside ? ok('settings: Shift+Tab stays inside the dialog')
+              : bad('settings: Shift+Tab escaped');
+
+  await page.keyboard.press('Escape');
+  const closed = await page.getByRole('dialog', { name: 'Settings' }).count();
+  const returned = await page.evaluate(() =>
+    (document.activeElement?.textContent || '').includes('Settings'));
+  closed === 0 && returned
+    ? ok('settings: Escape closes and focus returns to the button that opened it')
+    : bad('settings: Escape/focus return', `closed=${closed} returned=${returned}`);
 
   /* ---------- 6b. Import the exported save back ---------- */
   await openSettings(page);

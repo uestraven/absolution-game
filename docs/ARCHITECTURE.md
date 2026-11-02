@@ -138,20 +138,33 @@ invents no steps for versions that never existed.
 | `SettingsDialog` | Input mode, text size, saves, checkpoint restart |
 | `RichText` | Paragraphs, `*emphasis*`, and all colour — as React nodes |
 
-## Known debt
+## Where new content goes
 
-`engine/reducer.ts` is around 1,400 lines and mixes the generic action pipeline
-with puzzle-specific logic and the prose those puzzles print. That is workable
-for one chapter and will not be for several.
+The puzzle-specific code has been lifted out of the reducer:
 
-The seam to cut along is already visible: `checkIllumination`, `openPassage`,
-`liftShutter`, `wedgeShutter` and the alcove branches of `doPlace` are the only
-parts that know about this particular puzzle, and they communicate with the rest
-of the reducer solely through flags, `discover` and pushed events. Extracting
-them — one module per puzzle, exporting handlers of the same
-`(draft, events) => ResolveResult` shape the reducer already uses internally,
-with their prose beside them — leaves the shared action pipeline untouched.
-Worth doing before a second era is added, not during.
+| File | Holds |
+| --- | --- |
+| `engine/mechanics.ts` | Shared state helpers — `clone`, `discover`, `addJournal`, `commit`, `setObjective`, item movement. Knows about no particular puzzle, room or item |
+| `engine/puzzles/shutteredRelief.ts` | Everything that knows about the opening's puzzle, including its prose |
+| `engine/reducer.ts` | The action pipeline, noun resolution and the generic verbs |
+
+Adding to the game:
+
+- **A room.** One entry in `content/locations.ts` with its exits, plus its
+  objects in `content/objects.ts`. Nothing else needs to change; `enterLocation`
+  discovers whatever is `initiallyVisible`.
+- **An era.** A new `LocationId` prefix, the matching `Era` value, and a case in
+  `eraOf`. Validation already cross-checks `era` against the location prefix,
+  so a new era is covered by the existing coherence checks.
+- **A puzzle.** A new module beside `shutteredRelief.ts`, exporting handlers of
+  the same `(draft, events) => ResolveResult` shape, wired in from the relevant
+  `case` in the reducer's `doOpen` / `doUse` / `doPlace`. Its flags go in
+  `content/flags.ts` with their types in `FLAG_TYPES`.
+- **A chapter transition.** Follow `doCross`: set the flag, set `chapter`, call
+  `enterLocation`, add the journal line and `setObjective`, all in one
+  `resolve`. `App.persist` writes a fresh checkpoint whenever `chapter` changes.
+  Add the chapter to the `Chapter` union and to the chapter/era coherence rules
+  in `persistence/validate.ts`.
 
 ## Colour
 
@@ -161,27 +174,34 @@ unusual phenomena and significant story terms, cyan for exits, interactive
 objects and conversation topics, green for successful actions, acquired items
 and completed objectives.
 
-`engine/highlighting.ts` decides what may be tinted:
+Colour is **authored**, using the `{{tag|text}}` annotations defined in
+`content/markup.ts`:
 
-- **Interactive terms are derived from `state.discovered`** — the names of
-  visible objects, people present, reachable items and visible exits. An
-  undiscovered object contributes nothing, so the prose cannot glow at
-  something hidden. This is the same gate the parser uses, from the same field.
-- **Mystery terms are authored** in `content/highlights.ts`, because they carry
-  meaning rather than mechanics. The list is deliberately broad — the prophecy,
-  the rite's name, the sounds in the cave — so that magenta does not amount to
-  the interface pointing at the chapter's reveal.
+```ts
+m('the Wanderer')   // magenta: significant story term or phenomenon
+c('the relief')     // cyan: exit, interactable object, conversation topic
+g('the wedge')      // green: acquired item, successful action
+```
 
-Only curated `name` fields feed the vocabulary, never the loose `nouns` arrays
-the parser accepts, plus each name's head noun so that "the shutter" matches an
-object called "stone shutter". Terms that are also ordinary English are listed
-in `REQUIRES_DETERMINER` and only match behind an article, so "the well" is
-tinted and "as well" is not. A term is tinted at most once per paragraph.
+There is no substring matching. An earlier version derived cyan from
+`state.discovered` and magenta from a term list, which was safe about discovery
+but could not tell one sense of a word from another — "eye" is scenery, anatomy
+and a clue in three different sentences. Annotation is per-phrase and
+deliberate.
 
-Green is not a separate vocabulary. The engine marks an action that achieved
-something with the `success` transcript kind, and inside such an entry the same
-interactive term renders green instead of cyan — so the thing you just acquired
-or worked is the thing that goes green, with no second list to keep in step.
+Two sources of annotation:
+
+- **Authored prose** carries it inline: object `listAs` lines, person `listAs`
+  lines, the prophecy text, and the phenomena in the deep chamber.
+- **Engine-generated lists** are wrapped as they are built — exits, "you can
+  make out", "people here", inventory, conversation topics, disambiguation
+  options. These derive from state, so they can never name something the player
+  has not discovered.
+
+`stripMarkup` recovers the plain words, and is what the screen-reader live
+region announces. Transcript strings saved before annotation existed contain no
+tags, strip to themselves, and render as plain soft white — so no save
+migration was needed.
 
 Nothing is carried by colour alone: every tint sits on wording that already says
 the same thing, each entry is announced by kind to a screen reader, and focus

@@ -16,7 +16,7 @@ import { SCHEMA_VERSION } from '../engine/types';
 import { isLocationId, LOCATIONS } from '../content/locations';
 import { isItemId } from '../content/items';
 import { isCharacterId } from '../content/characters';
-import { ALL_FLAG_KEYS } from '../content/flags';
+import { ALL_FLAG_KEYS, FLAGS, FLAG_TYPES } from '../content/flags';
 import { OBJECTS } from '../content/objects';
 import { PEOPLE } from '../content/dialogue';
 import { eraOf } from '../engine/reducer';
@@ -231,6 +231,18 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
   if (!isChapter(chapter)) {
     return { ok: false, error: 'That save has an unknown chapter.' };
   }
+  if (chapter === 'select') {
+    // Nothing is ever saved before a character is chosen.
+    return { ok: false, error: 'That save was written before the story started.' };
+  }
+  // The crossing moves chapter and era together, so they can only disagree in
+  // a file that has been edited.
+  if ((chapter === 'crossing') !== (era === 'past')) {
+    return {
+      ok: false,
+      error: 'That save is inconsistent: its chapter and its era disagree about the crossing.',
+    };
+  }
 
   const rawInventory: unknown = data.inventory;
   if (!Array.isArray(rawInventory) || !rawInventory.every((v: unknown) => isItemId(v))) {
@@ -269,6 +281,16 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
     }
     if (!isFlagValue(value)) {
       return { ok: false, error: `That save has a non-primitive value for flag "${key}".` };
+    }
+    const expected = FLAG_TYPES[key];
+    if (expected && typeof value !== expected) {
+      return {
+        ok: false,
+        error: `That save has a ${typeof value} in flag "${key}", which holds a ${expected}.`,
+      };
+    }
+    if (expected === 'number' && !Number.isFinite(value as number)) {
+      return { ok: false, error: `That save has an unusable number in flag "${key}".` };
     }
     flags[key] = value;
   }
@@ -313,6 +335,24 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
   const ended: unknown = data.ended;
   if (typeof ended !== 'boolean') {
     return { ok: false, error: 'That save has an unreadable completion state.' };
+  }
+  if (ended && locationId !== 'past.square') {
+    return {
+      ok: false,
+      error: 'That save is marked complete somewhere the chapter cannot end.',
+    };
+  }
+  if (ended && flags[FLAGS.heardNoProphecy] !== true) {
+    return {
+      ok: false,
+      error: 'That save is marked complete without the conversation that ends the chapter.',
+    };
+  }
+  if (Boolean(flags[FLAGS.crossed]) !== (era === 'past')) {
+    return {
+      ok: false,
+      error: 'That save is inconsistent: its crossing flag and its era disagree.',
+    };
   }
 
   const contentVersion: unknown = data.contentVersion;

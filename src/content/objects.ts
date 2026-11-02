@@ -1,4 +1,5 @@
 import type { GameState, SelectableVerb, WorldObjectDef } from '../engine/types';
+import { c, m } from './markup';
 import { FLAGS } from './flags';
 
 const f = (state: GameState, key: string): boolean => Boolean(state.flags[key]);
@@ -14,7 +15,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     locationId: 'present.home',
     initiallyVisible: true,
     hiddenWhen: (state) => state.inventory.includes('lantern'),
-    listAs: 'a hooded lantern on the windowsill',
+    listAs: c('a hooded lantern on the windowsill'),
     item: 'lantern',
     verbs: () => ['examine', 'take'],
     description: () =>
@@ -38,7 +39,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['tag', 'cloth', 'strip', 'writing', 'cloth tag', 'note'],
     locationId: 'present.home',
     initiallyVisible: false,
-    listAs: 'a cloth tag knotted to the lantern handle',
+    listAs: c('a cloth tag knotted to the lantern handle'),
     verbs: () => ['examine'],
     description: () =>
       'Three words in ink that has run a little:\n\n    Sixteen. Go carefully.\n\n' +
@@ -50,7 +51,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['window', 'sill', 'windowsill', 'shutter'],
     locationId: 'present.home',
     initiallyVisible: true,
-    listAs: 'the open window',
+    listAs: c('the open window'),
     verbs: () => ['examine'],
     description: () =>
       'From up here you can see most of the square and all of the hill behind it. Somebody is ' +
@@ -64,7 +65,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['bread', 'stool', 'breakfast', 'food'],
     locationId: 'present.home',
     initiallyVisible: true,
-    listAs: 'bread set out on a stool',
+    listAs: c('bread set out on a stool'),
     verbs: () => ['examine'],
     description: () =>
       'Yesterday\'s loaf, cut thick, with the good end facing up. Someone wanted you to find ' +
@@ -80,12 +81,12 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['plank', 'board', 'chalk', 'chalked plank', 'writing', 'prophecy', 'words'],
     locationId: 'present.square',
     initiallyVisible: true,
-    listAs: 'a chalked plank propped by the well',
+    listAs: c('a chalked plank propped by the well'),
     verbs: () => ['examine'],
     description: () =>
       'A door-plank set on its edge and written over in a careful hand. Some lines have been ' +
       'gone over twice where the chalk wore thin.\n\n' +
-      '    The Wanderer comes one-eyed and without mercy.\n' +
+      '    ' + m('The Wanderer') + ' comes one-eyed and without mercy.\n' +
       '    The hill will open. The water will answer.\n' +
       '    What stands will not stand.\n' +
       '    One who braves the Cave of Absolution will have the power to turn it aside.\n\n' +
@@ -96,9 +97,9 @@ const OBJECT_LIST: WorldObjectDef[] = [
         {
           id: 'j.prophecy',
           text:
-            'The prophecy on the plank: a one-eyed monster called the Wanderer brings a ' +
-            'cataclysm, and someone who braves the Cave of Absolution will have the power to ' +
-            'turn it aside.',
+            'The ' + m('prophecy') + ' on the plank: a one-eyed monster called the ' +
+            m('Wanderer') + ' brings a ' + m('cataclysm') + ', and someone who braves the ' +
+            m('Cave of Absolution') + ' will have the power to turn it aside.',
         },
       ],
     },
@@ -109,7 +110,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['lanterns', 'cord', 'strung lanterns', 'lights', 'eaves'],
     locationId: 'present.square',
     initiallyVisible: true,
-    listAs: 'lanterns strung unlit on cord',
+    listAs: c('lanterns strung unlit on cord'),
     verbs: () => ['examine'],
     description: () =>
       'Forty-odd lanterns on a cord between the eaves, every one of them filled and trimmed ' +
@@ -122,7 +123,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['salt', 'bowl', 'bowl of salt', 'well cap', 'wellcap'],
     locationId: 'present.square',
     initiallyVisible: true,
-    listAs: 'a bowl of salt on the well-cap',
+    listAs: c('a bowl of salt on the well-cap'),
     verbs: () => ['examine'],
     description: () =>
       'Coarse grey salt in a wooden bowl, heaped and smoothed flat on top. It is not a village ' +
@@ -135,7 +136,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['well', 'windlass', 'bucket'],
     locationId: 'present.square',
     initiallyVisible: true,
-    listAs: 'the well',
+    listAs: c('the well'),
     verbs: () => ['examine'],
     description: () =>
       'The well is the oldest thing in the square and acts like it. The cap is worn into a dish ' +
@@ -152,7 +153,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['basket', 'offcuts', 'scraps', 'basket of offcuts'],
     locationId: 'present.workshop',
     initiallyVisible: true,
-    listAs: 'a basket of offcuts under the bench',
+    listAs: c('a basket of offcuts under the bench'),
     verbs: () => ['examine'],
     description: (state) =>
       'Dowel ends, triangles of oak and ash, a few pieces with the bark still on. ' +
@@ -172,7 +173,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     locationId: 'present.workshop',
     initiallyVisible: true,
     hiddenWhen: (state) => state.inventory.includes('wedge'),
-    listAs: 'a wooden wedge, free for the taking',
+    listAs: c('a wooden wedge, free for the taking'),
     item: 'wedge',
     verbs: () => ['examine', 'take'],
     description: () =>
@@ -211,7 +212,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['stump', 'old stump', 'tree stump', 'seat'],
     locationId: 'present.cave_path',
     initiallyVisible: true,
-    listAs: 'an old stump at the turn of the path',
+    listAs: c('an old stump at the turn of the path'),
     verbs: () => ['examine'],
     description: () =>
       'A stump the width of a cart wheel, cut level and polished to a shine on top. The rings ' +
@@ -236,7 +237,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['marks', 'chalk', 'chalk marks', 'rocks'],
     locationId: 'present.cave_path',
     initiallyVisible: true,
-    listAs: 'chalk marks counting off the rocks',
+    listAs: c('chalk marks counting off the rocks'),
     verbs: () => ['examine'],
     description: () =>
       'Someone has chalked numerals on the shale at intervals, counting down to the mouth. ' +
@@ -253,7 +254,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['rope', 'knotted rope', 'ring', 'iron ring', 'line'],
     locationId: 'present.entrance',
     initiallyVisible: true,
-    listAs: 'a knotted rope running into the dark',
+    listAs: c('a knotted rope running into the dark'),
     verbs: () => ['examine'],
     description: () =>
       'Hemp, as thick as two fingers, spliced onto an iron ring set in the floor. Knots every ' +
@@ -278,7 +279,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['lintel', 'letters', 'inscription', 'carving', 'words'],
     locationId: 'present.entrance',
     initiallyVisible: true,
-    listAs: 'letters cut into the lintel',
+    listAs: c('letters cut into the lintel'),
     verbs: () => ['examine'],
     description: () =>
       'Cut deep and kept clear of moss:\n\n    GO IN. COME OUT. BE EASIER WITH YOURSELF.\n\n' +
@@ -299,7 +300,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['bench', 'seat', 'hook'],
     locationId: 'present.entrance',
     initiallyVisible: true,
-    listAs: 'a bench, and a hook with spare rope',
+    listAs: c('a bench, and a hook with spare rope'),
     verbs: () => ['examine'],
     description: () =>
       'A plank bench on two stones, the kind of furniture that exists because people wait here. ' +
@@ -317,7 +318,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['scratches', 'names', 'tallies', 'wall', 'left wall', 'left-hand wall', 'marks', 'dates'],
     locationId: 'present.outer_gallery',
     initiallyVisible: true,
-    listAs: 'scratched names and tallies on the left-hand wall',
+    listAs: c('scratched names and tallies on the left-hand wall'),
     verbs: () => ['examine'],
     description: () =>
       'Two generations of handwriting, at every height a person can reach.\n\n' +
@@ -353,7 +354,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     acceptsItems: true,
     locationId: 'present.outer_gallery',
     initiallyVisible: true,
-    listAs: 'a worn relief, older than the scratches',
+    listAs: c('a worn relief, older than the scratches'),
     verbs: () => ['examine'],
     description: (state) => {
       const parts: string[] = [];
@@ -405,7 +406,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['pillar', 'column', 'rope', 'rope end'],
     locationId: 'present.outer_gallery',
     initiallyVisible: true,
-    listAs: 'the pillar the rope is tied to',
+    listAs: c('the pillar the rope is tied to'),
     verbs: () => ['examine'],
     description: () =>
       'A natural column where a drip has been building and a pool has been eating for a few ' +
@@ -420,7 +421,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['ash', 'old ash', 'floor', 'torches', 'soot'],
     locationId: 'present.outer_gallery',
     initiallyVisible: true,
-    listAs: 'patches of old ash on the floor',
+    listAs: c('patches of old ash on the floor'),
     verbs: () => ['examine'],
     description: () =>
       'Torch ash, trodden into the floor in a dozen patches. They cluster here, under the ' +
@@ -438,7 +439,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['words', 'scratched words', 'account', 'writing', 'wall', 'inscription'],
     locationId: 'present.echo_chamber',
     initiallyVisible: true,
-    listAs: 'words scratched at sitting height',
+    listAs: c('words scratched at sitting height'),
     verbs: () => ['examine'],
     description: () =>
       'Scratched with something soft — a buckle, maybe — in a hand that starts neat and ends ' +
@@ -469,7 +470,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['boot', 'shoe'],
     locationId: 'present.echo_chamber',
     initiallyVisible: true,
-    listAs: 'a single boot by the water',
+    listAs: c('a single boot by the water'),
     verbs: () => ['examine'],
     description: () =>
       'A left boot, child-sized or near it, lying on its side with the laces still tied in a ' +
@@ -485,7 +486,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     acceptsItems: true,
     locationId: 'present.echo_chamber',
     initiallyVisible: true,
-    listAs: 'a shallow dish of standing water',
+    listAs: c('a shallow dish of standing water'),
     verbs: () => ['examine'],
     description: () =>
       'An ankle-deep dish of water with a floor of fine silt, so clear it reads as empty until ' +
@@ -506,8 +507,8 @@ const OBJECT_LIST: WorldObjectDef[] = [
     initiallyVisible: true,
     listAs: (state) =>
       f(state, FLAGS.shutterHeld)
-        ? 'the stone shutter, wedged up'
-        : 'a stone shutter low on the fourth wall',
+        ? c('the stone shutter, wedged up')
+        : c('a stone shutter low on the fourth wall'),
     verbs: (state) => (f(state, FLAGS.shutterHeld) ? ['examine', 'use'] : ['examine', 'open', 'use']),
     description: (state) => {
       const parts: string[] = [];
@@ -548,7 +549,9 @@ const OBJECT_LIST: WorldObjectDef[] = [
     locationId: 'present.sealed_chamber',
     initiallyVisible: false,
     listAs: (state) =>
-      f(state, FLAGS.shutterHeld) ? 'the open alcove behind the shutter' : 'the alcove behind the shutter',
+      f(state, FLAGS.shutterHeld)
+        ? c('the open alcove behind the shutter')
+        : c('the alcove behind the shutter'),
     verbs: () => ['examine'],
     description: (state) => {
       const parts: string[] = [];
@@ -580,7 +583,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     acceptsItems: true,
     locationId: 'present.sealed_chamber',
     initiallyVisible: true,
-    listAs: 'a carved eye pierced through the wall above the shutter',
+    listAs: c('a carved eye pierced through the wall above the shutter'),
     verbs: () => ['examine'],
     description: () =>
       'A round hole, a hand across, cut clean through a thinned panel of the wall and rimmed ' +
@@ -618,7 +621,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     acceptsItems: true,
     locationId: 'present.sealed_chamber',
     initiallyVisible: true,
-    listAs: 'walls cut in a pattern of overlapping scales',
+    listAs: c('walls cut in a pattern of overlapping scales'),
     verbs: (state) => (f(state, FLAGS.seamRevealed) && !f(state, FLAGS.passageOpen) ? ['examine', 'open'] : ['examine']),
     description: (state) => {
       const parts: string[] = [];
@@ -660,7 +663,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     locationId: 'present.sealed_chamber',
     initiallyVisible: false,
     hiddenWhen: (state) => f(state, FLAGS.passageOpen),
-    listAs: 'a seam in the pattern, picked out by the light',
+    listAs: c('a seam in the pattern, picked out by the light'),
     verbs: () => ['examine', 'open'],
     description: () =>
       'It runs up from the floor to shoulder height, turns, runs level for the width of a door, ' +
@@ -675,7 +678,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['passage', 'opening', 'opened passage', 'doorway', 'door', 'steps'],
     locationId: 'present.sealed_chamber',
     initiallyVisible: false,
-    listAs: 'the opened passage, going down',
+    listAs: c('the opened passage, going down'),
     verbs: () => ['examine'],
     description: () =>
       'A slab of patterned wall standing open on a pivot cut into the floor and the lintel. ' +
@@ -693,7 +696,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     acceptsItems: true,
     locationId: 'present.deep_chamber',
     initiallyVisible: true,
-    listAs: 'the basin, and the depth in it',
+    listAs: c('the basin, and the depth in it'),
     verbs: () => ['examine', 'cross'],
     description: () => {
       return (
@@ -706,7 +709,8 @@ const OBJECT_LIST: WorldObjectDef[] = [
         'And the sound changes. Not louder. Nearer. The hush of a big room arrives up out of ' +
         'the basin and sits over the top of this one — wind moving through something, a bird, ' +
         'a long way off, in daylight.\n\n' +
-        'There is no softer way to say it: the hole in the floor has weather in it.'
+        'There is no softer way to say it: ' +
+        m('the hole in the floor has weather in it') + '.'
       );
     },
     onExamine: {
@@ -715,8 +719,8 @@ const OBJECT_LIST: WorldObjectDef[] = [
         {
           id: 'j.threshold',
           text:
-            'The basin in the deep chamber holds a depth it has no room for, and the sound of ' +
-            'somewhere else comes up out of it.',
+            'The basin in the deep chamber holds ' + m('a depth it has no room for') +
+            ', and the sound of somewhere else comes up out of it.',
         },
       ],
     },
@@ -727,7 +731,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['steps', 'cut steps', 'stair', 'stairs', 'walls', 'floor'],
     locationId: 'present.deep_chamber',
     initiallyVisible: true,
-    listAs: 'the cut steps you came down',
+    listAs: c('the cut steps you came down'),
     verbs: () => ['examine'],
     description: () =>
       'Cut, not worn — each tread still square at the front edge after however long this has ' +
@@ -746,7 +750,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     acceptsItems: true,
     locationId: 'past.deep_chamber',
     initiallyVisible: true,
-    listAs: 'the basin, a hand deep',
+    listAs: c('the basin, a hand deep'),
     verbs: () => ['examine', 'cross'],
     description: () =>
       'A hand\'s depth of water over pale cut stone. You can see the tool marks on the bottom ' +
@@ -772,7 +776,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['carvings', 'tool work', 'toolwork', 'tool-work', 'walls', 'stone', 'chisel marks', 'wall'],
     locationId: 'past.deep_chamber',
     initiallyVisible: true,
-    listAs: 'tool-work with the edges still on it',
+    listAs: c('tool-work with the edges still on it'),
     verbs: () => ['examine'],
     description: () =>
       'Chisel marks in overlapping rows, so crisp that you can see where the worker changed ' +
@@ -801,7 +805,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['mouth', 'cave mouth', 'entrance', 'opening', 'lintel', 'rock'],
     locationId: 'past.entrance',
     initiallyVisible: true,
-    listAs: 'the squared cave mouth',
+    listAs: c('the squared cave mouth'),
     verbs: () => ['examine'],
     description: () =>
       'Narrower than the mouth you walked into this morning, and squared off at the head with ' +
@@ -827,7 +831,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['village', 'view', 'roofs', 'hill', 'valley', 'below'],
     locationId: 'past.entrance',
     initiallyVisible: true,
-    listAs: 'the village below',
+    listAs: c('the village below'),
     verbs: () => ['examine'],
     description: () =>
       'Fewer roofs. The lane is the same lane — it has to go where the ground lets it — and it ' +
@@ -857,7 +861,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['tree', 'great tree', 'leaves', 'branches', 'stump'],
     locationId: 'past.square',
     initiallyVisible: true,
-    listAs: 'a great tree at the turn of the path',
+    listAs: c('a great tree at the turn of the path'),
     verbs: () => ['examine'],
     description: () =>
       'You walk up to it and put your hand on it, because you have to.\n\n' +
@@ -893,7 +897,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     ],
     locationId: 'past.square',
     initiallyVisible: true,
-    listAs: 'a half-built wall where the workshop stands',
+    listAs: c('a half-built wall where the workshop stands'),
     verbs: () => ['examine'],
     description: () =>
       'A frame of green oak, pegged, two walls filled in and the third going up course by ' +
@@ -918,7 +922,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['well', 'new well', 'cap', 'windlass', 'rope'],
     locationId: 'past.square',
     initiallyVisible: true,
-    listAs: 'the well, new',
+    listAs: c('the well, new'),
     verbs: () => ['examine'],
     description: () =>
       'The same well. The stones are the same stones in the same order; you have sat on the ' +

@@ -146,14 +146,37 @@ export function writeAutosave(state: GameState): StorageStatus {
   }
   const result = writeRaw(KEYS.save, payload);
   if (result.working && previous !== null && previous !== payload) {
-    // Best effort. A failed backup rotation does not invalidate the autosave.
-    writeRaw(KEYS.backup, previous);
+    /*
+     * Only rotate bytes that are actually loadable.
+     *
+     * If the autosave slot held something corrupt — which is exactly when the
+     * player was served from the backup — rotating it forward would overwrite
+     * the one good save they had left. Best effort either way: a failed
+     * rotation does not invalidate the autosave just written.
+     */
+    if (isLoadable(previous)) writeRaw(KEYS.backup, previous);
   }
   return result;
 }
 
+/** True when these bytes parse and validate as a save. */
+function isLoadable(raw: string): boolean {
+  try {
+    return validateSave(JSON.parse(raw), raw.length).ok;
+  } catch {
+    return false;
+  }
+}
+
 export function writeCheckpoint(state: GameState): StorageStatus {
-  return writeRaw(KEYS.checkpoint, serialize(state));
+  const payload = serialize(state);
+  if (payload.length > MAX_SAVE_BYTES) {
+    return {
+      working: false,
+      message: 'The chapter checkpoint is too large to store.',
+    };
+  }
+  return writeRaw(KEYS.checkpoint, payload);
 }
 
 export function readSlot(slot: StorageSlot): { state: GameState | null; error: string | null } {
@@ -200,14 +223,22 @@ export function loadBest(): LoadOutcome {
 
   if (sawBytes) {
     const raw = readRaw(KEYS.save);
+    let quarantined = false;
     if (raw !== null && readRaw(KEYS.quarantine) === null) {
-      writeRaw(KEYS.quarantine, raw);
+      // Claim this only once the write has actually succeeded.
+      quarantined = writeRaw(KEYS.quarantine, raw).working;
       notes.push(
-        'The unreadable save has been kept aside rather than deleted, in case it can be ' +
-          'recovered. Starting a new game will not erase it.'
+        quarantined
+          ? 'The unreadable save has been kept aside rather than deleted, in case it can be ' +
+              'recovered. Starting a new game will not erase it.'
+          : 'The unreadable save could not be copied aside, because this browser is not ' +
+              'accepting writes. It has been left exactly where it is and nothing will ' +
+              'overwrite it.'
       );
+    } else if (raw !== null) {
+      quarantined = true;
     }
-    return { state: null, slot: null, notes, quarantined: true };
+    return { state: null, slot: null, notes, quarantined };
   }
 
   return { state: null, slot: null, notes, quarantined: false };

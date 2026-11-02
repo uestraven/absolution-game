@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { TranscriptEntry } from '../engine/types';
-import type { Vocabulary } from '../engine/highlighting';
 import { RichText } from './RichText';
 
 /**
@@ -20,20 +19,8 @@ const KIND_NAME: Record<TranscriptEntry['kind'], string> = {
   failure: 'Nothing happens',
 };
 
-/** Entries whose text is prose worth tinting. */
-const TINTED: ReadonlySet<TranscriptEntry['kind']> = new Set<TranscriptEntry['kind']>([
-  'narration',
-  'location',
-  'dialogue',
-  'success',
-  'system',
-  'journal',
-  'failure',
-]);
-
 export interface TranscriptProps {
   entries: TranscriptEntry[];
-  vocabulary: Vocabulary;
   /**
    * Selectable mode renders the same choices as buttons, so the written-out
    * numbered list would be duplicate noise there.
@@ -41,7 +28,7 @@ export interface TranscriptProps {
   showOptionLists: boolean;
 }
 
-export function Transcript({ entries, vocabulary, showOptionLists }: TranscriptProps) {
+export function Transcript({ entries, showOptionLists }: TranscriptProps) {
   const shown = showOptionLists ? entries : entries.filter((e) => e.kind !== 'options');
   const scroller = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
@@ -81,11 +68,7 @@ export function Transcript({ entries, vocabulary, showOptionLists }: TranscriptP
               {entry.text}
             </p>
           ) : (
-            <RichText
-              text={entry.text}
-              {...(TINTED.has(entry.kind) ? { vocabulary } : {})}
-              interactiveTint={entry.kind === 'success' ? 'success' : 'interactive'}
-            />
+            <RichText text={entry.text} />
           )}
         </article>
       ))}

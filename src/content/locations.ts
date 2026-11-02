@@ -13,24 +13,32 @@ const f = (state: GameState, key: string): boolean => Boolean(state.flags[key]);
  * being dark, which is also the nudge to strike the striker.
  */
 function lightNote(state: GameState, depth: 'outer' | 'inner'): string {
-  if (f(state, FLAGS.lanternLit)) {
+  const carried = state.inventory.includes('lantern');
+  const lit = f(state, FLAGS.lanternLit);
+
+  // The description has to follow where the lantern actually is. A lantern
+  // burning in the alcove two rooms away is not in the hero's hand, and saying
+  // so was a real contradiction.
+  if (carried && lit) {
     return 'Your lantern throws a moving wedge of light wherever you turn your shoulder.';
   }
-  const carried = state.inventory.includes('lantern');
-  if (depth === 'outer') {
-    return carried
+  if (carried) {
+    return depth === 'outer'
       ? 'Your lantern hangs cold and unlit from your hand. Daylight still reaches this far, so ' +
           'there is no hurry about it.'
-      : 'You have no light with you, and daylight still reaches this far, so for the moment it ' +
-          'does not matter.';
+      : 'Your lantern is still cold in your hand. You are managing by whatever light finds its ' +
+          'way round the corners behind you, and by touch — enough to move about, not enough to ' +
+          'look properly at anything.';
   }
-  return carried
-    ? 'Your lantern is still cold in your hand. You are managing by whatever light finds its way ' +
-        'round the corners behind you, and by touch — enough to move about, not enough to look ' +
-        'properly at anything.'
-    : 'You have no light with you. You can find the walls and the way back by hand, which is ' +
-        'something, but it is no way to examine stone.';
+
+  const lanternElsewhere = lit ? ', burning where you left it,' : '';
+  return depth === 'outer'
+    ? `Your lantern is not with you${lanternElsewhere} and daylight still reaches this far, so ` +
+        'for the moment it does not matter.'
+    : `Your lantern is not with you${lanternElsewhere} and you are going by hand. You can find ` +
+        'the walls and the way back. You cannot examine stone.';
 }
+
 
 export const LOCATIONS: Record<LocationId, LocationDef> = {
   /* ================================================================ *
@@ -82,8 +90,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         '\n\n' +
         'Sage is at the plank with a stub of chalk, correcting something that does not need ' +
         'correcting. Marjoram has her board out in front of the bakehouse and is working dough ' +
-        'like it owes her money. Mint is at the well filling a bucket with no particular ' +
-        'urgency. Parsie, who is eleven, is orbiting.\n\n' +
+        'like it owes her money. Parsie, who is eleven, is orbiting.\n\n' +
         'The lane climbs north to your door. The joiner\'s workshop stands open to the east. ' +
         'West, past the last house, the cave path starts up the hill.'
       );
@@ -152,15 +159,14 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'An old stump sits beside the path at the turn, worn smooth on top by generations of ' +
       'people sitting down to think about it. Chalk marks on the rocks count off the last ' +
       'stretch.\n\n' +
-      'Dilly is sitting on the stump with her boots off. Bay is further up, coiling rope ' +
-      'and watching the weather. Rose and Mary have come up from the square to watch somebody ' +
-      'else do it, and are sharing one coat about it.\n\n' +
+      'Dilly is sitting on the stump with her boots off. Tyme is further up, coiling rope ' +
+      'and watching the weather.\n\n' +
       'The square is back down to the east. The cave mouth is up and west.',
     firstVisit: (state) =>
       'From down in the square the hill looks like a hill. From here it looks like a door ' +
       'somebody left in the ground.\n\n' +
       'And from here you can pick out the roofs by who is under them. Marjoram is working dough ' +
-      'she means to sell tomorrow. Parsie has four years to wait for his turn at this and has ' +
+      'she means to sell tomorrow. Parsie has five years to wait for his turn at this and has ' +
       'already decided he is going right to the back. Somebody is still up a ladder being told ' +
       'how to hang a lantern.' +
       (f(state, FLAGS.heardProphecy)
@@ -200,8 +206,6 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'has been keeping them clear of moss.\n\n' +
       'A rope runs from an iron ring by the bench into the dark, knotted at intervals, the ' +
       'knots polished by hands.\n\n' +
-      'Tyme is on the bench with two apples and an unconvincing air of having come up for the ' +
-      'walk.\n\n' +
       'Daylight reaches a good way in. From the first gallery you will still be able to see ' +
       'this slot of sky behind you.\n\n' +
       lightNote(state, 'outer') +
@@ -211,8 +215,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'chalk on the shale every spring, and spliced that rope onto that ring, and put a bench ' +
       'here because people wait.\n\n' +
       'From the bench you can see the whole roofline below, and the cord strung across it, and ' +
-      'the forty lanterns on the cord that nobody has lit. Tyme walked up here to sit where ' +
-      'they could see all of that, which you do not think was the plan they had in mind.',
+      'the forty lanterns on the cord that nobody has lit.',
     exits: [
       {
         id: 'to_path',
@@ -255,7 +258,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         label: 'the way back to the cave mouth',
         to: 'present.entrance',
         direction: 'out',
-        aliases: ['entrance', 'mouth', 'up', 'east', 'back', 'daylight'],
+        aliases: ['entrance', 'mouth', 'up', 'back', 'daylight'],
       },
       {
         id: 'to_echo',
@@ -371,7 +374,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         label: 'the opened passage',
         to: 'present.deep_chamber',
         direction: 'down',
-        aliases: ['passage', 'opening', 'seam', 'in', 'through', 'east', 'deeper'],
+        aliases: ['passage', 'opening', 'seam', 'in', 'through', 'deeper'],
         requires: (state) => f(state, FLAGS.passageOpen),
       },
     ],
@@ -480,7 +483,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         label: 'the track down to the village',
         to: 'past.square',
         direction: 'east',
-        aliases: ['village', 'track', 'down', 'square', 'roofs'],
+        aliases: ['village', 'track', 'square', 'roofs'],
       },
     ],
   },

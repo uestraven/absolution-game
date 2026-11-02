@@ -1,4 +1,4 @@
-# Cave of Absolution — opening chapter prototype
+# Absolution — opening chapter prototype
 
 A short, text-led adventure. This build contains one complete, playable opening
 chapter: character selection, a village to explore, contrasting accounts of the
@@ -20,7 +20,7 @@ First playthrough is roughly 20–30 minutes.
 npm install
 npm run dev          # local dev server
 npm run typecheck    # tsc --noEmit
-npm run test         # vitest, 177 tests
+npm run test         # vitest
 npm run build        # typecheck, then a static bundle in dist/
 npm run check        # typecheck + test + build
 ```
@@ -49,18 +49,22 @@ commands `#A0A6AD`.
 
 Two rules keep the tinting honest, and both are enforced by tests:
 
-- **Interactive terms are derived from `state.discovered`.** An object the
-  player has not noticed contributes nothing to the vocabulary, so the prose
-  can never glow at something hidden. Reveal the alcove and its name starts
-  being tinted; until then it is ordinary text.
+- **Colour is authored, not inferred.** Each tint is written into the prose a
+  phrase at a time with the `{{tag|text}}` annotations in
+  `src/content/markup.ts`. Nothing matches substrings: "eye" is scenery in one
+  sentence, anatomy in another and a clue in a third, and only the author can
+  tell those apart. The engine also annotates the lists it generates — exits,
+  things here, people here, inventory, topics — from state, so those can never
+  name something undiscovered. Plain text is always recoverable with
+  `stripMarkup`, which is what the screen-reader announcement uses, and the
+  syntax is never shown to a player.
 - **Nothing is carried by colour alone.** Every tint sits on wording that
   already says the same thing, each transcript entry is announced by kind to a
   screen reader, exits are labelled with their direction, and a completed
   objective gets a class as well as a colour. Focused and selected controls
-  take an underline in addition to a border.
+  take an underline in addition to a border. No puzzle needs colour to solve.
 
-Colour also stays on short spans: a term is tinted at most once per paragraph,
-which measures at about 2% of the transcript in practice.
+Colour stays on short spans, measuring about 2% of the transcript in practice.
 
 ## Documentation
 
@@ -93,9 +97,12 @@ src/
     parser.ts       text -> action, fixed vocabulary, no LLM
     selectors.ts    derived reads: visible things, noun resolution
     affordances.ts  the selectable-mode action list, engine-computed
-    highlighting.ts which terms may be tinted, derived from discovery
+
+  engine/
+    mechanics.ts    shared state helpers used by the reducer and by puzzles
+    puzzles/        one module per puzzle; the opening's is shutteredRelief
   content/      authored data: locations, objects, dialogue, items, flags,
-                hints, highlight terms, prose
+                hints, markup helpers, prose
   persistence/  localStorage slots, export/import, save validation
   ui/           React: transcript, both input modes, settings, styles
   testing/      test harness shared by the suites
@@ -117,6 +124,13 @@ Settings offer Continue, New Game, Export Save, Import Save and
 Saves are per browser **origin**. They do not sync between devices or browsers,
 and a preview deployment address has its own separate storage. Export produces a
 plain JSON file named `adventure-save.json`.
+
+Reading and writing are independent: a browser that has run out of room can
+still load an existing save, so Continue and Export Save keep working when new
+saves do not. Storage keys are unchanged from the first prototype
+(`cave-of-absolution:*`), and saves written by it still load — internal
+person and topic ids were deliberately left alone when the cast was renamed, so
+no migration is needed.
 
 If storage is unavailable or full, the game says so in a banner that stays up —
 it never claims a save succeeded when the write failed — and play continues with
@@ -166,9 +180,9 @@ the story does not continue past the end-of-chapter marker.
 optional browser pass over the built output:
 
 ```bash
-npx playwright install chromium        # once
+npx playwright install chromium   # once; playwright is a devDependency
 npm run build
-node scripts/verify-browser.mjs "$PWD/dist"
+npm run verify:browser
 ```
 
 It drives the real built bundle in Chromium through Playwright request
@@ -180,6 +194,6 @@ and the visual specification itself — exact palette values, monospace metrics,
 the 70-character column on both narrow and wide viewports, how little of the
 transcript is coloured, that nothing undiscovered is tinted, and the absence of
 gradients, shadows, glow and animation.
-Playwright is intentionally not a project dependency; install it only if you want
-this pass. See [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) for what each check
+Playwright is a pinned devDependency, so only its browser binary needs the
+one-off install above. See [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) for what each check
 asserts and for the results of the last run.

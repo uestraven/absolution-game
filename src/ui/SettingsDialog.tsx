@@ -28,13 +28,56 @@ export function SettingsDialog({
   const panel = useRef<HTMLDivElement>(null);
   const closer = useRef<HTMLButtonElement>(null);
 
+  /**
+   * A real keyboard modal: focus moves in, Tab cycles inside it, Escape
+   * closes, and focus goes back to whatever opened it.
+   */
   useEffect(() => {
+    const invoker = document.activeElement as HTMLElement | null;
     closer.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+
+    const focusable = (): HTMLElement[] => {
+      const root = panel.current;
+      if (!root) return [];
+      return [
+        ...root.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select, textarea, a[href], [tabindex]:not([tabindex="-1"])'
+        ),
+      ].filter((el) => el.offsetParent !== null || el === document.activeElement);
     };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const active = document.activeElement;
+      if (!panel.current?.contains(active)) {
+        event.preventDefault();
+        first.focus();
+        return;
+      }
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('keydown', onKey, true);
+      // Put the caret back where the player left it.
+      if (invoker && document.contains(invoker)) invoker.focus();
+    };
   }, [onClose]);
 
   function setMode(mode: InputMode) {

@@ -134,8 +134,9 @@ describe('dialogue options in each mode', () => {
       await user.type(field, `${line}{Enter}`);
     }
     const log = screen.getByRole('log', { name: 'Story so far' });
-    expect(within(log).getByText(/1\. the prophecy/)).toBeTruthy();
-    expect(within(log).getByText(/0\. leave/)).toBeTruthy();
+    // The topic label is a tinted span, so the line is split across elements.
+    expect(log.textContent).toMatch(/1\. the prophecy/);
+    expect(log.textContent).toMatch(/0\. leave/);
   });
 
   it('shows them as buttons instead for selectable play, without duplicating the text', async () => {
@@ -146,7 +147,7 @@ describe('dialogue options in each mode', () => {
 
     expect(panel().getByRole('button', { name: '1. the prophecy' })).toBeTruthy();
     const log = screen.getByRole('log', { name: 'Story so far' });
-    expect(within(log).queryByText(/0\. leave/)).toBeNull();
+    expect(log.textContent).not.toMatch(/0\. leave/);
 
     // Switching to typing reveals the same list in the transcript: it was
     // recorded all along, only hidden.
@@ -154,7 +155,7 @@ describe('dialogue options in each mode', () => {
     const dialog = screen.getByRole('dialog', { name: 'Settings' });
     await user.click(within(dialog).getByRole('radio', { name: 'Type-only' }));
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));
-    expect(within(screen.getByRole('log', { name: 'Story so far' })).getByText(/0\. leave/)).toBeTruthy();
+    expect(screen.getByRole('log', { name: 'Story so far' }).textContent).toMatch(/0\. leave/);
   });
 });
 

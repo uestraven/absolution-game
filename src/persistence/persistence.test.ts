@@ -344,6 +344,59 @@ describe('imports are validated before anything is touched', () => {
       /unreadable pending choice/,
     ],
     [
+      'a boolean flag holding a string',
+      corrupt((d) => ((d.flags as Record<string, unknown>)[FLAGS.shutterHeld] = 'yes')),
+      /string in flag "shutter_held", which holds a boolean/,
+    ],
+    [
+      'a number flag holding a boolean',
+      corrupt((d) => ((d.flags as Record<string, unknown>)[FLAGS.hintStage] = true)),
+      /boolean in flag "hint_stage", which holds a number/,
+    ],
+    [
+      // JSON turns Infinity into null on the way out, so this is caught by the
+      // primitive check rather than the finite check. Both reject it.
+      'a non-finite number flag',
+      corrupt((d) => ((d.flags as Record<string, unknown>)[FLAGS.hintStage] = 1e999)),
+      /non-primitive value for flag "hint_stage"/,
+    ],
+    [
+      'a chapter that disagrees with the era',
+      corrupt((d) => (d.chapter = 'crossing')),
+      /chapter and its era disagree/,
+    ],
+    [
+      'a save from before the story started',
+      corrupt((d) => (d.chapter = 'select')),
+      /written before the story started/,
+    ],
+    [
+      'completion claimed in the wrong place',
+      corrupt((d) => (d.ended = true)),
+      /marked complete somewhere the chapter cannot end/,
+    ],
+    [
+      'a crossing flag that disagrees with the era',
+      corrupt((d) => ((d.flags as Record<string, unknown>)[FLAGS.crossed] = true)),
+      /crossing flag and its era disagree/,
+    ],
+    [
+      'a pending option with no options at all',
+      corrupt((d) => (d.pending = { kind: 'clarification', question: 'Which?', options: [] })),
+      /unreadable pending choice/,
+    ],
+    [
+      'a pending SELECT_CHARACTER naming nobody',
+      corrupt((d) => {
+        d.pending = {
+          kind: 'clarification',
+          question: 'Which?',
+          options: [{ label: 'x', action: { type: 'SELECT_CHARACTER', character: 'basilisk' } }],
+        };
+      }),
+      /unreadable pending choice/,
+    ],
+    [
       'an item carried without being in the inventory',
       corrupt((d) => {
         d.inventory = [];
@@ -406,6 +459,15 @@ describe('imports are validated before anything is touched', () => {
       expect(result.error).toMatch(expected);
     });
   }
+
+  it('refuses a non-finite number that never went through JSON', () => {
+    const payload = JSON.parse(serialize(valid())) as Record<string, unknown>;
+    (payload.flags as Record<string, unknown>)[FLAGS.hintStage] = Number.POSITIVE_INFINITY;
+    const result = validateSave(payload);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/unusable number in flag "hint_stage"/);
+  });
 
   it('refuses an oversized file without parsing it', () => {
     const huge = 'x'.repeat(MAX_SAVE_BYTES + 1);

@@ -89,11 +89,52 @@ Three tiers, kept strictly apart:
 
 All of this is invention for playability. None of it constrains canon.
 
-**Names.** Sage, Marjoram, Parsie (village square); Oreg (joiner); Dilly, Bay
-(cave path); Saffra, Fenn (past square). Mentioned but unseen: Hyssop, who dreamed
-the date; Nettle, whose idea the salt was; Lovage and his sons, cutting the stair in
-the past; Jens, Mira, Hal, Bren, this year's other sixteen-year-olds; Cress, who
-dropped a coin in the basin; "H.", who fled.
+### Names
+
+**The convention is locked: everyone is named for a herb or a spice.** The
+individual names are provisional; the convention is not, and a character
+outside it fails a test.
+
+Internal `id`s are deliberately the earlier provisional ones. Saves reference
+them — directly in `pending.personId`, and inside the `topic.<person>.<topic>`
+entries in `discovered` — so renaming a display name must not move them. The
+old names also stay in each person's `nouns`, so a player's typing habits and
+an older save's expectations both keep working.
+
+| Internal id | Display name | Where | Role |
+| --- | --- | --- | --- |
+| `orla` | **Sage** | square | Keeps the plank, the midwinter words and the order of the vigil. Twenty-three, inherited the job from an aunt |
+| `marda` | **Marjoram** | square | The baker. Outspoken, thinks it is nonsense, still wants the hero home safe |
+| `hesk` | **Parsie** | square | Eleven, fascinated by the expedition |
+| `tolv` | **Oreg** | workshop | The joiner. Practical, gives away wedges, searched the sealed chamber and found nothing |
+| `nessa` | **Dilly** | cave path | Was lost and rescued, and dislikes the embellished version the square tells |
+| `aldren` | **Tyme** | cave path | Keeps the entrance and the rope. Went in after Dilly |
+| `sabra` | **Saffra** | past square | A mason, building what will be the joiner's workshop |
+| `pell` | **Fenn** | past square | Eleven or twelve, holding the mortar board badly |
+
+Mentioned but never met, same convention: **Hyssop**, who counted the date out
+of the lines; **Nettle**, whose idea the salt was — and, quietly, the "N." who
+scratched the account in the echo chamber and fled; **Lovage** and his sons,
+cutting the stair in the past; **Cress**, who dropped a coin in the basin;
+**Chervil** and **Borage**, who went in this year; **Mint**, who declined the
+rite in front of everyone.
+
+**Rose and Mary are reserved.** Approved as twins for the full-game design and
+deliberately not spent on filling out the opening's roster. A test asserts they
+appear nowhere in player-facing text, so they stay available.
+
+Nobody remarks on anyone's name, nobody makes a pun, and no behaviour is
+derived from a name's meaning. **Tyme's dialogue is kept clear of the time
+register** — no time, times, timing, clock, hours, minutes, years, "the past",
+future, era, age — so the name never reads as a wink at what the chapter turns
+out to be about. A test enforces it.
+
+Three additions were built and then removed as unapproved cast expansion. They
+are listed here for Milestone 2 review, and are in git history: a standalone
+**Mint** as a talkable villager; **Rose and Mary** as a single paired
+conversation whose every answer disagreed with itself; and a **Tyme** who was
+the hero's childhood friend waiting at the cave mouth rather than the entrance
+keeper. The last of those carried the opening's clearest personal stake.
 
 **The village has no name anywhere in the build**, because that is undecided —
 see below. Player-facing text says "the village", "the square", "home".
@@ -173,6 +214,23 @@ The prototype contains no combat, levelling, hunger, durability, timers or
 consumable resources, so nothing here presumes a system for any of them.
 
 ---
+
+## Milestone 1 housekeeping
+
+**Title.** The game is **Absolution**. The place inside it remains the **Cave of
+Absolution**. Storage keys are unchanged (`cave-of-absolution:*`), kept
+deliberately so that saves from the first prototype still load.
+
+**Save compatibility.** `schemaVersion` is still 1 and `contentVersion` is
+still `0.1.0`: the state shape did not change, and neither did any id a save
+records. Renaming the cast touched display names only. Transcript strings may
+now contain `{{tag|text}}` annotations; strings saved before that contain none,
+strip to themselves, and render as plain text, so there is nothing to migrate.
+
+**Still provisional, and due for Milestone 2 review:** Hyssop's counted date
+for the prophecy; the vigil, lanterns and salt as the village's preparation;
+the lintel inscription; the whole first puzzle; and the cave-path paragraph that
+names what is down in the village in order to give the hero something to lose.
 
 ## Spoiler hygiene, and its limit
 

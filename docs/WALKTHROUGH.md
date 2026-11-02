@@ -183,10 +183,10 @@ that no command in the run was rejected.
 | Location | Objects | People |
 | --- | --- | --- |
 | `present.home` | lantern, cloth tag (hidden until the lantern is examined), window, bread | — |
-| `present.square` | chalked plank, strung lanterns, bowl of salt, well | Sage, Marjoram, Mint, Parsie |
+| `present.square` | chalked plank, strung lanterns, bowl of salt, well | Sage, Marjoram, Parsie |
 | `present.workshop` | offcut basket, wedge, bench | Oreg |
-| `present.cave_path` | old stump, chalk marks | Dilly, Bay, Rose and Mary |
-| `present.entrance` | knotted rope, lintel, bench | Tyme |
+| `present.cave_path` | old stump, chalk marks | Dilly, Tyme |
+| `present.entrance` | knotted rope, lintel, bench | — |
 | `present.outer_gallery` | scratches, relief, pillar, old ash | — |
 | `present.echo_chamber` | scratched account, boot, standing water | — |
 | `present.sealed_chamber` | shutter, alcove*, eye, patterned wall, seam*, passage* | — |
@@ -199,7 +199,7 @@ that no command in the run was rejected.
 
 ## Automated coverage
 
-177 tests across eight files.
+Tests live in nine files.
 
 | File | Covers |
 | --- | --- |
@@ -210,12 +210,13 @@ that no command in the run was rejected.
 | `content/characters.test.ts` | Both names and pronoun sets, pronoun substitution in NPC lines, identical progress for either character, no unrendered placeholders anywhere |
 | `persistence/persistence.test.ts` | Round trip, export/import, reload mid-puzzle, resuming pending conversations and questions, atomic crossing, backup and checkpoint fallbacks, quarantine, storage-failure reporting, loading and exporting while writes are impossible, preferences kept apart from progress, 27 rejected-import cases, transcript sanitising |
 | `ui/app.dom.test.tsx` | Title screen states, both modes end to end in the DOM, mode switching preserving state and transcript, option lists per mode, live region carrying only new output, focus not stolen |
-| `ui/highlighting.dom.test.tsx` | What may be tinted and in which colour: nothing undiscovered, tinting starting the moment something is discovered, magenta beating cyan where a term is both, interactive terms turning green inside a success, ordinary English left alone, once-per-paragraph, hyphen boundaries, and that text is never rendered as HTML |
+| `engine/regressions.test.ts` | The Milestone 1 defect list: loose items recoverable in both modes and across a reload, no item strandable by the crossing in any arrangement, a corrupt autosave never costing the backup, unclaimed quarantine and checkpoint failures reported truthfully, read-without-write storage, old saves and old names loading, and no two exits in a room answering to the same word |
+| `ui/strictmode.dom.test.tsx` | One commit per action under StrictMode: one transcript echo, one save write, at most one backup rotation, and rapid commands keeping order against fresh state |
 
 ## Manual and browser verification
 
 `scripts/verify-browser.mjs` drives the built bundle in Chromium (see the README
-for how to run it). Last run: **35 of 35 checks passed.**
+for how to run it). Last run: **40 of 40 checks passed.**
 
 360px with no horizontal scrolling, before and during play · touch targets at
 least 40px tall · buttons alone move the story · the transcript is the scroller

@@ -4,6 +4,7 @@ import { OBJECTS, OBJECTS_BY_LOCATION } from './objects';
 import { PEOPLE } from './dialogue';
 import { ALL_FLAG_KEYS, FLAGS } from './flags';
 import { begin } from '../testing/harness';
+import { stripMarkup } from './markup';
 import { eraOf } from '../engine/reducer';
 import type { GameState, LocationId } from '../engine/types';
 
@@ -239,7 +240,7 @@ function allPlayerText(): Array<[string, string]> {
       for (const entry of topic.effects?.journal ?? []) out.push([entry.id, entry.text]);
     }
   }
-  return out;
+  return out.map(([where, text]) => [where, stripMarkup(text)] as [string, string]);
 }
 
 describe('the naming convention', () => {
@@ -251,19 +252,16 @@ describe('the naming convention', () => {
   const HERB_NAMES = new Set([
     'Sage',
     'Marjoram',
-    'Mint',
     'Parsie',
     'Oreg',
     'Dilly',
-    'Bay',
-    'Rose and Mary',
     'Tyme',
     'Saffra',
     'Fenn',
   ]);
 
   /** Named in dialogue but never met. Same convention. */
-  const OFFSTAGE = ['Hyssop', 'Nettle', 'Lovage', 'Cress', 'Rose', 'Mary', 'Mint'];
+  const OFFSTAGE = ['Hyssop', 'Nettle', 'Lovage', 'Cress', 'Chervil', 'Borage', 'Mint'];
 
   it('names every character on stage from the herb convention', () => {
     for (const person of Object.values(PEOPLE)) {
@@ -271,10 +269,33 @@ describe('the naming convention', () => {
     }
   });
 
-  it('gives each person an id that matches their name', () => {
-    for (const person of Object.values(PEOPLE)) {
-      const expected = person.name.toLowerCase().replace(/\s+/g, '_');
-      expect(person.id, person.name).toBe(expected);
+  /**
+   * Internal ids are deliberately the earlier provisional ones: saves
+   * reference them, so renaming the display name must not move them.
+   */
+  const ID_TO_NAME: Record<string, string> = {
+    orla: 'Sage',
+    tolv: 'Oreg',
+    marda: 'Marjoram',
+    nessa: 'Dilly',
+    aldren: 'Tyme',
+    hesk: 'Parsie',
+    sabra: 'Saffra',
+    pell: 'Fenn',
+  };
+
+  it('keeps internal ids stable while display names change', () => {
+    expect(Object.keys(PEOPLE).sort()).toEqual(Object.keys(ID_TO_NAME).sort());
+    for (const [id, name] of Object.entries(ID_TO_NAME)) {
+      expect(PEOPLE[id]?.name, id).toBe(name);
+    }
+  });
+
+  it('still answers to the old name, so old habits and saves keep working', () => {
+    for (const [id, name] of Object.entries(ID_TO_NAME)) {
+      const nouns = PEOPLE[id]!.nouns;
+      expect(nouns, `${name} should answer to "${id}"`).toContain(id);
+      expect(nouns, `${name} should answer to "${name}"`).toContain(name.toLowerCase());
     }
   });
 
@@ -313,36 +334,29 @@ describe('the naming convention', () => {
     }
   });
 
-  it('lets the twins register without anyone explaining them', () => {
-    const twins = PEOPLE['rose_and_mary']!;
-    const theirText = [
-      twins.greeting(state),
-      twins.appearance(state),
-      twins.listAs,
-      ...twins.topics.map((t) => t.response(state)),
-    ].join('\n');
-    // The two names together do the work; nothing points at it.
-    expect(twins.name).toBe('Rose and Mary');
-    expect(theirText).not.toMatch(/rosemary/i);
-    expect(theirText).not.toMatch(/\btwins?\b/i);
-    // And they genuinely disagree: both voices in every answer.
-    for (const topic of twins.topics) {
-      const response = topic.response(state);
-      expect(response, `rose_and_mary/${topic.id}`).toMatch(/\bRose\b/);
-      expect(response, `rose_and_mary/${topic.id}`).toMatch(/\bMary\b/);
-    }
+  it('reserves Rose and Mary for the full-game design', () => {
+    // Approved as twins for later, deliberately not spent on filling a roster
+    // in the opening.
+    const everything = allPlayerText()
+      .map(([, text]) => text)
+      .join('\n');
+    expect(everything).not.toMatch(/\bRose\b/);
+    expect(everything).not.toMatch(/\bMary\b/);
+    expect(everything).not.toMatch(/rosemary/i);
   });
 
-  it('keeps time out of the childhood friend entirely', () => {
-    // Tyme must never read as a signal, so their own words avoid the register.
-    const tyme = PEOPLE['tyme']!;
+  it('keeps the time register out of Tyme entirely', () => {
+    // The name must never read as a wink at what the chapter is about.
+    const tyme = PEOPLE['aldren']!;
     const theirText = [
       tyme.greeting(state),
       tyme.appearance(state),
       tyme.listAs,
       ...tyme.topics.map((t) => t.response(state)),
       ...tyme.topics.map((t) => t.label),
-    ].join('\n');
+    ]
+      .map(stripMarkup)
+      .join('\n');
     for (const loaded of [
       /\btimes?\b/i,
       /\btiming\b/i,
@@ -350,7 +364,9 @@ describe('the naming convention', () => {
       /\bhours?\b/i,
       /\bminutes?\b/i,
       /\byears?\b/i,
-      /\bpast\b/i,
+      // "past the pillar" is the preposition and perfectly ordinary; it is
+      // "the past" as a noun that would read as a wink.
+      /\bthe past\b/i,
       /\bfuture\b/i,
       /\bera\b/i,
       /\bcentury\b/i,
