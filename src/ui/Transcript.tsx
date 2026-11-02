@@ -28,6 +28,13 @@ export interface TranscriptProps {
    */
   showOptionLists: boolean;
   /**
+   * Increments once per player action. Any change scrolls to the bottom,
+   * wherever the reader had got to — they just did something and want to see
+   * what happened. Re-renders that are not actions (opening settings, folding
+   * the status bar, switching input mode) leave the position alone.
+   */
+  actionCount: number;
+  /**
    * Called when a block large enough to be felt lands. The shell uses it to
    * nudge the anchored input, so the command line reads as being pushed down
    * by the text rather than as a separate widget.
@@ -35,19 +42,22 @@ export interface TranscriptProps {
   onHeavyFeed?: (pixels: number) => void;
 }
 
-export function Transcript({ entries, showOptionLists, onHeavyFeed }: TranscriptProps) {
+export function Transcript({
+  entries,
+  showOptionLists,
+  actionCount,
+  onHeavyFeed,
+}: TranscriptProps) {
   const shown = showOptionLists ? entries : entries.filter((e) => e.kind !== 'options');
   const scroller = useRef<HTMLDivElement>(null);
-  const pinned = useRef(true);
   const cascade = useRef(createCascade());
   const firstPaint = useRef(true);
 
-  // Follow new output only when the reader is already at the bottom. Someone
-  // who has scrolled up to read history is left exactly where they are, with
-  // no animation at all.
+  // Every action goes to the bottom. A reader who scrolled up to check
+  // something and then typed a command is asking to see the result of it.
   useLayoutEffect(() => {
     const el = scroller.current;
-    if (!el || !pinned.current) return;
+    if (!el) return;
     if (firstPaint.current) {
       // Arriving at a restored transcript should not play a glide.
       firstPaint.current = false;
@@ -56,17 +66,16 @@ export function Transcript({ entries, showOptionLists, onHeavyFeed }: Transcript
     }
     const travelled = cascade.current.toBottom(el);
     if (travelled >= BOUNCE_THRESHOLD_PX) onHeavyFeed?.(travelled);
-  }, [entries, showOptionLists, onHeavyFeed]);
+  }, [actionCount, onHeavyFeed]);
 
-  useEffect(() => {
+  // Switching input mode changes what is rendered but is not an action, so the
+  // position is kept rather than reset.
+  useLayoutEffect(() => {
     const el = scroller.current;
-    if (!el) return;
-    const onScroll = () => {
-      pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-    };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
-  }, []);
+    if (!el || firstPaint.current) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (atBottom) cascade.current.snapToBottom(el);
+  }, [showOptionLists]);
 
   // A reader touching the scrollbar mid-glide takes it over immediately.
   useEffect(() => {

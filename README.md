@@ -57,16 +57,26 @@ legible exit names at 44px tap height cannot be made much smaller.
 ### Motion
 
 New text appears immediately. What moves is the scroll position: when a block
-lands, the transcript glides up to meet it over 60–100 ms on an exponential
-ease-out, driven from `requestAnimationFrame` rather than CSS so the target can
-be re-read while content settles. Measured frame deltas on a long block:
-637, 328, 104, 32 px — deceleration, not a row-by-row jump. A heavy block also
-nudges the anchored command line down 3px and back, so it reads as being pushed
-by the text.
+lands, the transcript glides up to meet it on a cubic ease-out, driven from
+`requestAnimationFrame` rather than CSS so the target can be re-read while
+content settles. A heavy block also nudges the anchored command line 3px and
+back, so it reads as being pushed by the text rather than as a separate widget.
 
-Nothing waits on it: any glide is cancelled the moment a reader touches the
-wheel, a scrollbar or the screen, a reader who has scrolled up is never
-animated at all, and a restored transcript snaps rather than replaying. Under
+Two things keep it legible:
+
+- **170–380 ms, scaled by distance.** An earlier 60–100 ms envelope was a blur
+  with a stop at the end.
+- **Travel is bounded to three quarters of a screen.** A long drop covers
+  everything beyond that instantly and glides the rest, so the eye always
+  follows the same readable distance however much text arrived. Animating a
+  three-thousand-pixel jump is illegible at any duration.
+
+**Every action scrolls to the bottom**, wherever the reader had got to — if you
+scroll up to check something and then type a command, you want to see the
+result. Re-renders that are *not* actions (folding the status bar, opening
+settings, switching input mode) leave the position alone, and a glide is
+cancelled the instant a reader touches the wheel, a scrollbar or the screen. A
+restored transcript snaps rather than replaying. Under
 `prefers-reduced-motion` the glide becomes the jump, verified as settling
 within one frame.
 

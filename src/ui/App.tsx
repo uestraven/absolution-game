@@ -49,6 +49,8 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [feedNudge, setFeedNudge] = useState(false);
+  /** Bumped once per player action, so the transcript knows to go to the bottom. */
+  const [actionCount, setActionCount] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
   const loaded = useRef(false);
   /** Mirrors `state` for synchronous reads inside `act`. */
@@ -139,6 +141,7 @@ export function App() {
       setState(result.state);
       persist(result.state, result.state.chapter !== current.chapter);
       setAnnouncement(result.events.map((e) => stripMarkup(e.text)).join('\n\n'));
+      setActionCount((n) => n + 1);
     },
     [persist]
   );
@@ -216,6 +219,8 @@ export function App() {
     if (!ok) return;
     stateRef.current = checkpoint;
     setState(checkpoint);
+    // A restored transcript is new output as far as the reader is concerned.
+    setActionCount((n) => n + 1);
     setScreen('play');
     setSettingsOpen(false);
     setNotice('Restarted from the chapter checkpoint.');
@@ -269,6 +274,7 @@ export function App() {
       }
       stateRef.current = result.state;
       setState(result.state);
+      setActionCount((n) => n + 1);
       setScreen('play');
       setSettingsOpen(false);
       setStorage(writeAutosave(result.state));
@@ -389,6 +395,7 @@ export function App() {
         <Transcript
           entries={state.transcript}
           showOptionLists={prefs.inputMode === 'type'}
+          actionCount={actionCount}
           onHeavyFeed={onHeavyFeed}
         />
       </main>

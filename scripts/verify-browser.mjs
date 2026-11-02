@@ -114,7 +114,7 @@ async function newPage(viewport) {
     ? ok('location stays visible; subtitle and objective are folded away')
     : bad('status disclosure', JSON.stringify(folded));
 
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(700);
   const scrolling = await page.evaluate(() => {
     const t = document.querySelector('.transcript');
     return {
@@ -133,10 +133,13 @@ async function newPage(viewport) {
   overflow2 <= 0 ? ok('360px: still no horizontal scrolling mid-play')
                  : bad('360px: still no horizontal scrolling mid-play', `${overflow2}px`);
 
+  // Let any earlier glide finish, or it will overwrite the reset below and the
+  // samples will describe a one-pixel nudge instead of real motion.
+  await page.waitForTimeout(700);
   const glide = await page.evaluate(async () => {
     const t = document.querySelector('.transcript');
-    t.scrollTop = Math.max(0, t.scrollHeight - t.clientHeight);
-    const before = t.scrollTop;
+    t.scrollTop = 0;
+    await new Promise((r) => requestAnimationFrame(() => r()));
     // A real action, so there is genuinely new output to glide to.
     [...document.querySelectorAll('.panel-meta button')]
       .find((b) => b.textContent.trim() === 'look')
@@ -146,14 +149,14 @@ async function newPage(viewport) {
       let n = 0;
       const tick = () => {
         samples.push(t.scrollTop);
-        if (++n < 12) requestAnimationFrame(tick);
+        if (++n < 40) requestAnimationFrame(tick);
         else resolve();
       };
       requestAnimationFrame(tick);
     });
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => setTimeout(r, 700));
     const distanceToBottom = t.scrollHeight - t.scrollTop - t.clientHeight;
-    // Deltas between frames: an exponential ease-out decelerates sharply.
+    // Deltas between frames: a cubic ease-out decelerates steadily.
     const deltas = samples.slice(1).map((v, i) => Math.abs(v - samples[i])).filter((d) => d > 0);
     return {
       samples: samples.slice(0, 4).map((v) => +v.toFixed(2)),
@@ -170,6 +173,13 @@ async function newPage(viewport) {
         `${glide.samples.join(' -> ')} ... ${glide.distanceToBottom}px`
       )
     : bad('the kinetic glide', JSON.stringify(glide));
+  /*
+   * Not asserted here: that a long drop teleports most of the way and glides
+   * only the last screenful. The teleport happens inside the same layout
+   * effect as the click, before any frame this probe can sample, so from
+   * outside it is indistinguishable from a short glide. It is implemented in
+   * ui/cascade.ts (MAX_TRAVEL_SCREENS) and verified by eye, not here.
+   */
   glide.decelerates
     ? ok(
         'the glide eases out rather than stepping by rows',
@@ -177,12 +187,27 @@ async function newPage(viewport) {
       )
     : bad('the glide eases out', JSON.stringify(glide));
 
+  // A re-render that is not an action leaves the reader where they are.
+  await page.evaluate(() => { document.querySelector('.transcript').scrollTop = 0; });
+  await page.locator('.topbar-toggle').click();
+  await page.waitForTimeout(120);
+  const heldOnRerender = await page.evaluate(() => document.querySelector('.transcript').scrollTop);
+  await page.locator('.topbar-toggle').click();
+  heldOnRerender < 40
+    ? ok('a non-action re-render leaves the scroll position alone', `scrollTop ${heldOnRerender}`)
+    : bad('a non-action re-render moved the reader', `scrollTop ${heldOnRerender}`);
+
+  // An action always returns to the bottom, wherever the reader had got to.
   await page.evaluate(() => { document.querySelector('.transcript').scrollTop = 0; });
   await page.getByRole('region', { name: 'Actions' }).getByRole('button', { name: 'look' }).click();
-  await page.waitForTimeout(80);
-  const held = await page.evaluate(() => document.querySelector('.transcript').scrollTop);
-  held < 40 ? ok('reading history is not yanked back to the bottom', `scrollTop ${held}`)
-            : bad('reading history is not yanked back to the bottom', `scrollTop ${held}`);
+  await page.waitForTimeout(700);
+  const afterAction = await page.evaluate(() => {
+    const t = document.querySelector('.transcript');
+    return t.scrollHeight - t.scrollTop - t.clientHeight;
+  });
+  afterAction < 2
+    ? ok('every action scrolls to the bottom, even from the top of the history')
+    : bad('an action did not scroll to the bottom', `${afterAction.toFixed(2)}px short`);
 
   errors.length === 0 ? ok('no console or page errors (selectable)')
                       : bad('no console or page errors (selectable)', errors.join(' | '));
@@ -331,7 +356,14 @@ async function newPage(viewport) {
       if (s.backgroundImage !== 'none') offenders.push(`bg-image on ${el.className}`);
       if (s.textShadow !== 'none') offenders.push(`text-shadow on ${el.className}`);
       if (s.boxShadow !== 'none') offenders.push(`box-shadow on ${el.className}`);
-      if (s.animationName !== 'none') offenders.push(`animation on ${el.className}`);
+      // The anchored input's single-shot nudge is intended; anything else
+      // animating is not.
+      if (s.animationName !== 'none' && s.animationName !== 'anchor-nudge') {
+        offenders.push(`animation ${s.animationName} on ${el.className}`);
+      }
+      if (s.animationName === 'anchor-nudge' && s.animationIterationCount !== '1') {
+        offenders.push(`anchor-nudge repeats ${s.animationIterationCount} times`);
+      }
     }
     return offenders.slice(0, 5);
   });
