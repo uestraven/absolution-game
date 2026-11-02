@@ -29,6 +29,7 @@ import { TypeInput } from './TypeInput';
 import { SelectPanel } from './SelectPanel';
 import { SettingsDialog } from './SettingsDialog';
 import { SetupScreen, TitleScreen } from './StartScreens';
+import { useSoundtrack } from './useSoundtrack';
 
 type Screen = 'title' | 'setup' | 'play';
 
@@ -70,6 +71,19 @@ export function App() {
    * So the replacement is declared here rather than deduced there.
    */
   const [historyEpoch, setHistoryEpoch] = useState(0);
+  /*
+   * The soundtrack. Driven by state, incapable of changing it: see
+   * `useSoundtrack`. `playing` is false on the start screens, because no track
+   * is approved for the title and because coming back to it must stop the
+   * music rather than leave a room's theme running underneath.
+   */
+  const music = useSoundtrack({
+    state,
+    playing: screen === 'play' && state !== null && state.chapter !== 'select',
+    enabled: prefs.music,
+    volume: prefs.musicVolume,
+  });
+
   const fileInput = useRef<HTMLInputElement>(null);
   const loaded = useRef(false);
   /** Mirrors `state` for synchronous reads inside `act`. */
@@ -325,6 +339,16 @@ export function App() {
         <TitleScreen
           canContinue={canContinue && state !== null}
           notes={startNotes}
+          music={{
+            on: prefs.music,
+            blocked: music.blocked,
+            onToggle: (on) => {
+              updatePrefs({ ...prefs, music: on });
+              // This click is the interaction a browser wants, so spend it now
+              // rather than waiting for the first room.
+              if (on) music.enable();
+            },
+          }}
           onContinue={() => {
             setResumed(true);
             setScreen('play');
@@ -473,9 +497,25 @@ export function App() {
         )}
       </section>
 
+      {/*
+        * Music is on but the browser wants a gesture — a reload, almost
+        * always. Nonblocking: it sits above the controls, takes one tap, and
+        * ignoring it costs nothing but silence.
+        */}
+      {music.blocked && prefs.music ? (
+        <div className="music-prompt" role="status">
+          <button type="button" className="btn btn-quiet" onClick={music.enable}>
+            Start music
+          </button>
+          <span>This browser needs a tap before it will play audio.</span>
+        </div>
+      ) : null}
+
       {settingsOpen ? (
         <SettingsDialog
           prefs={prefs}
+          musicBlocked={music.blocked}
+          onEnableMusic={music.enable}
           hasCheckpoint={hasCheckpoint}
           storageMessage={storage.working ? null : storage.message}
           onSetPrefs={updatePrefs}

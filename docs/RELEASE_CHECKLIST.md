@@ -41,10 +41,10 @@ own last response at entry 24, fully visible, with the stale mark's entry 7 now
 | --- | --- |
 | `npm ci` | clean install from `package-lock.json`, 0 vulnerabilities |
 | `npm run typecheck` (`tsc --noEmit`) | clean, no diagnostics |
-| `npm run test` (vitest) | **441 passed / 441**, 14 files, 5.6s |
+| `npm run test` (vitest) | **506 passed / 506**, 17 files |
 | `npm run build:only` (vite) | built; emits the 500kB chunk-size advisory, [discussed below](#5-bundle-and-packaging) |
-| `node scripts/verify-browser.mjs dist` | **125 passed / 125** |
-| `node scripts/verify-served.mjs dist` | **15 passed / 15** |
+| `node scripts/verify-browser.mjs dist` | **127 passed / 127** |
+| `node scripts/verify-served.mjs dist` | **29 passed / 29** |
 
 `npm run verify` runs the build and both browser passes in sequence.
 
@@ -208,10 +208,16 @@ Measured on 2026-11-02:
 | | raw | gzip | brotli |
 | --- | --- | --- | --- |
 | `index.html` | 1.3kB | 0.7kB | — |
-| `assets/index-*.css` | 9.6kB | 2.7kB | 2.3kB |
-| `assets/index-*.js` | 549.6kB | — | 141.9kB |
+| `assets/index-*.css` | 10.4kB | 2.9kB | 2.5kB |
+| `assets/index-*.js` | 570.5kB | 176.1kB | 144.0kB |
 | `assets/title-*.png` | 17.5kB | — | 17.3kB |
-| **total transfer** | **577.9kB** | **189.4kB** | **162.7kB** |
+| **first-load transfer** | **586.0kB** | **191.9kB** | **164.8kB** |
+
+**Audio is not in that total, and is not loaded at startup.** Sixteen files —
+eight tracks, two formats — are stored (4.26 MB WebM/Opus, 5.17 MB MP3), and a
+player downloads one track at a time, only after enabling music, only for the
+place they are in. A visitor who never touches the control downloads none of
+it. Both facts are checked on the wire.
 
 The PNG is the title wordmark, and it is counted here because the page fetches
 it: the served harness now measures every same-origin response rather than only
@@ -249,6 +255,48 @@ Other packaging checks:
 
 ---
 
+## 5b. The soundtrack
+
+Eight supplied tracks, mapped to the eight places and phases named in the
+assignment. Filenames matched the slots one to one, so **no part of the mapping
+is a guess** and there is nothing to refer back for clarification.
+
+The one judgement call, stated rather than buried: **the cave theme starts at
+the mouth.** `cave_path` is the open hill and keeps the village theme;
+`entrance` is where the change happens. Full mapping with location ids in
+`src/content/music.ts`; the player-facing table is in the README.
+
+| Requirement | Evidence |
+| --- | --- |
+| One app-level controller, separate from the engine | `ui/soundtrack.ts` plus `ui/useSoundtrack.ts`. No import path from either into the engine; the mapping in `content/music.ts` is a pure function of `chapter` and `locationId` |
+| Music never changes story state | Nothing in those files dispatches an action, sets a flag or writes to the transcript. 17 unit tests drive the controller with no engine present at all |
+| Playback only after an explicit interaction | Nothing is created before `enable()`, which is only reached from a click. Checked on the wire: **no audio request at all** before the player asks, and none from the title screen |
+| A clear, nonblocking "Enable music" before starting or continuing | A button beside New Game and Continue, `aria-pressed`, 44px tall, no dialog. Proceeding with it untouched is tested |
+| Preference remembered; another interaction handled after reload | Stored in prefs; on reload the control reads *Start music* and a one-tap prompt appears in play, because a stored "yes" is not a gesture. A rejected `play()` flips a `blocked` flag once and never retries in a loop |
+| Default volume 25% | `DEFAULT_VOLUME = 0.25`. Measured on the served build: `volume 0.25` |
+| Re-entering a room, inspecting, settings, mode switch, rerender do not restart | `setTrack` is idempotent. Twenty repeat calls produce one element and one `play()`; verified in the browser that walking home → square → hill keeps a single source |
+| ~1.5s crossfade | `FADE_MS = 1500`. Measured mid-fade on the served build: two audible sources at 0.167 and 0.083 against a 0.25 master, then one at 0.25 |
+| Rapid room changes: obsolete fades cancelled, nothing orphaned | Seven changes a fifth of a fade apart never exceed two voices and settle on one. A separate test counts `clearInterval` calls to prove the old fade is cancelled rather than left running |
+| Never more than the two sources a crossfade needs | Asserted at every step of the rapid-change test, and on the wire during a real transition |
+| Pause when hidden, resume when visible | Pauses rather than releasing, so the position is kept. Measured: paused at 2.48s, resumed from 3.08s |
+| Stop and clean up on teardown | `destroy()` pauses, clears sources, removes elements and kills the timer; the controller is inert afterwards. A test mounts, destroys and mounts again — React's development double-invoke — and finds one source, not two |
+| Title screen stops gameplay music; no title theme | `playing` is false outside play, so `trackFor` is never consulted there. Enabling music on the title screen plays nothing, by design and by test |
+| Seven area tracks loop; epilogue inspected | All eight loop. The epilogue has **no composed ending** — its level holds flat through the final four seconds — so playing it once would end the game mid-phrase. Measurements and the method in `art/music/README.md` |
+| Loop seams inspected, not assumed | No leading or trailing silence on any track; the level step across the wrap is 0.2–1.6 dB; the MP3s carry correct gapless tags (a decode round-trip returns the master's exact frame count). Observed in the browser: the clock wraps and playback continues. **Not established: whether a browser honours the gapless tag when looping, and nobody has listened.** See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) #11 |
+| No musical material cut or altered | The conversions are whole-file encodes. Nothing trimmed, faded, re-normalised or re-timed |
+| Ending review keeps the epilogue playing | Reviewing produces no new element and no second `play()`; the same element carries on |
+| A completed save reloads to the epilogue, still asking permission | Tested as a save written to storage and resumed with Continue |
+| Music on/off and a labelled volume slider with its number | Settings has both. The slider is labelled *Volume*, shows `25%` as text, and is tied to it with `aria-describedby`. 44px tall and keyboard-focusable |
+| Persisted as UI preferences, apart from saves and exports | The `prefs` key. Not in the save, not in an export |
+| Older preferences load with safe defaults | A pref written before the soundtrack existed keeps the player's choices and arrives music-off at 25%. A volume that is not a 0–1 number is refused |
+| Mute immediate; volume live without restarting | Muting stops playback at once; the slider changes an element's volume with no new `play()`, including mid-crossfade, where only the master scales |
+| Playable without audio; no clue depends on sound | A full playthrough with music never enabled creates no element. Nothing in the content layer refers to sound as a clue |
+| Audio failures do not block input or repeat notices | Every path — rejected `play()`, a format it cannot play, a throwing constructor, a load error — is swallowed and reported at most once. Six tests |
+| Same-origin static assets, base-path-safe | Imported, so Vite hashes them and rewrites against `base`. Verified: the page fetches from no origin but its own |
+| Not in the JS bundle | `grep -c "data:audio" dist/assets/*.js` → 0. The JS grew 8.6kB for the controller and sixteen URL strings |
+| Only the current track and its partner; not all eight at startup | After a full transition, exactly two files had ever been requested |
+| Masters preserved | `art/music/*.wav`, 38 MB, not bundled |
+
 ## 6. Pending, and what it blocks
 
 | Item | Status | What it affects |
@@ -256,6 +304,9 @@ Other packaging checks:
 | **Human blind playtest** | **PENDING** — no sessions run, nobody contacted | Pacing, difficulty, whether the killing and the sacrifice land, whether the epilogue needs its own beat. **None of this is verified.** Code readiness does not speak to it |
 | Real mobile browsers and devices | Not done | Software-keyboard behaviour, iOS Safari quirks, touch scrolling feel |
 | A real screen reader | Not done | Whether the announcements are usable in practice, as opposed to structurally correct |
+| **Soundtrack attribution and licence** | **MISSING — blocker** | No author, source or licence was supplied with the eight tracks, and none was invented. Must be settled or the tracks replaced before any deployment |
+| Listening to the music | Not done | Loop seams, crossfade feel, per-track loudness, and whether 25% is right. Machine checks confirm it plays, not that it sounds right |
+| Mobile audio | Not done | iOS Safari requires a gesture per element, which the crossfade's second source may not have. Most likely place for audio to fail, untested |
 | Deployment | Not done, not authorized | Nothing published; no account, project or domain exists |
 | Push | Not done | Commits are local. **If a Pages Git integration is ever connected, pushing the production branch deploys** — see `DEPLOYMENT.md` |
 

@@ -6,6 +6,10 @@ export interface SettingsDialogProps {
   prefs: Prefs;
   hasCheckpoint: boolean;
   storageMessage: string | null;
+  /** True when a browser refused playback and wants another interaction. */
+  musicBlocked: boolean;
+  /** Spends a click as the gesture a browser needs to start audio. */
+  onEnableMusic: () => void;
   onSetPrefs: (prefs: Prefs) => void;
   onClose: () => void;
   onExport: () => void;
@@ -18,6 +22,8 @@ export function SettingsDialog({
   prefs,
   hasCheckpoint,
   storageMessage,
+  musicBlocked,
+  onEnableMusic,
   onSetPrefs,
   onClose,
   onExport,
@@ -146,6 +152,56 @@ export function SettingsDialog({
           </label>
           <p className="dialog-note">
             Animation already follows your system&rsquo;s reduced-motion setting.
+          </p>
+        </fieldset>
+
+        <fieldset className="dialog-block">
+          <legend>Music</legend>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={prefs.music}
+              onChange={(e) => {
+                onSetPrefs({ ...prefs, music: e.target.checked });
+                // A click here is a real interaction, so it is also the
+                // permission a browser wants before it will start audio.
+                if (e.target.checked) onEnableMusic();
+              }}
+            />
+            <span>Music</span>
+          </label>
+          <div className="slider-row">
+            <label className="slider-label" htmlFor="music-volume">
+              Volume
+            </label>
+            <input
+              id="music-volume"
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={Math.round(prefs.musicVolume * 100)}
+              aria-describedby="music-volume-value"
+              onChange={(e) =>
+                onSetPrefs({ ...prefs, musicVolume: Number(e.target.value) / 100 })
+              }
+            />
+            {/*
+              The number is shown as text as well as being the slider's value,
+              because a slider alone makes a reader guess. `aria-describedby`
+              points at it so the figure is announced with the control.
+            */}
+            <output id="music-volume-value" className="slider-value" htmlFor="music-volume">
+              {Math.round(prefs.musicVolume * 100)}%
+            </output>
+          </div>
+          <p className="dialog-note">
+            {musicBlocked
+              ? 'Music is on, but this browser is waiting for a tap before it will play. ' +
+                'Turning the checkbox off and on again counts.'
+              : 'Eight tracks, one per place, changing as you move. Volume and mute take ' +
+                'effect at once and do not restart anything. Nothing in the game depends ' +
+                'on sound.'}
           </p>
         </fieldset>
 

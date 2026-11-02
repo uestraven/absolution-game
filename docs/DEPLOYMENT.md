@@ -1,7 +1,7 @@
 # Deploying to Cloudflare Pages
 
 The build is a static site: one HTML file, one JS bundle, one stylesheet, one
-PNG wordmark, and an inline SVG favicon. No backend, no Pages Functions, no environment secrets, no
+PNG wordmark, sixteen music files, and an inline SVG favicon. No backend, no Pages Functions, no environment secrets, no
 runtime network access of any kind — verified on the wire, see
 [Verified on a served build](#verified-on-a-served-build).
 
@@ -147,6 +147,40 @@ smooth bitmap — the master it came from is 870kB for the same word.
 The master lives in [`art/`](../art/README.md), which is **not** bundled: Vite
 emits only what `src/` imports. Regeneration is one ImageMagick command,
 documented there.
+
+## Audio
+
+Sixteen files — eight tracks in two formats — emitted to `assets/` with content
+hashes, totalling **4.26 MB of WebM/Opus and 5.17 MB of MP3**. Per track:
+247–617 kB (WebM) or 300–749 kB (MP3).
+
+That total is what the host stores, **not what a player transfers**:
+
+- Nothing is fetched until the player enables music and enters a place with a
+  track. A visitor who never touches the control downloads **none** of it, and
+  the title screen downloads none of it either. Both are checked on the wire by
+  `verify:served`.
+- Only the current track and, during a 1.5-second crossfade, its transition
+  partner are loaded. An element is paused *and its source cleared* when
+  released, which is what actually stops a pending fetch.
+- `canPlayType` picks one format, so only one variant of a track is requested.
+  WebM/Opus where it is supported; MP3 for Safari, which supports neither
+  Vorbis nor Opus in Ogg or WebM.
+
+Audio is **not** in the JS bundle. The modules import the files, which makes
+Vite emit them and hand back a URL — so the bundle holds sixteen short strings
+and the asset paths are rewritten against `base` for free.
+
+### Range requests
+
+A media element asks for byte ranges when it seeks, which includes looping back
+to the start once playback has run past the buffered head. Cloudflare Pages
+serves ranges, so this needs no configuration — but a host that answers
+`200`-with-everything instead will leave a track stalled and paused at the loop
+point. If music stops after one pass on some other host, check `Accept-Ranges`
+before looking anywhere else. The local verification server implements ranges
+for exactly this reason; it did not at first, and the missing support looked
+precisely like a bug in the game.
 
 ## Save storage across addresses
 

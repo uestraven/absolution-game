@@ -8,6 +8,9 @@ Severity: **blocker** stops a release · **major** spoils a playthrough for some
 players · **minor** is visible but survivable · **limitation** is a deliberate
 boundary, not a bug.
 
+There is **one blocker**: the soundtrack has no attribution or licence
+([#10](#10-the-soundtrack-has-no-attribution-or-licence--blocker-for-release)).
+
 ---
 
 ## 1. Nobody outside the authors has played the game — *limitation (and the big one)*
@@ -159,6 +162,80 @@ still needs a browser is the measurement: which pixel a placement resolves to.
 **Consequence:** a change to the measuring or animating half of `cascade.ts`
 that passes `npm run test` is not verified. Run `npm run verify` after touching
 it.
+
+---
+
+## 10. The soundtrack has no attribution or licence — *blocker for release*
+
+**What:** Eight audio masters were supplied with no author, source or licence.
+None is stated anywhere, because none was given and none may be invented.
+
+**Reproduce:** Not applicable; it is an absence.
+
+**Why it blocks:** if the tracks are not original work made for this project,
+shipping them is a licensing problem. The game is otherwise releasable; this is
+the one item that is not an engineering question.
+
+**Workaround:** none. Record the terms in `art/music/README.md` and add a
+player-visible credit before any deployment, or replace the tracks.
+
+---
+
+## 11. Nobody has listened to the music in the game — *limitation*
+
+**What:** Playback is verified by machine, not by ear. The served-build pass
+confirms that the right track is fetched, that the clock advances, that the
+volume is 0.25, that a crossfade has two audible sources and then one, that the
+loop wraps instead of ending, and that a hidden tab pauses. It cannot hear a
+click at a loop seam, a jarring crossfade, or a track that is simply wrong for
+its room.
+
+**Specifically unverified:**
+
+- **Whether the loop seams are audible.** The masters have no leading or
+  trailing silence and the level step across the wrap is 0.2–1.6 dB, so there
+  is no hole — but three of the eight step by over a decibel, which may be
+  heard as a bump. Measurements in `art/music/README.md`.
+- **Whether browsers honour MP3 gapless metadata when looping a media
+  element.** The files carry correct Xing/LAME tags (a decode round-trip
+  returns exactly the master's frame count), and Chromium loops cleanly in the
+  automated check — but a browser that ignores the tag inserts ~20–30 ms at
+  each wrap on the MP3 path. This is why WebM/Opus is preferred where available
+  and why the loop is described as measured rather than seamless.
+- **Whether 25% is the right default**, and whether the eight tracks sit at
+  comparable loudness in practice. They share a −3.0 dBFS peak, which is not
+  the same as sounding equally loud.
+
+**Workaround:** listen to it. Added to the observer checklist in
+`PLAYTEST_PLAN.md`.
+
+---
+
+## 12. Mobile audio is untested, and has known platform limits — *limitation*
+
+**What:** No real phone has played a note. All audio verification is headless
+Chromium on Linux.
+
+**Known platform limits that apply regardless:**
+
+- **iOS Safari requires a user gesture per audio element**, not merely once per
+  page, and is stricter than desktop about what counts. The crossfade creates a
+  second element mid-play, without a fresh gesture: if iOS refuses it, the
+  outgoing track fades out and the incoming one stays silent, so a room change
+  could land in silence until the next gesture. The controller handles the
+  rejection quietly and the *Start music* prompt reappears, but **the
+  crossfade's second source is the most likely thing to fail on iOS and it has
+  not been tested there.**
+- **iOS respects the hardware mute switch** for media-element audio in some
+  configurations, so music can be silent with everything set correctly.
+- **Backgrounding on mobile** suspends audio by OS policy as well as by the
+  `visibilitychange` handling here; the two should agree, and that has not been
+  observed on a device.
+- MP3 is the format iOS gets, so it is also the path with the loop-seam
+  question above.
+
+**Workaround:** none needed to play — music is optional everywhere. Test on a
+real iPhone and a real Android device before claiming mobile audio works.
 
 ---
 

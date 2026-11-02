@@ -156,6 +156,25 @@ Note the reaction, in their words if they say anything:
 9. **The epilogue.** Do they understand that both selves are dead and that the
    future is saved?
 
+### Music
+
+Optional, off until enabled, and eight tracks that change by place. Worth
+noting:
+
+- Did they turn it on? At the title screen, or later in Settings, or never?
+- Did they change the volume, and to what? The default is 25%.
+- **Did a room change ever land in silence?** The crossfade makes a second
+  audio element mid-play, which iOS Safari may refuse without a fresh gesture.
+- **Can you hear the loop?** Each track is 25–64 seconds, so a player who
+  lingers will hear it wrap several times. A click, a bump in loudness, or an
+  obvious restart is worth reporting — nobody has listened for one.
+- Did any track feel wrong for its place?
+- Did audio ever interrupt reading with a notice or an error?
+
+Ask afterwards whether they noticed the music changing between the eras, and
+whether the last chapter sounded different from the rest of the cave. Both are
+intended; neither is signposted.
+
 ### Scroll placement
 
 A specific thing to watch, because it was just rebuilt: **when a long response
@@ -223,6 +242,10 @@ In rough priority order:
 
 7. **Was the text easy to read and move around on your device?** Did you ever
    have to scroll back up to find the start of something?
+
+8. **If you turned the music on:** did it suit the places? Did it ever cut out,
+   restart oddly, or get in the way of reading? If you turned it off again, what
+   made you?
 
 **Anything else**
 

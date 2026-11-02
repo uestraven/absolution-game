@@ -21,9 +21,53 @@ function Wordmark() {
   );
 }
 
+export interface MusicOfferProps {
+  /** The player's stored preference. */
+  on: boolean;
+  /** A browser refused playback and wants another interaction. */
+  blocked: boolean;
+  /** Turn the preference on or off. Called from a real click. */
+  onToggle: (on: boolean) => void;
+}
+
+/**
+ * The music offer.
+ *
+ * Deliberately a button and not a dialog: it sits next to New Game and
+ * Continue, says plainly what it will do, and the player can walk straight
+ * past it. The game is fully playable with it never touched.
+ *
+ * It is also the gesture. Browsers will not start audio without one, and a
+ * stored "yes" from a previous session is not a gesture — so after a reload
+ * this reads *Start music* rather than claiming to be on already.
+ */
+function MusicOffer({ on, blocked, onToggle }: MusicOfferProps) {
+  const needsGesture = on && blocked;
+  return (
+    <div className="start-music">
+      <button
+        type="button"
+        className="btn btn-quiet"
+        aria-pressed={on && !blocked}
+        onClick={() => onToggle(needsGesture ? true : !on)}
+      >
+        {on && !blocked ? 'Music on' : needsGesture ? 'Start music' : 'Enable music'}
+      </button>
+      <p className="start-music-note">
+        {needsGesture
+          ? 'Music is on, but this browser needs a tap before it will play.'
+          : on
+            ? 'Eight tracks, quiet by default. Volume is in Settings.'
+            : 'Optional. Nothing in the game depends on sound.'}
+      </p>
+    </div>
+  );
+}
+
 export interface TitleScreenProps {
   canContinue: boolean;
   notes: string[];
+  music: MusicOfferProps;
   onContinue: () => void;
   onNewGame: () => void;
   onImport: () => void;
@@ -32,6 +76,7 @@ export interface TitleScreenProps {
 export function TitleScreen({
   canContinue,
   notes,
+  music,
   onContinue,
   onNewGame,
   onImport,
@@ -40,6 +85,7 @@ export function TitleScreen({
     <main className="start">
       <Wordmark />
       <p className="start-sub">{SUBTITLE}</p>
+      <MusicOffer {...music} />
       <div className="start-actions">
         {canContinue ? (
           <button type="button" className="btn" onClick={onContinue}>

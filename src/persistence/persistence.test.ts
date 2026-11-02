@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   KEYS,
   clearProgress,
+  DEFAULT_PREFS,
   exportBlob,
   hasAnySave,
   importFromText,
@@ -14,6 +15,7 @@ import {
   writeAutosave,
   writeCheckpoint,
   writePrefs,
+  type Prefs,
 } from './storage';
 import { MAX_SAVE_BYTES, validateSave } from './validate';
 import { begin, progressOf, type, typeAll } from '../testing/harness';
@@ -260,11 +262,19 @@ describe('storage failure is reported, never pretended away', () => {
 });
 
 describe('preferences are stored apart from progress', () => {
+  const ALL: Prefs = {
+    inputMode: 'type',
+    largeText: true,
+    showStatus: true,
+    music: true,
+    musicVolume: 0.4,
+  };
+
   it('survives clearing progress', () => {
-    writePrefs({ inputMode: 'type', largeText: true, showStatus: true });
+    writePrefs(ALL);
     writeAutosave(begin());
     clearProgress();
-    expect(readPrefs()).toEqual({ inputMode: 'type', largeText: true, showStatus: true });
+    expect(readPrefs()).toEqual(ALL);
     expect(hasAnySave()).toBe(false);
   });
 
@@ -272,7 +282,30 @@ describe('preferences are stored apart from progress', () => {
     localStorage.setItem(KEYS.prefs, 'not json');
     expect(readPrefs().inputMode).toBe('select');
     localStorage.setItem(KEYS.prefs, '{"inputMode":"telepathy","largeText":"yes"}');
-    expect(readPrefs()).toEqual({ inputMode: 'select', largeText: false, showStatus: false });
+    expect(readPrefs()).toEqual(DEFAULT_PREFS);
+  });
+
+  it('loads preferences written before the soundtrack existed', () => {
+    // Exactly what an older build wrote: no music keys at all.
+    localStorage.setItem(KEYS.prefs, '{"inputMode":"type","largeText":true,"showStatus":true}');
+    const prefs = readPrefs();
+    // The player's own choices are kept...
+    expect(prefs.inputMode).toBe('type');
+    expect(prefs.largeText).toBe(true);
+    // ...and the new ones arrive off and quiet, not loud.
+    expect(prefs.music).toBe(false);
+    expect(prefs.musicVolume).toBe(0.25);
+  });
+
+  it('refuses a volume that is not a fraction', () => {
+    // `NaN` is deliberately absent: it is not valid JSON, so that case is the
+    // "not json" fallback above, which returns every default.
+    for (const bad of ['"loud"', '2', '-0.5', 'null']) {
+      localStorage.setItem(KEYS.prefs, `{"music":true,"musicVolume":${bad}}`);
+      expect(readPrefs().musicVolume, bad).toBe(0.25);
+      // The on/off choice is independent of a bad volume.
+      expect(readPrefs().music, bad).toBe(true);
+    }
   });
 });
 

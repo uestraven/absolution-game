@@ -58,10 +58,42 @@ const server = createServer(async (req, res) => {
   }
   try {
     const body = await readFile(file);
+    const type = TYPES[path.extname(rel)] ?? 'application/octet-stream';
+    /*
+     * Range requests, because a media element needs them.
+     *
+     * Seeking inside a track — which is also what looping back to the start
+     * does once playback has run on past the buffered head — makes the browser
+     * ask for a byte range. A host that answers 200-with-everything instead
+     * leaves the element stalled and paused, which looks exactly like a bug in
+     * the game and is not one. Cloudflare Pages supports ranges; so, now, does
+     * this stand-in.
+     */
+    const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+    if (range) {
+      const last = body.byteLength - 1;
+      const start = range[1] === '' ? Math.max(0, last - Number(range[2])) : Number(range[1]);
+      const end = range[1] === '' || range[2] === '' ? last : Math.min(last, Number(range[2]));
+      if (start > end || start > last) {
+        res.writeHead(416, { 'content-range': `bytes */${body.byteLength}` }).end();
+        return;
+      }
+      const slice = body.subarray(start, end + 1);
+      served.push({ rel, status: 206, bytes: slice.byteLength });
+      res.writeHead(206, {
+        'content-type': type,
+        'content-length': String(slice.byteLength),
+        'content-range': `bytes ${start}-${end}/${body.byteLength}`,
+        'accept-ranges': 'bytes',
+      });
+      res.end(slice);
+      return;
+    }
     served.push({ rel, status: 200, bytes: body.byteLength });
     res.writeHead(200, {
-      'content-type': TYPES[path.extname(rel)] ?? 'application/octet-stream',
+      'content-type': type,
       'content-length': String(body.byteLength),
+      'accept-ranges': 'bytes',
     });
     res.end(body);
   } catch {
@@ -147,7 +179,7 @@ try {
   const fetched = [
     ...new Set(
       served
-        .filter((r) => r.status === 200 && r.rel !== 'index.html')
+        .filter((r) => (r.status === 200 || r.status === 206) && r.rel !== 'index.html')
         .map((r) => r.rel)
     ),
   ];
@@ -298,6 +330,180 @@ try {
   errors.length === 0
     ? ok('no console or page errors on a served origin')
     : bad('console errors on a served origin', errors.slice(0, 3).join(' | '));
+
+  /* ---------- 6b. Music, over the wire and actually sounding ---------- */
+  const audioHits = () => served.filter((r) => /\.(webm|mp3)$/.test(r.rel));
+
+  /*
+   * Nothing is fetched before the player asks. This is the packaging
+   * requirement with teeth: sixteen files exist, and a visitor who never
+   * touches the music control must download none of them.
+   */
+  audioHits().length === 0
+    ? ok('no audio is fetched before the player asks for it', `${served.length} requests so far`)
+    : bad('audio was downloaded unasked', JSON.stringify(audioHits().slice(0, 4)));
+
+  const fresh = await browser.newContext({ viewport: { width: 1100, height: 820 } });
+  const mp = await fresh.newPage();
+  const musicErrors = [];
+  mp.on('pageerror', (e) => musicErrors.push(String(e)));
+  mp.on('console', (m) => {
+    if (m.type() === 'error') musicErrors.push(m.text());
+  });
+  const before = served.length;
+  await mp.goto(`${ORIGIN}/`, { waitUntil: 'networkidle' });
+  const atTitle = served.slice(before).filter((r) => /\.(webm|mp3)$/.test(r.rel));
+  atTitle.length === 0
+    ? ok('the title screen downloads no music')
+    : bad('the title screen downloaded music', JSON.stringify(atTitle));
+
+  // The gesture, then a game.
+  await mp.getByRole('button', { name: 'Enable music' }).click();
+  const afterGesture = served.filter((r) => /\.(webm|mp3)$/.test(r.rel));
+  afterGesture.length === 0
+    ? ok('enabling music on the title screen still plays nothing', 'no track is approved for it')
+    : bad('the title screen played a track', JSON.stringify(afterGesture));
+
+  await mp.getByRole('button', { name: 'New Game' }).click();
+  await mp.getByRole('button', { name: 'Play as Basil', exact: true }).click();
+  await mp.waitForTimeout(2500);
+
+  const firstTrack = served.filter((r) => /\.(webm|mp3)$/.test(r.rel)).map((r) => r.rel);
+  const distinct = [...new Set(firstTrack)];
+  distinct.length === 1 && /present_village/.test(distinct[0]) && /\.webm$/.test(distinct[0])
+    ? ok('one track is fetched on arrival, and it is the right one', distinct[0])
+    : bad('the wrong number or kind of track was fetched', JSON.stringify(distinct));
+
+  // Real playback: the clock moves, at the quiet default, looping.
+  const sounding = await mp.evaluate(async () => {
+    const els = [...document.querySelectorAll('audio')];
+    const el = els.find((a) => a.src) ?? els[0];
+    if (!el) return { missing: true, count: els.length };
+    const t0 = el.currentTime;
+    await new Promise((r) => setTimeout(r, 1200));
+    return {
+      count: els.length,
+      advanced: +(el.currentTime - t0).toFixed(3),
+      paused: el.paused,
+      loop: el.loop,
+      volume: +el.volume.toFixed(3),
+      readyState: el.readyState,
+      duration: Math.round(el.duration),
+      src: el.src.split('/').pop(),
+    };
+  });
+  !sounding.missing && sounding.advanced > 0.5 && !sounding.paused
+    ? ok('music actually plays after the gesture', `clock advanced ${sounding.advanced}s of ${sounding.duration}s`)
+    : bad('music did not play', JSON.stringify(sounding));
+  sounding.loop === true && Math.abs(sounding.volume - 0.25) < 0.02
+    ? ok('it loops, at the quiet 25% default', `volume ${sounding.volume}`)
+    : bad('loop flag or default volume', JSON.stringify(sounding));
+
+  /*
+   * Looping, observed rather than asserted from the flag: seek to just before
+   * the end and watch the clock wrap instead of the element ending.
+   */
+  const wrapped = await mp.evaluate(async () => {
+    const el = [...document.querySelectorAll('audio')].find((a) => a.src);
+    el.currentTime = Math.max(0, el.duration - 0.35);
+    await new Promise((r) => setTimeout(r, 1600));
+    return { at: +el.currentTime.toFixed(2), ended: el.ended, paused: el.paused };
+  });
+  wrapped.at < 3 && !wrapped.ended && !wrapped.paused
+    ? ok('the loop wraps instead of ending', `back round to ${wrapped.at}s`)
+    : bad('the track did not loop', JSON.stringify(wrapped));
+
+  /* Crossfade: two sources briefly, one afterwards, one new file. */
+  await mp.getByRole('button', { name: 'Settings' }).click();
+  await mp.getByRole('dialog', { name: 'Settings' }).getByRole('radio', { name: 'Type-only' }).click();
+  await mp.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: /Close|Done/ }).first().click();
+  const field = mp.getByLabel('What do you do?');
+  for (const line of ['take lantern', 'down', 'west']) {
+    await field.fill(line);
+    await mp.keyboard.press('Enter');
+    await mp.waitForTimeout(150);
+  }
+  await mp.waitForTimeout(1800);
+  const stillOne = await mp.evaluate(
+    () => [...document.querySelectorAll('audio')].filter((a) => a.src).length
+  );
+  stillOne === 1
+    ? ok('moving inside one area does not add a second source')
+    : bad('a second source appeared inside one area', String(stillOne));
+
+  await field.fill('west');
+  await mp.keyboard.press('Enter');
+  await mp.waitForTimeout(500);
+  const midFade = await mp.evaluate(() =>
+    [...document.querySelectorAll('audio')]
+      .filter((a) => a.src)
+      .map((a) => ({ src: a.src.split('/').pop(), volume: +a.volume.toFixed(3), paused: a.paused }))
+  );
+  await mp.waitForTimeout(2000);
+  const afterFade = await mp.evaluate(() =>
+    [...document.querySelectorAll('audio')]
+      .filter((a) => a.src)
+      .map((a) => ({ src: a.src.split('/').pop(), volume: +a.volume.toFixed(3) }))
+  );
+  midFade.length === 2 &&
+  midFade.every((a) => !a.paused) &&
+  afterFade.length === 1 &&
+  /present_cave/.test(afterFade[0].src)
+    ? ok(
+        'entering the cave crossfades, two sources then one',
+        `${midFade.map((a) => `${a.src}@${a.volume}`).join(' + ')} -> ${afterFade[0].src}`
+      )
+    : bad('the crossfade', JSON.stringify({ midFade, afterFade }));
+
+  const fetchedNow = [...new Set(served.filter((r) => /\.(webm|mp3)$/.test(r.rel)).map((r) => r.rel))];
+  fetchedNow.length === 2
+    ? ok('only the tracks that have played have been downloaded', fetchedNow.join(', '))
+    : bad('too many tracks downloaded', JSON.stringify(fetchedNow));
+
+  /* A hidden page is quiet, and a visible one is not. */
+  const hiddenBehaviour = await mp.evaluate(async () => {
+    const el = [...document.querySelectorAll('audio')].find((a) => a.src);
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await new Promise((r) => setTimeout(r, 300));
+    const whileHidden = { paused: el.paused, at: +el.currentTime.toFixed(2) };
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await new Promise((r) => setTimeout(r, 600));
+    return { whileHidden, after: { paused: el.paused, at: +el.currentTime.toFixed(2) } };
+  });
+  hiddenBehaviour.whileHidden.paused &&
+  !hiddenBehaviour.after.paused &&
+  hiddenBehaviour.after.at >= hiddenBehaviour.whileHidden.at
+    ? ok('a hidden page pauses and resumes from the same place', JSON.stringify(hiddenBehaviour))
+    : bad('hidden-page behaviour', JSON.stringify(hiddenBehaviour));
+
+  /* Volume and mute, live. */
+  await mp.getByRole('button', { name: 'Settings' }).click();
+  const dialog = mp.getByRole('dialog', { name: 'Settings' });
+  await dialog.getByRole('slider', { name: 'Volume' }).fill('70');
+  const loud = await mp.evaluate(() => {
+    const el = [...document.querySelectorAll('audio')].find((a) => a.src);
+    return { volume: +el.volume.toFixed(2), paused: el.paused, at: el.currentTime };
+  });
+  Math.abs(loud.volume - 0.7) < 0.02 && !loud.paused
+    ? ok('the volume slider takes effect live, without restarting', `volume ${loud.volume}`)
+    : bad('the volume slider', JSON.stringify(loud));
+
+  await dialog.getByRole('checkbox', { name: 'Music' }).uncheck();
+  await mp.waitForTimeout(200);
+  const muted = await mp.evaluate(
+    () => [...document.querySelectorAll('audio')].filter((a) => a.src && !a.paused).length
+  );
+  muted === 0
+    ? ok('muting stops playback immediately')
+    : bad('muting did not stop playback', String(muted));
+  await dialog.getByRole('button', { name: /Close|Done/ }).first().click();
+
+  musicErrors.length === 0
+    ? ok('no console errors from the soundtrack')
+    : bad('soundtrack console errors', musicErrors.slice(0, 3).join(' | '));
+  await fresh.close();
 
   /* ---------- 7. Origin isolation, stated honestly ---------- */
   const other = await browser.newContext();

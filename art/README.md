@@ -7,6 +7,11 @@ versions can be regenerated rather than recovered.
 | Master | Shipped as | How |
 | --- | --- | --- |
 | `title-source.png` — 2172×724, 870kB | `src/assets/title.png` — 530×179, 18kB | see below |
+| `music/*.wav` — eight tracks, 38 MB | `src/assets/music/*.{webm,mp3}` — 4.26 MB + 5.17 MB | [`music/README.md`](music/README.md) |
+
+The soundtrack has its own notes, because the conversions, the loop
+measurements and the **missing attribution and licence** all need recording:
+see [`music/README.md`](music/README.md).
 
 ## The title wordmark
 

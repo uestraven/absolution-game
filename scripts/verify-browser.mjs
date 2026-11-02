@@ -89,6 +89,39 @@ async function newPage(viewport) {
     ? ok('360px: the title wordmark loads, stays crisp, and names the heading', `${wordmark.natural} shown at ${wordmark.css}`)
     : bad('the title wordmark', JSON.stringify(wordmark));
 
+  /*
+   * The music controls. Audio itself is checked against the served build,
+   * where there is a real decoder and a real network; what matters here is
+   * that the control is reachable, labelled and sized for a thumb, and that
+   * the game is plainly playable without it.
+   */
+  const musicOffer = await page.evaluate(() => {
+    const btn = [...document.querySelectorAll('button')].find((b) =>
+      /enable music|music on|start music/i.test(b.textContent ?? '')
+    );
+    if (!btn) return { missing: true };
+    const box = btn.getBoundingClientRect();
+    return {
+      label: (btn.textContent ?? '').trim(),
+      pressed: btn.getAttribute('aria-pressed'),
+      height: Math.round(box.height),
+      // Nonblocking: nothing modal, and New Game is right there.
+      modal: document.querySelector('[role=dialog]') !== null,
+      canProceed: [...document.querySelectorAll('button')].some(
+        (b) => (b.textContent ?? '').trim() === 'New Game'
+      ),
+      note: (document.querySelector('.start-music-note')?.textContent ?? '').trim(),
+    };
+  });
+  musicOffer.label === 'Enable music' &&
+  musicOffer.pressed === 'false' &&
+  musicOffer.height >= 40 &&
+  !musicOffer.modal &&
+  musicOffer.canProceed &&
+  /nothing in the game depends on sound/i.test(musicOffer.note)
+    ? ok('360px: music is offered, off, and easy to walk past', `"${musicOffer.note}"`)
+    : bad('the music offer', JSON.stringify(musicOffer));
+
   await page.getByRole('button', { name: 'New Game' }).click();
   const onSetup = await page.evaluate(() => ({
     logo: document.querySelectorAll('.start-logo').length,
@@ -828,6 +861,45 @@ async function newPage(viewport) {
   closed === 0 && returned
     ? ok('settings: Escape closes and focus returns to the button that opened it')
     : bad('settings: Escape/focus return', `closed=${closed} returned=${returned}`);
+
+  /*
+   * The volume control. A slider on its own makes a reader guess, so the
+   * number is text as well, and `aria-describedby` ties the two together.
+   */
+  await openSettings(page);
+  const volume = await page.evaluate(() => {
+    const dialog = document.querySelector('[role=dialog]');
+    const slider = dialog.querySelector('input[type=range]');
+    const check = [...dialog.querySelectorAll('input[type=checkbox]')].find(
+      (c) => (c.closest('label')?.textContent ?? '').trim() === 'Music'
+    );
+    if (!slider || !check) return { missing: true };
+    const described = slider.getAttribute('aria-describedby');
+    const value = described ? dialog.querySelector(`#${described}`) : null;
+    const label = dialog.querySelector(`label[for="${slider.id}"]`);
+    slider.focus();
+    return {
+      labelled: (label?.textContent ?? '').trim(),
+      value: (value?.textContent ?? '').trim(),
+      slider: slider.value,
+      height: Math.round(slider.getBoundingClientRect().height),
+      checkboxLabelled: (check.closest('label')?.textContent ?? '').trim(),
+      keyboard: document.activeElement === slider,
+    };
+  });
+  volume.labelled === 'Volume' &&
+  volume.value === '25%' &&
+  volume.slider === '25' &&
+  volume.checkboxLabelled === 'Music' &&
+  volume.height >= 40 &&
+  volume.keyboard
+    ? ok(
+        'settings: music has a labelled switch and a slider that shows its number',
+        `${volume.value}, keyboard reachable`
+      )
+    : bad('the music settings controls', JSON.stringify(volume));
+  await page.getByRole('dialog', { name: 'Settings' })
+    .getByRole('button', { name: /Close|Done/ }).first().click();
 
   /* ---------- 6b. Import the exported save back ---------- */
   await openSettings(page);

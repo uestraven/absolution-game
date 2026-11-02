@@ -285,12 +285,26 @@ export interface Prefs {
    * and the objective is repeated in the transcript whenever it changes.
    */
   showStatus: boolean;
+  /**
+   * Whether the player has asked for music.
+   *
+   * Off until asked for, because a browser will refuse to start audio without
+   * a gesture anyway and because a game that makes a noise the moment it loads
+   * is a game people close. Remembering `true` is a statement of preference,
+   * not permission to play: a reload still needs an interaction, which is what
+   * the "Enable music" control is for.
+   */
+  music: boolean;
+  /** 0..1. Quiet by default — music under prose, not over it. */
+  musicVolume: number;
 }
 
 export const DEFAULT_PREFS: Prefs = {
   inputMode: 'select',
   largeText: false,
   showStatus: false,
+  music: false,
+  musicVolume: 0.25,
 };
 
 export function readPrefs(): Prefs {
@@ -306,6 +320,19 @@ export function readPrefs(): Prefs {
         : DEFAULT_PREFS.inputMode,
       largeText: typeof record.largeText === 'boolean' ? record.largeText : false,
       showStatus: typeof record.showStatus === 'boolean' ? record.showStatus : false,
+      /*
+       * Preferences written before the soundtrack existed have neither of
+       * these, and get the defaults: music off, quiet. A volume outside 0..1,
+       * or a non-number, is a corrupt or hand-edited value and is not trusted.
+       */
+      music: typeof record.music === 'boolean' ? record.music : DEFAULT_PREFS.music,
+      musicVolume:
+        typeof record.musicVolume === 'number' &&
+        Number.isFinite(record.musicVolume) &&
+        record.musicVolume >= 0 &&
+        record.musicVolume <= 1
+          ? record.musicVolume
+          : DEFAULT_PREFS.musicVolume,
     };
   } catch {
     return { ...DEFAULT_PREFS };

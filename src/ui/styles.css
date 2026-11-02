@@ -218,6 +218,52 @@ body {
   color: var(--ink-dim);
   margin: 0.4rem 0 2.5rem;
 }
+/* The music offer on the title screen, and the gesture prompt in play. */
+.start-music {
+  margin: 0 0 1.5rem;
+}
+.start-music-note {
+  color: var(--ink-dim);
+  margin: 0.4rem 0 0;
+  font-size: 0.9em;
+}
+.music-prompt {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0.4rem 1rem 0;
+  color: var(--ink-dim);
+  font-size: 0.9em;
+}
+
+/* Volume. The number is text as well as the slider's value. */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+.slider-label {
+  min-width: 4.5rem;
+}
+.slider-row input[type='range'] {
+  flex: 1 1 8rem;
+  min-width: 8rem;
+  accent-color: var(--cyan);
+  /* A comfortable target where the pointer is coarse, like every control. */
+  height: 2.75rem;
+}
+.slider-value {
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5ch;
+  text-align: right;
+  color: var(--cyan);
+}
+
 .start-actions {
   display: flex;
   flex-direction: column;

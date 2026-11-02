@@ -178,6 +178,56 @@ Two rules keep the tinting honest, and both are enforced by tests:
 
 Colour stays on short spans, measuring about 2% of the transcript in practice.
 
+## Music
+
+Eight tracks, one per place, changing as you move. **Off until asked for**, and
+the game is complete without it: no puzzle, clue or exit depends on sound.
+
+| Where | Track |
+| --- | --- |
+| The village, the workshop, the hill — original era | `present_village` |
+| The cave mouth and everything inward — original era | `present_cave` |
+| The square, the spring, the track — a hundred years back | `past_village` |
+| The mouth, the basin chamber, Lovage's dig — a hundred years back | `past_cave` |
+| The square and the hillside — a hundred years on | `future_village` |
+| The sealed mouth and the broken chamber — a hundred years on | `future_cave` |
+| The last chapter, wherever it happens | `final_boss` |
+| A finished story | `epilogue` |
+
+The one judgement call: **the cave theme starts at the mouth.** `cave_path`
+("Above the roofs, where the grass gives up") is the open hill and keeps the
+village theme; `entrance` — "the Cave of Absolution, the part everyone sees" —
+is where the change happens, because that threshold is what the rite is about.
+The full mapping with location ids is in
+[`src/content/music.ts`](src/content/music.ts).
+
+### How it behaves
+
+- **A browser will not start audio without a gesture**, so the title screen
+  offers an **Enable music** button next to New Game and Continue. Walking past
+  it is normal and costs nothing.
+- **The preference is remembered, but permission is not.** After a reload the
+  control reads *Start music*, and a one-tap prompt appears in play, because a
+  stored "yes" from last week is not an interaction.
+- **25% by default.** Music under prose, not over it.
+- **Tracks crossfade over 1.5 seconds**, and never more than two sources exist.
+  Re-entering a room, examining something, opening settings, switching input
+  mode and every rerender leave the current track alone.
+- **A hidden tab pauses** and resumes from the same place.
+- **Settings** has an on/off switch and a volume slider that shows its number.
+  Both take effect immediately and neither restarts anything.
+- **Failures are silent.** A refused `play()`, a format the browser cannot
+  decode, a track that will not load: the game carries on without music and
+  says so at most once.
+
+Two formats ship — WebM/Opus where it is supported, MP3 everywhere else,
+because Safari supports neither Vorbis nor Opus in Ogg or WebM. Exactly one
+variant of one track is downloaded at a time; nothing is fetched before the
+player asks. Sizes, conversions and the loop measurements are in
+[`art/music/README.md`](art/music/README.md) — including the fact that **no
+attribution or licence was supplied with the tracks**, which needs settling
+before release.
+
 ## Documentation
 
 | Document | Contents |
@@ -189,6 +239,7 @@ Colour stays on short spans, measuring about 2% of the transcript in practice.
 | [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | Dated verification evidence: what was run, what it measured, and what is still pending. |
 | [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) | Real remaining defects and limitations, with reproduction and workarounds. |
 | [`docs/PLAYTEST_PLAN.md`](docs/PLAYTEST_PLAN.md) | A spoiler-free tester sheet and feedback form, plus **spoiler-marked** observer guidance. |
+| [`art/music/README.md`](art/music/README.md) | The soundtrack masters: conversions, delivery sizes, loop measurements, and the missing attribution. |
 | [`docs/FULL_GAME_DESIGN.md`](docs/FULL_GAME_DESIGN.md) | **Spoilers. Proposed, not approved.** The complete adventure: ending, causal model, maps, puzzles. |
 | [`docs/FULL_GAME_WALKTHROUGH.md`](docs/FULL_GAME_WALKTHROUGH.md) | **Spoilers. Proposed.** Critical path for the whole game, plus a continuity audit. |
 | [`docs/M2_DECISIONS.md`](docs/M2_DECISIONS.md) | The five decisions the owner has settled, and what is still proposed. |
@@ -340,6 +391,10 @@ than overwritten.
   mouse.
 - `prefers-reduced-motion` and `prefers-contrast: more` are both honoured; the
   glide degrades to an instant jump, which lands in the same place.
+- No audio is required, none plays until asked for, and nothing in the game is
+  communicated by sound. The music switch and volume slider are labelled
+  controls; the slider's value is shown as text and tied to it with
+  `aria-describedby`, and the audio elements are `aria-hidden`.
 - Type-only mode is completable with the keyboard alone; Selectable Actions mode
   is completable without typing anything.
 
