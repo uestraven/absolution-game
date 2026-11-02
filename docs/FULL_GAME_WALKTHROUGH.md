@@ -1,13 +1,13 @@
 # Absolution — proposed full-game walkthrough
 
 > **SPOILERS**, and a **design document**. Chapter 1 is implemented and runs at
-> commit `aad3a60`. Chapters 2–4 are **proposed and not implemented**; the
-> commands below are a specification of intended play, not a record of a
-> session. Nothing here has been executed except Chapter 1.
+> `31866e6`. Chapters 2–4 are **proposed and not implemented**: the commands
+> below specify intended play, they are not a record of a session. Only
+> Chapter 1 has been executed.
 
-Companion to `docs/FULL_GAME_DESIGN.md`. Status labels there apply here.
-**Revision 2**, after owner review of `8ed3d96` — see that document's §0 for
-the nine corrections.
+**Revision 3**, reconciled to the five approved owner decisions. See
+`docs/FULL_GAME_DESIGN.md` §0 for what was superseded, and
+`docs/M2_DECISIONS.md` for the decisions themselves.
 
 ---
 
@@ -31,11 +31,14 @@ down                    → deep chamber
 enter threshold         → CROSSING 1
 ```
 
-Recommended fuller route, for the relationships Chapters 3–4 depend on:
+Recommended fuller route, for the relationships and clues the later chapters
+rely on:
 
 ```
 examine lantern · examine tag · take lantern · examine window · down
-examine plank · talk to sage → the prophecy / how old the prophecy is / leave
+examine plank                       ← the five lines. The hero has known them
+                                      since school; this is a re-reading
+talk to sage → the prophecy / how old the prophecy is / leave
 talk to marjoram → the cave / advice for going in / leave
 talk to parsie → why he is so excited / the others who went in /
                  what he wants you to bring back / leave
@@ -46,404 +49,358 @@ talk to dilly → what happened when she went in / how she got lost /
                 the thing she let go of the rope for / leave
 talk to tyme → the entrance and the way back / what is actually in there /
                coming back out for more gear / leave
+               [PROPOSED] what he does while you are inside
 examine stump · west · examine lintel · examine rope · light lantern · in
 examine scratches · examine relief
-[PROPOSED addition] take stone        ← for Parsie, optional, §9 of the design
+[PROPOSED] take stone                ← for Parsie. Optional. It ends up in a
+                                       record chest a century later
 north · examine words · examine boot · south
 east · examine shutter · open shutter · examine alcove · examine eye
+[PROPOSED] examine crack             ← unremarked. It will be a different
+                                       length the next time it is measured
 wedge shutter · place lantern in alcove · examine wall · open seam
 take lantern · take wedge · down
 examine threshold · examine steps
 enter threshold
 ```
 
-**Essentials leaving Chapter 1:** `lantern`, `wedge`. **Knowledge:** the
-prophecy's wording, that the relief is instructions, that the basin has a
-depth it cannot have. **Optional:** a stone for Parsie; the echo chamber
-account. **State:** seam open; basin depth recorded in the journal
-*(proposed addition)*.
+**Leaving Chapter 1:** `lantern`, `wedge`. **Knowledge:** the prophecy, that
+the relief is instructions, that the basin has a depth it cannot have.
+**Optional:** a stone for Parsie; the echo chamber.
 
 ---
 
-## Chapter 2 — The past *(proposed)*
+## Chapter 2 — The past, one century back *(proposed)*
 
-**Entry:** `past.deep_chamber`. Carrying lantern and wedge. The basin is a hand
-deep; coins and a bone pin in the silt.
+**Entry:** `past.deep_chamber`. The basin is a hand deep; two coins and a bone
+pin in the silt.
 
 ```
-examine basin                    ← the depth is gone; this is not the way back
-take pin                         ← optional; the only object from −140 that is
-                                   portable and legible later
-examine tool work                ← chalk setting-out line, bucket, mallet
-examine gauge                    ← numbered marks cut into the stair; reads 31
-                                   ⇒ journal records it
-up                               → past.entrance (a worked stair, no gallery)
+examine basin · examine tool work     ← chalk setting-out line, bucket, mallet
+take mallet                           ← Lovage's. It is the tool that ends the game
+up                                    → past.entrance (a worked stair, no gallery)
 examine mouth · examine village
-east                             → past.square
+east                                  → past.square
 talk to saffra → where you are / the cave on the hill /
                  whether the cave has a name
-talk to fenn → the tree / whether he has been in the cave
+talk to fenn   → the tree / whether he has been in the cave
+```
+
+### P4 · The recitation — the chapter's hinge
+
+This can be done before or after the worksite; the design supports both orders.
+
+```
+talk to saffra → the Wanderer          ← the hero mentions it the way you
+                                         mention a holiday
+                                       ⇒ SHE HAS NEVER HEARD OF IT.
+                                         The hero's shock is the beat.
+               → what it says          ← she and Fenn both want to know
+recite prophecy                        ⇒ NEW VERB. The five canonical lines,
+                                         verbatim, every time. No variants.
+                                       ⇒ flag recited_prophecy
+                                       ⇒ one line of realisation: the hero
+                                         hears their own voice saying it to
+                                         people who are writing it down
+```
+
+Optional, and none of it changes the recited text:
+
+```
+talk to saffra → how I know            ← warn / confess / refuse
+talk to fenn   → the truth             ⇒ told_fenn_truth
+recite prophecy                        ← again, if the player refused first.
+                                         They ask. And ask. It is required,
+                                         and the player sets the spirit of it
+talk to saffra → take it back          ⇒ tried_to_retract. She has already
+                                         written it on a board
 ```
 
 ### P2 · Getting onto the worksite
 
 ```
-ask fenn about the stair          ← he mentions who carries the water up
-west                             → past.cave_path   (NEW ROOM)
-examine crew · examine rope       ← Lovage has the stair roped off
-talk to lovage → the stair        ← "Come back when you are somebody."
-             → the water          ← "We are not digging for a pool. We are
-                                    digging until we hit the water, and that
-                                    is the water the village drinks."
-south                            → past.spring      (NEW ROOM)
-examine spring                    ← running hard
-talk to saffra → the spring       ← "When the hill is full, the spring runs."
+ask fenn about the stair               ← nobody stops the water-carrier
+west                                   → past.cave_path   (NEW ROOM)
+examine crew · examine rope
+talk to lovage → the stair             ← "Come back when you are somebody."
+               → the water             ← they are cutting down to a cistern
+south                                  → past.spring      (NEW ROOM)
 take skins · fill skins
-north · west                     → past.entrance
-give skins to lovage              ← he takes them and stops looking at you
-                                 ⇒ flag past_worksite_access
+north · west                           → past.entrance
+give skins to lovage                   ⇒ past_worksite_access
 ```
 
-*Selectable equivalents:* **Fenn** → *the stair* · exits as buttons ·
-**water skins** → *Take* / *Fill* · **Lovage** → *Give the water skins*.
-
-### P3 · The worksite and the aiming
-
-```
-in                               → past.worksite    (NEW ROOM)
-examine aperture                  ← half-cut; thinned panel; no camouflage yet
-examine niche                     ← rough, not yet dished
-examine drawing                   ← THE POWER: a lamp at three heights,
-                                    three fans of light, numbers beside them.
-                                    Complete. No missing marks.
-examine inscription               ← "WHAT HAS CROSSED IS OUT OF THE RIVER.
-                                     IT DOES NOT FLOW WITH IT."
-examine note                      ← cut, not chalked: "CUT SO IT CAN BE UNMADE"
-examine floor                     ← chisel scars, a fresh step, spoil heaped
-ask lovage about the numbers      ← "Off the floor." He means the finished one.
-ask lovage about the floor        ← "Another hand off it before the dish goes
-                                    in." Nobody here knows the final depth;
-                                    it is the last thing cut, from a plan
-                                    handed down.
-measure niche                     ⇒ flags read_setting_out, knows_aiming
-                                    journal records all three heights, measured
-                                    from the floor that exists
-```
-
-**Foreshadowing beat, optional but recommended:** `place lantern in niche` →
-`light lantern` → `take lantern`. Water is heard coming back **up** the stair.
-One line. This is closure, demonstrated on water: what the tear was holding is
-given back the moment it stops being addressed.
-
-Also here, and required reading for the finale:
+**If the recitation came first, the water route is barred** — and two
+replacements appear on the `recited_prophecy` flag, with **no prerequisite on
+any earlier conversation**:
 
 ```
-examine inscription    "WHAT HAS CROSSED IS OUT OF THE RIVER AND DOES NOT
-                        FLOW WITH IT. WHAT IS SWALLOWED IS OWED BACK."
-examine note           cut, not chalked: "CUT SO IT CAN BE UNMADE"
+talk to fenn   → the old way           ← he comes and finds you. The topic
+                                         appears with the flag and never goes
+west · in                              → past.worksite, behind the spoil heap
+```
+```
+talk to saffra → get me up there       ← she walks you past Lovage herself
 ```
 
-### P4 · The warning
+### P3 · The builders' three settings
 
 ```
-out · east                       → past.square
-talk to saffra → the hill         ← the five core lines are FIXED; the hero
-                                    speaks the plank's own words because they
-                                    are the only words they have
-  (a) explanation : "the hill is hollow and leaking" /
-                    "there is a hole in the year" /
-                    "I will not tell you how I know"
-  (b) tone        : warning / confession / plea
-  (c) confidant   : Saffra / Lovage / Fenn   ← whose handwriting ends up on it
-  (d) advice      : "watch the water" / "keep a vigil" /
-                    "send someone into the cave"
-                                 ⇒ flags gave_warning, warning_explain/tone/
-                                   confidant/advice
-                                 ⇒ the ADVICE decides which 180-year record
-                                   exists in Chapter 3. All three produce a
-                                   dated annual water series.
+in                                     → past.worksite    (NEW ROOM)
+examine aperture                        ← half-cut, in a thinned panel
+examine drawing                         ← THE POWER: three positions, numbered.
+                                          Complete. Nothing obscured
+examine notes                           ← the crew's craft record: where we
+                                          were, how long, what we found. No
+                                          theory, because they have none
+examine dishes                          ← TWO are cut. The low one and the
+                                          high one
+examine outline                         ← chalk on rough rock where the middle
+                                          one will go
+                                        ⇒ read_drawing, knows_settings
 ```
 
-The hero hears themselves quoting the plank. One line of narration; no
-explanation.
-
-**Consequence:** Lovage pulls the rope across the stair. If P3 is not yet
-done, **two routes, both unconditional** — neither depends on any earlier
-dialogue choice:
+Every obvious way out of the limitation, and its answer:
 
 ```
-talk to fenn → the old way        ← this topic appears the moment the warning
-                                    is given and never goes away. He finds you.
-west · in                         → past.worksite, behind the spoil heap
-```
-```
-talk to saffra → get me up there  ← she walks you past Lovage herself
+place lantern on rubble                 ← will not sit level; the light
+                                          wanders; the fold does not answer
+wedge lantern                           ← the wedge props a shutter, not a
+                                          lamp at a hand's tolerance
+ask lovage to cut it                    ← "A week with two men, and I would
+                                          not give you an hour."
+wait                                    ← available. And over the next day the
+                                          wrongnesses start, the village
+                                          decides they came in with the
+                                          stranger, and the hill is closed to
+                                          them for good
 ```
 
-### Leaving
+### Leaving — forward, knowingly
 
 ```
-place lantern in niche            ← at the height you measured, correctly,
-                                    off the floor that exists
+place lantern in high dish
 light lantern
-enter aperture                    → CROSSING 2
-                                    One line on the way through: the floor is
-                                    not finished.
+enter aperture                          → CROSSING 2
+                                          The hero knows this is the wrong
+                                          direction. It is the only one open.
 ```
 
-**Leaving Chapter 2:** lantern, wedge, **mallet** *(take it — Lovage's,
-from `past.deep_chamber` or the worksite)*, optional bone pin. **Knowledge:**
-the tear answers to light; height selects era; the aperture was built to be
-unmade; what has crossed is out of the river and what is swallowed is owed
-back; the basin is the hill's water table; gauge reading 31. **Recovery if the mallet is
-missed:** a maul in the future ruin of Oreg's workshop (§5 P6 of the design).
+**Leaving Chapter 2:** lantern, wedge, **mallet**, optional bone pin.
+**Knowledge:** the fold answers to a lamp at a height; three settings and no
+more; the middle dish is uncut; **nobody in this century had ever heard the
+prophecy until the hero said it.** **Recovery if the mallet is missed:** a maul
+in the ruined workshop in Chapter 3.
 
 ---
 
-## Chapter 3 — The ruined future *(proposed)*
+## Chapter 3 — The future, one century on *(proposed)*
 
-**Entry:** `future.deep_chamber`, buried, a gap in the fallen roof.
-
-```
-look · examine basin              ← dry. Tool marks, two coins, no water.
-examine gauge                     ← reads 0, every mark exposed, silt two
-                                    marks up the stone
-                                   ⇒ journal records it
-examine roof · out                → future.rubble    (NEW ROOM)
-examine slab                      ← the pivot slab is down and broken
-examine panel                     ← one edge of the pierced aperture shows
-up                                → future.entrance (NEW ROOM)
-examine mouth                     ← choked; the hill has moved
-wait                              ← rain near the mouth falls upward for a
-                                    few seconds. Nobody comments.
-examine bench                     ← Tyme's bench, and the mark on it
-east                              → future.cave_path (NEW ROOM)
-examine trunk                     ← the great tree, down, under rubble
-east                              → future.square    (NEW ROOM)
-examine calendar                  ← the survivors' calendar has repeated days
-                                    on it. They are matter-of-fact about this.
-examine map                       ← Parsie's, with a shaded edge: two valleys
-                                    in five years
-```
-
-### P5 · The water record
+**Entry:** `future.deep_chamber`, closed in by the hill, a gap in the fallen
+roof. *(Milestone 3 ends here — see the design's §9.)*
 
 ```
-examine well                      ← no rope, no water
-examine record                     ← 180 years of annual entries, in whichever
-                                    form your Chapter 2 advice created:
-                                    the ledger / the midwinter minutes /
-                                    the keepers' log
-journal                            ← your own gauge readings: 31 (−140),
-                                    12 and then 11 (year 0), 0 (now)
-compare record with journal        ⇒ NEW VERB. Three things agree:
-                                    · the fall starts the year the record
-                                      starts — the year a stranger told them
-                                      to start it
-                                    · exactly one night in 180 years shows a
-                                      two-mark drop, and it is the night in
-                                      your journal
-                                    · your −140 reading is the top of the
-                                      series
-                                   ⇒ flags read_record, knows_cause
-talk to parsie → the night the well dropped
-              → the hill coming down
-              → the shaded edge of the map   ← it is still spreading
-              → the stone                     ← if you brought him one
-              → Tyme                          ← how the bench got its mark
+look · examine basin                    ← dry
+examine roof · out                      → future.entrance (NEW ROOM)
+examine mouth                           ← SEALED, with a cut mark on the stone
+examine mark                            ← the village's own
+up / east                               → future.cave_path (NEW ROOM)
+examine trunk                           ← the great tree, down
+examine sky                             ← wrong, and nobody here remembers it
+                                          being otherwise
+east                                    → future.square   (NEW ROOM)
 ```
 
-*Selectable equivalents:* **the record** → *Examine* / *Compare with my
-journal* · **Journal** in the header · **Talk to Parsie** → topics.
-
-Parsie never accuses anyone. He holds the whole case in his lean-to and has
-never had the fourth number. The player supplies it.
-
-**A bell is heard that has not been rung.** Later in the chapter, somebody
-rings it. That is the confirmation that the tear has reached sequence, and
-nobody explains it.
-
-### P6 · Clearing the aperture, and the eye
+### P5 · The settlement's account
 
 ```
-west · west · down                → future.rubble
-wedge slab                        ← or it drops across the alcove
-break rubble with mallet          ← first blow
-break rubble with mallet          ← second blow; the spall
-                                  ⇒ flag lost_eye
-                                    journal: "My left eye is gone. I did it
-                                    myself, with Lovage's mallet."
-examine aperture                  ← the finished floor exists now, and the
-                                    datum mark is cut into the rim. The
-                                    heights finally mean what the drawing
-                                    said they meant.
-                                  ⇒ flag knows_datum
+talk to sorrel                          ← a child; takes you in; answers
+                                          anything
+              → the village             ← thirty people
+              → anywhere else           ← the roads stopped. The sea came up
+                                          and stayed. Nobody has come through
+                                          in her lifetime
+examine well                            ← capped with stone
+examine memorial                        ← the year it started going wrong
+examine account                         ← the settlement's history of the end
+                                          of the world. A century of gloss —
+                                          and the FIVE LINES in the middle of
+                                          it, word for word
+read journal                            ← your own entries. Your birthday
+talk to rue   → the account             ← "a stranger said it"
+              → the stranger            ← the family story: one eye, out of
+                                          the hill, would not say who they were
+              → the year                ← what her grandmother's grandmother
+                                          was told
+              → how it works            ← "I have no idea." NOBODY HERE DOES
+              → the seal                ← her people put it there
+              → the chest               ← if you brought Parsie a stone, it
+                                          is in it
+                                        ⇒ read_account, heard_family_story,
+                                          knows_responsibility
 ```
 
-**Identity confirmed by the world, not the narration:** go up and out, and
-whoever is at the mouth backs away and says the word.
+The player makes the match. Rue never accuses anyone, and believes the
+Wanderer did it — which is correct, and which she cannot possibly know.
+
+### P6 · Out through the seal, and the eye
 
 ```
-up · examine survivor             ← they will not come closer
-down
-place lantern in aperture         ← at the third height, from the real datum
+talk to sorrel → the seal               ← which course is loose
+west / down                             → future.entrance
+wedge course
+break seal with mallet                   ← first blow
+break seal with mallet                   ← second blow
+                                        ⇒ A stone comes down and takes the
+                                          left eye — and the fall it came from
+                                          begins AFTERWARDS.
+                                        ⇒ flag lost_eye. Two sentences.
+up                                      ← whoever is at the mouth backs away
+                                          and names you, out of a text you
+                                          wrote
+examine fissure                         ← the low dish, intact behind it
+place lantern in low dish
 light lantern
-enter aperture                    → CROSSING 3
+enter aperture                          → CROSSING 3
 ```
 
 ---
 
-## Chapter 4 — The return and the finale *(proposed)*
+## Chapter 4 — The return, the confrontation, the end *(proposed)*
 
-**Entry:** `present.sealed_chamber`, year 0, the instant the seam appears.
-Carrying lantern, wedge, mallet, journal. One eye. The earlier self is holding
-a lit lamp. **The slab settles shut behind you.** There is one way out of this
-chamber and the other person is standing in it.
+**Entry:** `present.sealed_chamber`, year 0, the minute the seam opens.
+Lantern, wedge, mallet, journal. One eye, three days, filthy. The earlier self
+is holding a lit lamp. **The slab settles shut behind you.**
 
 ```
 look · examine self · examine slab
-go up                             ← "You are not leaving this room.
-                                    Neither of you is."
+go up                                   ← "You are not leaving this room.
+                                          Neither of you is."
 
-talk to basil → who I am          ← "Anybody could say that."
-show lantern                      ← IDENTITY. Two lanterns, same dent, same
-                                    striker chain, four days apart. They hold
-                                    both.                        ⇒ stage 2
-
-show journal                      ← DANGER. Four readings, your handwriting.
-talk to basil → the water         ← they go down the steps and read the gauge
-                                    themselves: it has dropped a mark since
-                                    this morning.               ⇒ stage 3
-
-talk to basil → the prophecy      ← "Then it is about you, and it says I stop
-                                    you." You have no clean answer. Say so.
-talk to basil → the village
-talk to basil → the vigil
-tell about tyme                   ← RESISTANCE. What the bench looks like in
-                                    forty years, and who put the mark on it.
-                                                                ⇒ stage 4
-
-examine panel · tell about tear
-talk to basil → cut so it can be unmade
-                                  ← they solved this puzzle twenty minutes
-                                    ago and get there at once — then object:
-                                    nobody ever reaches it again. You agree.
-                                                                ⇒ stage 5
-
-break panel with mallet           ← they brace the slab; you swing
+talk to basil → who I am                ← "Anybody could say that."
+show lantern                            ← IDENTITY. Two lanterns, same dent,
+                                          three days apart. They believe it —
+                                          and the plank says the Wanderer is
+                                          one-eyed and comes to stop the one
+                                          who could stop it. Believing you
+                                          makes them certain
+show journal                            ← a century of deaths in their own
+                                          handwriting. Nothing here can
+                                          corroborate it. It reads as a trick
+talk to basil → the prophecy            ← where the words came from. They have
+                                          recited those words every midwinter
+                                          of their life. It lands as blasphemy
+stand in threshold                      ← holds for one exchange
+grab basil                              ← they get free
+tie basil with rope                     ← the rope is at the mouth, not here
+break pillar with mallet                 ← they tackle you. The mallet skids to
+                                          the back of the chamber
+take mallet
 ```
 
-**Then:** the seam collapses, and water comes back up the stair for an hour,
-audibly, and keeps coming.
-
-**The quiet beat, after.** Not a lever, and it persuades nobody: the two of
-them work out between them where the Wanderer-words came from. Neither enjoys
-it. One exchange; then they climb out.
-
-### Aftermath — about eight minutes, no puzzles
+Then the only action left that stops the crossing: **the hero kills their
+earlier self.** One line, the mallet because it is what is in the hand, and no
+dwelling. What the narration spends
+words on is the four seconds afterwards.
 
 ```
-up · west · out                   → present.entrance
-talk to tyme                      ← he looks at the two of you for a long
-                                    time. He does not need to understand it;
-                                    he needs to know if anyone is hurt.
-east · east                       → present.square
-tell the village → the truth / the useful part / nothing
-talk to sage                      ← if you told the truth, she writes it down,
-                                    because that is her job, and it goes in
-                                    the chest with the midwinter minutes —
-                                    where Saffra put the other one
-talk to marjoram                  ← "Boring," you tell her.
+examine basil                            ← four seconds
+examine pillar                           ← one worked pillar, and a century of
+                                          loosening the hero has seen the far
+                                          end of
+break pillar with mallet                 ← first blow; the hill answers
+break pillar with mallet                 ← second
+break pillar with mallet                 ← the last one is its own action. Its
+                                          cost is stated before it is taken:
+                                          THE HERO DIES HERE, and the cave is
+                                          gone for good
 ```
 
-**Where the older one goes.** They cannot be Basil or Basilia; that name is
-standing next to them. Some weeks later Tyme hands over a coil of rope without
-making a speech about it, and the bench becomes theirs. They keep the path,
-refresh the chalk every spring, hand rope to sixteen-year-olds, and never tell
-any of them what used to be behind the fourth wall.
+### Epilogue — not playable, not the hero's
 
-**Cost, itemised:** no name in the village's reckoning, no family, no record,
-no birthday, one eye, sole possession of forty years of other people's
-futures, and the knowledge that the person they saved will have an ordinary
-life and will slowly stop thinking about this.
+The village, that evening and after: the sound reaching the square; the hill
+moved and the mouth gone by full dark; Tyme found on the bench with a coil of
+rope in his hands and nobody to give it to; nobody missing, no child
+unaccounted for. The vigil called off. The rite ended, because there is no cave
+to walk into. Sage filing the Wanderer-words with the midwinter minutes and
+writing beside them that they came true.
 
-**What the village keeps:** the prophecy, unrepealed, and a one-eyed stranger
-on the cave path who arrived the night the vigil was called off. They decline,
-collectively and without discussing it, to put those two things together.
+Closing on one ordinary detail, a century later, in a square the player has
+stood in twice: **it rains, and the water stays where it falls.**
 
-### Alternative branch — the sacrificial variant
+---
 
-At stage 4 or later:
+## The two orderings
 
-```
-wedge slab
-break panel with mallet           ← alone; the chamber comes in
-```
+### The hero's subjective order
 
-The seam closes, the water returns, the village is saved and never learns why,
-and a sixteen-year-old walks down the hill on their own. **One real branch;
-both endings authored. Recommendation is the survivable one.**
+| # | Where | Elapsed | Carried out | Injury |
+| --- | --- | --- | --- | --- |
+| 1 | Village, first cave | day 1, morning–dusk | lantern, wedge | — |
+| 2 | Past, year −100 | day 1 evening – day 2 | + mallet | — |
+| 3 | Future, year +100 | day 2 – day 3 | + the journal's record | left eye |
+| 4 | Sealed chamber, year 0 | day 3, the same dusk as (1) | — | — |
 
-### Deliberate dead ends — all recoverable in one turn
+About three days. Sixteen throughout.
 
-| Attempt | Outcome | Recovery |
-| --- | --- | --- |
-| `remove hood` at stage 0–1 | They see the socket, reach the plank's conclusion, and put themselves between you and the alcove with the lamp held like something they might throw. Conversation suspended. | `put down mallet`, then `step back`. Stage 1 resumes; `show lantern` still works. |
-| `break panel with mallet` before stage 4 | They tackle you. Nobody hurt; the mallet skids to the back of the chamber. | `take mallet`, continue from the stage you had reached. |
-| `go up` / `out` / `west` | Refused in one line. | — |
-| Arguing from the plank's authority | Fails by design. | — |
+### The world's calendar order
 
-**The earlier self never crosses during the encounter**, there is no timer, and
-stalling costs nothing. Every failure is conversational and bounded.
+| Calendar | Event |
+| --- | --- |
+| −100 | Lovage's crew cutting the stair; the fold found; three settings learned; the middle dish uncut |
+| −100 | A stranger recites the Wanderer-words. Saffra writes them on a board |
+| −100 | Wrongnesses begin. The village turns on the stranger, who leaves forward. **The tear stays open** |
+| −100 → 0 | Copied, chanted at midwinter, shortened, carved, taught in school |
+| 0, morning | The hero turns sixteen. Eleven days into the vigil |
+| 0, dusk | The earlier self opens the seam |
+| **0, dusk, same minute** | **The intervention. Both die. The hill comes down** |
+| 0, that night | The cave is gone. The rite ends |
+| ~~0 → +100~~ | ~~Causality shatters; a century of collapse; a few survive~~ — **never happens** |
+
+---
 
 ## Continuity audit
 
-Re-graded for revision 2. The first draft called ten of ten checks **Pass**,
-which the owner correctly read as over-claiming. Grades here are **Pass**
-(traced, no gap found), **Partial** (works, with a named weakness) and **Open**
-(not settled, and the owner has to settle it).
+Graded **Pass** (traced, no gap found), **Partial** (works, with a named
+weakness) or **Open** (the owner's to settle, and listed in
+`M2_DECISIONS.md`).
 
 | Check | Grade | Notes |
 | --- | --- | --- |
-| Every required action is motivated before its result is known | **Pass** | Crossing 1: curiosity. Crossing 2: getting home, with correct arithmetic off the only floor that exists. Crossing 3: reaching the moment it starts. P4: they are the only person who knows. P6: the only route out. No action needs foreknowledge of its own consequence. |
-| The warning is the prophecy's source, consistent with the opening | **Partial** | The five core lines are now **fixed** and are the shipped plank text, so nothing the player reads is retrofitted — that defect is closed. The weakness that remains is the bootstrap: *one-eyed* has no first author. Owned in dialogue, not patched. |
-| The eye injury and identity evidence are in a coherent order | **Pass** | Injury (Ch3 mid) → a stranger names them (Ch3 late) → the hero argues *against* the identity they now fit (Ch4). The evidence that convinces is the lantern; the eye is the obstacle. |
-| Temporal damage has observable cause and cumulative effect | **Pass** | One instrument (the gauge), four readings, a 180-year series, and three stages of symptom — water, stone, sequence. The player does the arithmetic; nobody announces it. |
-| The catastrophe matches the premise's scope | **Partial** | Restored from "a dry valley" to a tear that has reached the order of events and is spreading valley by valley. But it is shown in **four descriptive beats and one map prop**, which is cheap in scope and correspondingly thin in weight. A reader may still feel the end of the world deserves more than that. Deliberate trade, flagged. |
-| The final intervention implies no future-self meeting in the opening | **Pass** | Chapter 1 as played *is* the unchanged history. Nothing is retrofitted into it; the player's recognition of the room is the whole effect. |
-| The closure rule solves the actual causal problem and is foreshadowed | **Pass** | Two distinct rules, *crossed* and *swallowed*, replacing the first draft's contradiction. Closure expels only what was held. Foreshadowed twice in Ch2 — the two-rule inscription, and water audibly returning when the lamp is lifted. |
-| Both selves' fates and memory retention are accounted for | **Partial** | Rule 1 covers it and is demonstrated on water before it is applied to a person. The aftermath is now written rather than gestured at. **The residual objection stands:** if the earlier self never crosses, a reader may still feel the traveller cannot be there to prevent it. This is a story rule and the draft says so. |
-| No prerequisite needs an inaccessible item or a permanently missed clue | **Pass** | Mallet has a future substitute; lantern has a past substitute; the drawing cannot be destroyed; the record is fixed scenery. **The Ch2 dependency trap is closed:** after the warning there are two unconditional routes onto the worksite, neither gated on earlier dialogue. |
-| Both input modes can perform every solution | **Pass, with one item to build** | `COMPARE RECORD WITH JOURNAL` needs its selectable form specified — a *Compare with my journal* action on the record object. The finale's `show lantern`, `show journal`, `tell about tyme` are conversation topics, which both modes already render. |
-| Pacing fits a short adventure | **Partial** | Ch1 ≈ 25 min (measured), Ch2 ≈ 25, Ch3 ≈ 20, Ch4 ≈ 15, aftermath ≈ 8 — about 95 minutes, which is over the first draft's estimate because the aftermath is now real. Chapter 2 still carries three puzzles and the warning and is the likeliest to bloat. |
-| Is the ending settled? | **Open** | Survivable is recommended; sacrificial is a real branch. Owner decision 5. |
-| Is the bootstrap acceptable? | **Open** | Owner decision 4. The alternative — a mundane origin for *one-eyed* in a carver's invention — removes the loop and costs the best moment in Chapter 2. |
+| Every required action is motivated before its result is known | **Pass** | Crossing 1: curiosity. Crossing 2: the only setting with a dish, taken knowingly as the lesser evil. Crossing 3: reaching the minute it starts. The recitation: they assume everyone knows it and are asked. |
+| The warning is the prophecy's only source, consistent with the opening | **Pass** | The canonical text is the shipped plank, unedited. The recitation is those lines verbatim. No earlier prophet, no unseen author, no record predating it. The loop is the owner's chosen origin |
+| Player choices never rewrite text the player has read | **Pass** | Decision 4 applied: one fixed recitation; agency is in tone, questions, explanation and who is told the truth |
+| The future follows the hero's journey | **Pass** | The memorial's year is the hero's birthday; the collapse runs from it; the Account's middle lines are the hero's own |
+| The final intervention is new, with no future self in the opening | **Pass** | Chapter 1 as played *is* the unchanged history. Nothing retrofitted |
+| Both deaths and the cave's permanent destruction are accounted for | **Pass** | The earlier self is killed in the chamber; the hero brings the pillar down from inside; the chamber and the fold are under the hill |
+| Singularity is applied to the protagonist only | **Pass** | No universal rule anywhere. Objects travel as a gameplay rule, stated as such. Nothing explains it, nobody theorises about it, no ancestry |
+| The catastrophe is worldwide and shown, not asserted | **Partial** | The sky, the capped well, the sealed hill, the roads, a sea that came up and stayed, thirty people where there were two hundred — all testimony and observation. **But it is still four or five beats and one chapter.** A reader may want more weight than the scope allows |
+| The mechanism is never explained | **Partial** | Every symptom is an observation and every explanation is somebody's belief; Rue says outright she has no idea. **The risk is in review, not in the plan:** the temptation to let one character "know" has to be refused each time a scene is written |
+| No prerequisite needs an inaccessible item or a permanently missed clue | **Pass** | Mallet has a future substitute; lantern has a past one; the drawing, Account and memorial are indestructible fixed scenery. **The Ch2 order trap is closed:** after the recitation there are two unconditional routes onto the worksite, each on the flag the required path sets, neither depending on an earlier optional conversation |
+| The forced mistake is gone | **Pass** | No obscured mark. Three fixed settings, one uncut dish, and four authored answers to cleaning, improvising, asking and waiting. The hero's arithmetic is never wrong |
+| Both input modes can perform every solution | **Pass, with two to build** | Two new things need their selectable forms specified: `RECITE PROPHECY` as a *Recite it* action on the conversation topic, and the evidence reading as ordinary *Examine* on the Account, the memorial and the journal — there is no `COMPARE` verb any more, because the inference is the player's rather than a command. The confrontation's actions are all either verbs on visible objects or conversation topics, which both modes already render |
+| Pacing fits a short adventure | **Partial** | Ch1 ≈ 25 min (measured), Ch2 ≈ 25, Ch3 ≈ 20, Ch4 ≈ 15, epilogue ≈ 3 — about 90 minutes. Chapter 2 still carries three puzzles and the hinge and is the likeliest to bloat |
+| Lethality is handled with restraint | **Open** | Specified as one line with no dwelling, and four seconds of aftermath given the words instead. Whether that is the right register is the owner's call once it is drafted |
 
 ### Unresolved, and honest
 
-1. **The one-eyed bootstrap.** Still the strongest residual issue. Not
-   solvable inside the fixed canon without inventing an original author, which
-   the brief forbids. Mitigated by having the hero notice it. **Open for the
-   owner.**
-2. **The hero's persistence after the change.** Rule 1 asserts it and
-   foreshadows it on water. It remains an assertion about people. The
-   alternative considered and rejected: let the earlier self cross and close
-   the tear from the far side, which contradicts "the portal closes" and
-   strands them.
-3. **The catastrophe's weight versus its cost.** Four beats and a map prop
-   restore the *scope* but not necessarily the *felt scale*. Spending another
-   room on it is the obvious upgrade and the obvious scope risk.
-4. **Chapter 3's population is thin** — one named survivor and one unnamed
-   frightened one. Deliberate; a third costs twenty minutes of writing for
-   atmosphere.
-5. **Chapter 2 is the fattest chapter** and the first place to cut.
+1. **The information loop** is deliberate (decision 4) and not a defect. The
+   design's only obligations are to let the hero notice it and never explain
+   it. Recorded here so no later pass "fixes" it.
+2. **The catastrophe's felt scale** versus the scope it is given. The honest
+   trade is one more future room; the honest risk is a ninety-minute game
+   becoming two hours.
+3. **How much the hero understands at the end.** They know they caused it and
+   that the cave guarantees repetition. They never know why. Whether a player
+   finds that satisfying or thin is the biggest open question in the design.
+4. **Chapter 3's population is two named people.** Deliberate; a third costs
+   writing time for atmosphere.
 
-### What the owner's review closed
+### What this revision closed
 
-For the record, these were real defects in revision 1 and are no longer open:
-the shrunken catastrophe; warning choices rewriting the plank; the
-crossed-versus-in-transit contradiction; a 40-year ledger asked to date a
-140-year-old action; the optional-dialogue dependency trap; a mis-aim that made
-the hero look careless; an undefined retreat-and-resume in the finale; an
-aftermath that was asserted rather than written; and a persuasion sequence that
-used prophecy recitation to prove authorship.
+Real defects in revision 2, now gone: the universal anchoring rule; −140/+40
+dates; an opening acquaintance implausibly alive a century on; the quantified
+aquifer model and its gauge; a 40-year ledger asked to date a 140-year-old
+act; player choices rewriting the plank; the forced mis-aim; the
+dependency-trapped alternate route; and a two-survivor ending with a comic
+epilogue.

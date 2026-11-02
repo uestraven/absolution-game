@@ -45,10 +45,58 @@ Three tiers, kept strictly apart:
   universes.
 - The hero **retains their experiences** even when intervening in their earlier
   journey. The warning was always part of the original village's history.
-- The final confrontation takes place in the cave and should result in **closing
-  its portal**.
+- The final confrontation takes place in the cave.
 - The cave differs in each era. Age, inhabitants, water, damage and access
   routes should eventually affect exploration and puzzles.
+
+### Settled later, by owner decision
+
+These five were decided after the opening shipped. They are canon, and they
+supersede earlier drafting. The reasoning and the detail live in
+[`docs/M2_DECISIONS.md`](M2_DECISIONS.md).
+
+- **The hero is a singularity.** Their experience is continuous when history
+  changes: changing events does not erase the returning hero, their memories
+  or their injuries, and **killing the earlier self does not erase them
+  either** — they remain able to perform the final sacrifice. Two versions of
+  the protagonist can coexist during the confrontation. No merge, no automatic
+  disappearance, no parallel universes.
+  **This protects the protagonist only.** It is not a universal law about
+  people, water or objects passing through the cave, it is never explained to
+  the player, and it is never attributed to ancestry.
+- **One century in each direction.** The past is exactly 100 years before the
+  opening village; the future exactly 100 years after.
+  The end of the world does not mean everyone is dead: a few humans survive,
+  civilisation is fractured beyond repair, and the Earth is dying slowly. The
+  original village still stands as an inhabited settlement, and the hero must
+  meet future inhabitants who help them discover what their journey did.
+  Those inhabitants work from records, inherited accounts, belief and present
+  evidence. **No opening acquaintance survives the extra century**; descendants
+  carry the connection without recognising the hero. The apocalypse is
+  worldwide, shown by observation and testimony rather than by touring it.
+- **A mysterious causal catastrophe.** The paradox tears a causal loophole into
+  space-time: the journey into the past and the hero's role as the prophecy's
+  source rupture causality, and **travelling onward to the future instead of
+  returning home shatters it further and brings the catastrophe.**
+  **The mechanism is never explained to the player.** There are no scientists
+  in this setting. People have observations, inherited accounts, beliefs and
+  theories — and no mason, inscription, narrator, journal or omniscient
+  survivor may give a technical account in a scientist's place.
+- **A word-for-word recitation.** The prophecy was taught in school and
+  discussed all through the hero's childhood. In the past they assume everyone
+  knows it, are **shocked** that nobody has heard of it, are asked what it
+  says, and **recite it word for word from memory.** That recitation is the
+  origin of the prophecy the opening village inherits.
+  The core text is fixed: no player-selectable wording, and no retroactive
+  rewriting of the plank or any other record. **No earlier prophet, no unseen
+  author, and no record that predates the recitation.** The information loop is
+  the chosen origin, not a defect to remove.
+- **The ending.** The returning hero **kills their earlier self**, then
+  **sacrifices their own life to destroy the Cave of Absolution forever.**
+  Both believe they are acting rightly: the earlier self believes they are
+  opposing the cyclops and pursuing the village's salvation. There is no
+  cooperative ending, no variant in which either survives, no resurrection, no
+  hidden escape, no surviving duplicate and no sequel portal.
 
 ### How this build honours each of those
 
@@ -193,19 +241,24 @@ things." Chosen to imply someone cares without asserting any family facts.
 - The protagonist's family details.
 - The ultimate rescue plan.
 - The cause and timing of the eye injury.
-- The full physical rules of temporal damage.
-- The return crossing from the future.
-- The closure mechanism for the portal, and its cost.
-- The ending.
+- The hero's subjective journey length and changing appearance.
+- The practical rules for crossings, destinations, object transport and the
+  last return.
+- The specific symptoms of the rupture, and what evidence future inhabitants
+  hold.
+- The earlier self's exact plan, and why the confrontation ends lethally.
+- How the sacrifice destroys the cave and permanently prevents the apocalypse.
+- The final aftermath's viewpoint.
 - Full combat and progression systems.
 - **Whether anyone in this world has real foreknowledge.** The prototype
   carefully does not say. Hyssop reads a date out of old lines and may simply be
-  wrong; the prophecy itself is generations old and, per canon, originates with
-  the hero's own warning. Nothing here establishes a mechanism by which the
-  original words could have been predictive, and nothing here rules one out.
+  wrong; the prophecy originates with the hero's own recitation. Nothing here
+  establishes a mechanism by which the original words could have been
+  predictive, and nothing here rules one out. **Nor may anything explain the
+  rupture** — see the third owner decision above.
 - **Why the protagonist is personally invested in these particular people.**
   The prototype builds this out of named villagers — Marjoram's dough for
-  tomorrow, Parsie waiting four years for his own turn, somebody up a ladder
+  tomorrow, Parsie waiting five years for his own turn, somebody up a ladder
   being told how to hang a lantern. That is as far as it can honestly go while
   the protagonist's family remains undecided, which is the obvious place deeper
   stakes would come from.
@@ -215,17 +268,20 @@ consumable resources, so nothing here presumes a system for any of them.
 
 ---
 
-## Related: the full-game design draft
+## Related: the full-game design
 
-[`docs/FULL_GAME_DESIGN.md`](FULL_GAME_DESIGN.md) proposes the complete
-adventure — ending, causal model, maps, puzzles and the twelve required
-decisions — with [`docs/M2_DECISIONS.md`](M2_DECISIONS.md) as the owner
-decision sheet.
+[`docs/FULL_GAME_DESIGN.md`](FULL_GAME_DESIGN.md) is the full design —
+ending, causal sequence, maps, puzzles, confrontation and handoff — with
+[`docs/FULL_GAME_WALKTHROUGH.md`](FULL_GAME_WALKTHROUGH.md) for the critical
+path and audit, and [`docs/M2_DECISIONS.md`](M2_DECISIONS.md) for the owner
+decisions and what is still proposed.
 
-**Everything in those documents is PROPOSED, not canon.** They are a draft
-awaiting the owner's decisions and nothing in them has been approved or
-implemented. This file remains the record of what is actually settled; do not
-promote anything from the draft into it without the owner saying so.
+**The boundary:** the five decisions recorded above are canon. Everything else
+in those documents — rupture symptoms, journey length, the eye injury's
+timing, crossing and transport rules, the confrontation's exact sequence, the
+destruction mechanism and the aftermath's viewpoint — is **PROPOSED and not
+approved.** Nothing from the proposed side may be promoted into this file
+without the owner saying so, and nothing in any of it is implemented.
 
 ## Milestone 1 housekeeping
 
@@ -239,10 +295,23 @@ records. Renaming the cast touched display names only. Transcript strings may
 now contain `{{tag|text}}` annotations; strings saved before that contain none,
 strip to themselves, and render as plain text, so there is nothing to migrate.
 
-**Still provisional, and due for Milestone 2 review:** Hyssop's counted date
-for the prophecy; the vigil, lanterns and salt as the village's preparation;
-the lintel inscription; the whole first puzzle; and the cave-path paragraph that
-names what is down in the village in order to give the hero something to lose.
+**Still provisional:** Hyssop's counted date for the prophecy; the vigil,
+lanterns and salt as the village's preparation; the lintel inscription; the
+whole first puzzle; and the cave-path paragraph that names what is down in the
+village in order to give the hero something to lose.
+
+**Checked against the owner decisions at `31866e6`, and compatible:** the
+shipped prophecy text matches the fixed claims and carries no date and no
+anatomy, so it is declared the canonical text and is not edited. Sage's
+*"older than me, older than my aunt, and she had them from hers"* is about
+three generations, which fits exactly 100 years. Her *"the way you would
+recite a list you have been made to learn"* already implies the schooling the
+recitation decision establishes, and her *"A cyclops. One eye"* with the
+carvers' attribution is what keeps the cyclops claim true without an
+authoritative text making an anatomical statement — **both lines are
+load-bearing and must not be edited.** No hard dates exist in the content; the
+"forty" references are lanterns. No universal-rule inscription and no
+water-gauge machinery was ever implemented.
 
 ## Spoiler hygiene, and its limit
 

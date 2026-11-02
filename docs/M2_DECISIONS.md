@@ -1,322 +1,194 @@
-# Milestone 2 — owner decision sheet
+# Absolution — owner decisions, and what is still proposed
 
-**Status: design draft complete; story decisions pending.**
+**Status: five decisions APPROVED by the owner. Mechanism and detail still PROPOSED.**
 
-**Revision 2**, after owner review of `8ed3d96`. Nine corrections applied —
-see `docs/FULL_GAME_DESIGN.md` §0 for the table. The owner's review closed
-eight real defects; two points are deliberately left **Open** below because
-they are the owner's to settle.
+Reconciled against `31866e6`. The design documents have been rewritten to match;
+superseded proposals are removed rather than left standing beside the new plan.
 
-Source commit reviewed: `aad3a60`, with revision 2 authored against `8ed3d96`. Full draft in
-[`docs/FULL_GAME_DESIGN.md`](FULL_GAME_DESIGN.md); proposed critical path and
-continuity audit in [`docs/FULL_GAME_WALKTHROUGH.md`](FULL_GAME_WALKTHROUGH.md).
+- [`docs/FULL_GAME_DESIGN.md`](FULL_GAME_DESIGN.md) — the full design.
+- [`docs/FULL_GAME_WALKTHROUGH.md`](FULL_GAME_WALKTHROUGH.md) — critical path and audit.
+- [`docs/CANON.md`](CANON.md) — what is settled, with the boundary around what is not.
 
-Nothing below is approved. Everything is **PROPOSED** by the drafting agent.
-No playable content, schema, engine behaviour, dependency or deployment setting
-was changed in this milestone.
+**The five below are settled.** They are the owner's instruction and are not
+asked about again.
 
 ---
 
-## The recommended story, in short
+## APPROVED OWNER DECISION 1 — the hero is a singularity
 
-A sixteen-year-old is the first person to look at the cave's old relief
-properly, and works out that it is a set of instructions: a lamp, at a
-measured height, under a hole cut through the stone. They put a light where it
-belongs and a seam in the hill opens. They go through.
+Basil/Basilia is a singularity. Their personal experience is continuous when
+history changes: altering events does not erase the returning hero, their
+memories, or their injuries. **Killing the earlier self does not erase the
+returning hero**, who remains able to perform the final sacrifice.
 
-They land a hundred and forty years earlier, in their own village, when the
-cave is still being cut. To get home they have to earn their way onto the
-worksite, and there they find the builders' setting-out drawing — the lamp at
-*three* heights, three destinations. That drawing is the power the prophecy
-promised. Before they leave, they warn the village about the hill, using the
-only words they have: the ones off the plank they read that morning. The
-village writes it down. Over five generations it becomes the prophecy they grew
-up with, and a carver's guess turns *a wanderer* into *the Wanderer*.
+Two temporal versions of the same protagonist can coexist during the final
+confrontation. There is no obligatory merge, no automatic disappearance, no
+parallel universe, and no future-self meeting in the original opening. The
+final intervention happens for the first time when the returning hero makes it.
 
-They aim for home and miss. Their arithmetic is right; the datum is wrong — the
-drawing measures from a finished floor that Lovage's crew have not cut yet, and
-nobody in that century knows how deep it will be. They arrive forty years
-*after* they left.
+**This protects the protagonist only.** It is not a universal law about
+people, water or objects passing through the cave. It is never explained to the
+player, never given a scientific account, and never attributed to ancestry.
 
-The valley has no water. The hill has come down on the village. And near the
-mouth, the days have started repeating: the tear they left open has worked
-through water, then stone, then the order of events itself, and it is spreading
-valley by valley. **The prophecy was not exaggerating.**
+> Supersedes the draft's universal "anchoring" rule and its
+> crossed-versus-swallowed inscription. Both are removed.
 
-They prove it is theirs. One numbered gauge cut into Lovage's stair, readable
-in all three eras; four readings in their own journal; and a 180-year annual
-water record that exists **because they told the village to start keeping
-one** — containing exactly one night on which the water fell two marks at once.
-Clearing the buried aperture to get home, they take a chip of stone in the left
-eye from their own mallet.
+## APPROVED OWNER DECISION 2 — one century in each direction
 
-So they come back one-eyed, at the only instant the seam can be entered from
-the far side: the second their earlier self sets the lit lamp in the alcove. And
-the person they have to talk out of it has spent eleven days being told that
-someone who braves this cave can turn aside a one-eyed monster.
+The past is **exactly 100 years before** the opening village. The future is
+**exactly 100 years after**. All −140/+40 values, forty-year ledgers,
+five-generation assumptions and dependent age arithmetic are gone.
 
-Three jobs, three instruments. **Identity** is two identical lanterns, four
-days apart, held side by side. **Danger** is four numbers in their own
-handwriting, and a gauge the earlier self can walk down and read for
-themselves. **Resistance** is not an argument at all: it is a sixteen-year-old
-being asked to tell forty people who have sat up eleven nights that there was
-nothing in the hill and no part in it for them. What moves them is Tyme — what
-the bench at the mouth looks like in forty years, and who put the mark on it.
+The end of the world does not mean everyone is dead. **A few humans survive;
+civilisation is fractured beyond repair; the Earth is dying slowly.** The
+original village still stands as an inhabited post-apocalyptic settlement, and
+the hero must meet future inhabitants who help them discover what their
+journey did a century earlier.
 
-They break the pierced panel together. The water comes back up the stair for an
-hour and keeps coming. Nothing is undone for the hero.
+Those inhabitants work from surviving records, inherited accounts, belief,
+local history and present evidence. **No opening acquaintance survives the
+extra century.** Descendants and later inhabitants carry the emotional
+connection without knowing everything or recognising the hero.
 
-Afterwards there are two of them, and the village has room for one. The older
-one cannot be Basil or Basilia — that name is standing next to them — so some
-weeks later Tyme hands over a coil of rope without making a speech about it,
-and the bench becomes theirs. They keep the path, refresh the chalk every
-spring, hand rope to sixteen-year-olds, and never tell any of them what used to
-be behind the fourth wall. The village goes on saying the Wanderer-words at
-midwinter and declines, collectively, to put them next to the one-eyed stranger
-on the cave path.
+The apocalypse is **worldwide**, shown through credible observation and
+testimony rather than by making the player tour the globe.
 
-They tell Marjoram it was boring.
+> The hero's subjective journey length was never approved. "Four days" was a
+> draft proposal. See the proposals below.
+
+## APPROVED OWNER DECISION 3 — a mysterious causal catastrophe
+
+The paradox tears a causal loophole into space-time. The hero's journey into
+the past, and their role as the prophecy's source, rupture causality.
+**Travelling onward to the future instead of returning home shatters it
+further, and that is what brings the catastrophe.**
+
+This is behind-the-scenes guidance. **The mechanism is never explained to the
+player.** There are no scientists in this setting. People have observations,
+inherited accounts, beliefs and theories — and no mason, inscription,
+narrator, journal or omniscient survivor may deliver a technical account in a
+scientist's place.
+
+> Supersedes the draft's quantified water-displacement model, the 180-year
+> aquifer leak, the numbered gauge and the ledger-based proof. Water loss
+> survives only as one environmental symptom among several.
+
+The player connects the hero's actions to the disaster through independent
+clues and consequences. The hero can become certain of responsibility without
+knowing any physics.
+
+## APPROVED OWNER DECISION 4 — a word-for-word recitation
+
+Basil/Basilia knows the prophecy extremely well: **it was taught in school and
+talked about all through their childhood.**
+
+In the past they assume everyone knows it. They are **shocked** when nobody
+has heard of it. The villagers become curious and ask. The hero recites it
+**word for word from memory**, and that recitation is the origin of the
+prophecy the opening village inherits.
+
+The prophecy's core text is fixed. The draft's three selectable wording
+clauses, the `warning_text_a/b/c` flags and the retroactive rewriting of the
+opening plank are all removed. Player agency stays in the surrounding
+questions, tone, explanation and interactions — **never in the recitation
+itself.**
+
+Fixed claims: the Wanderer is described as a **cyclops** who brings the
+cataclysm; someone who braves the Cave of Absolution has the power to stop the
+Wanderer.
+
+Transmission from the witnesses to the later village must be credible. **No
+earlier prophet, no unseen author, and no record that predates the hero's
+recitation.** The information paradox is the owner's deliberate choice of
+origin and is not to be "fixed".
+
+> Timing and wording of the hero's realisation that they are the source remain
+> to be authored. Their shock at its absence is approved; instant complete
+> understanding is not.
+
+## APPROVED OWNER DECISION 5 — kill the earlier self, then sacrifice the returning self
+
+One required ending. The returning Basil/Basilia **kills their earlier self**,
+then **sacrifices their own life to destroy the Cave of Absolution forever.**
+
+This replaces the cooperative two-survivor ending, the optional sacrificial
+variant, every both-survive outcome, and the walk-home epilogue.
+
+Both selves believe they are right. The earlier self believes they are
+opposing the cyclops and pursuing the village's salvation. The returning hero
+acts to stop the catastrophic journey and finish the destruction.
+
+Singularity is why killing the younger self does not prevent the older one
+completing the sacrifice. **No fading before the final action.** No survival,
+resurrection, hidden escape, surviving duplicate or sequel portal.
+
+> The confrontation, why non-lethal approaches fail, the tool, the destruction
+> mechanism and the aftermath were explicitly left to this pass. They are
+> proposed below and detailed in the design document.
 
 ---
 
-## Five decisions
+## Still PROPOSED — the remaining design
 
-### 1. The temporal rule, and whether the hero survives their own fix
+Full detail in `FULL_GAME_DESIGN.md`. Summarised here so the recommendation can
+be read without the whole document.
 
-**Recommendation.** One rule, called *anchoring*: **anything that goes through
-the seam comes out of the river** — water, objects and people persist as they
-are, whatever happens to the history that produced them. Everything that has
-not crossed is anchored and changes when history changes.
-
-**Why.** It is a single sentence that answers every awkward question at once:
-why the hero keeps their memories and their injury, why they still exist after
-preventing their own journey, why the mallet does not evaporate, why closing
-the seam returns the displaced water, and why nobody else remembers anything.
-It is stated by an inscription in Chapter 2 and **demonstrated on water before
-it is applied to a person**, so it is foreshadowed rather than asserted at the
-climax.
-
-**The cost of accepting it:** a reader may still object that if the earlier
-self never crosses, the traveller cannot be there to stop them. The rule says
-they can. It is a story rule and the draft presents it as one.
-
-**Affected:** Chapters 2, 3, 4; the ending; every row of the damage ledger.
-**Status: PROPOSED.**
-
----
-
-### 2. Era distances and the hero's age
-
-**Recommendation.** Past **−140 years**; future **+40 years**; the hero lives
-about **four days** and stays sixteen throughout.
-
-**Why.** 140 years makes the warning immemorial (five or six generations of
-midwinter chanting) and still lets one tree become one stump. 40 years is the
-shortest distance that puts a grown Parsie, a dead Tyme and a ruined valley in
-the same room — any further and nobody who knew the hero is left to react.
-
-**Affected:** Chapters 2–4, the character payoffs, every date in the record.
-**Status: PROPOSED.**
-
----
-
-### 3. What accumulates, how big it gets, and how it is proved
-
-Three corrections in one decision.
-
-**(a) The scope is restored.** The owner was right that a dry valley is not the
-end of the world. The tear takes the most mobile thing first and then moves on:
-
-| Stage | What falls in | Shown as |
+| # | Question | Recommendation |
 | --- | --- | --- |
-| Water, from −140 | the aquifer | the gauge, the record, a dry valley |
-| Stone, from ~+10 | the hill's own mass | the subsidence that buries cave and village |
-| **Sequence**, from ~+30 | the order of events near the hill | **repeated days on the survivors' calendar; rain falling upward at the mouth; a bell heard before it is rung; Parsie's map with a shaded edge that has grown two valleys in five years** |
+| 1 | **Rupture symptoms** | Three escalating kinds, never explained. *Out of sequence:* a sound before its cause, weather that un-happens. *Will not stay put:* the crack in the sealed chamber is a different length every time it is measured. *Absence:* water, then light, then seasons. The past gets the first faint ones **while the hero is standing in it**, which is what turns the village against them. |
+| 2 | **Future evidence** | Testimony, not measurement. The settlement's own version of the Wanderer-words, now the central account of how the world ended, saying plainly that the Wanderer came *out of the hill*; an inherited family story about a one-eyed stranger on the night it began; a cave mouth sealed by the village, with their mark on the seal; a memorial naming the year it started; and the hero's own journal to match names and dates against. Responsibility is established. Mechanism is not. |
+| 3 | **Subjective duration** | About **three days**. The hero stays sixteen. Appearance: one eye gone, filthy, thinner, a half-healed face — enough that the earlier self does not know them at once. |
+| 4 | **Eye injury** | In the future, at the sealed cave mouth, struck by a stone from **a rockfall that has not happened yet**. A wound from the rupture rather than from clumsiness. Two sentences, no spectacle, no interface gimmick. |
+| 5 | **Crossing rules** | The builders found that the fold answers to a lamp at three heights, and recorded the three destinations they reached: their own era, one century back, one century on. **Three settings, not a dial.** Carried objects travel; nothing is confiscated. |
+| 6 | **Why the hero goes forward rather than home** | Not a mistake. The lamp has to stand in a cut dish to hold the height, and **the dish for the home setting has not been cut yet** — it is the last thing the builders will do. Improvising fails for a stated reason, Lovage will not cut it for a stranger he now distrusts, and the rupture's first symptoms are turning the village against them. Forward is the only setting that works, and the hero takes it knowing it is wrong. |
+| 7 | **The earlier self's plan** | Cross, find the power the plank promises, come back and stop the Wanderer. They have just solved the puzzle nobody has ever solved and are twenty minutes from the proudest moment of their life. |
+| 8 | **Why it ends lethally** | The player may try talking, proof, restraint and blocking the way; each fails for a stated reason. Chiefly: the stranger matches the cyclops the plank describes, so every proof of identity is proof they should be resisted. The earlier self is the same person, exactly as determined, and does not stay stopped. The encounter's pressure is their next attempt on the threshold, not a clock. |
+| 9 | **Why the cave must be destroyed** | Stopping one crossing stops one journey. **The prophecy the hero wrote guarantees repetition:** the village holds a written promise that braving this cave grants the power to save them, and sixteen-year-olds attempt it every year, forever. The tear cannot be repaired. It can only be denied a door. |
+| 10 | **How the sacrifice destroys it** | The rupture has been loosening the hill for a century. The chamber stands on one worked pillar. Bringing it down needs a mallet, the hill's own weight, and somebody inside when it goes. |
+| 11 | **Aftermath** | A short authored epilogue in the original era, seen from the village: the night of the vigil, the hill going down, Tyme at the mouth with a coil of rope and nobody to hand it to. The rite ends because the cave does. The prophecy is fulfilled exactly and nobody will ever know how. No playable survivor campaign. |
 
-So the village's destruction is the *leading edge*, and "what stands will not
-stand" is accurate about everything. Cost: four descriptive beats and one map
-prop. **Honest caveat:** that restores the scope cheaply, and correspondingly
-thinly. Spending a whole room on it is the obvious upgrade and the obvious
-scope risk.
+### Genuinely unresolved, and not blocking M3
 
-**(b) The evidence now has a mechanism.** The owner was right that a 40-year
-ledger cannot date an action 140 years earlier, and that comparing levels in
-two places proves nothing. Fixed:
+- **Epilogue viewpoint** — village-POV scene or closing narration. The design
+  recommends village-POV.
+- **Where the hero's realisation lands** — at the recitation in the past, or
+  reading the settlement's version in the future. The design recommends a
+  partial realisation in the past and the full weight in the future.
 
-- **One body of water.** The basin *is* the aquifer's surface, not a pool.
-  Lovage says so while digging for it: *"We are not digging for a pool. We are
-  digging until we hit the water, and that is the water the village drinks."*
-- **One instrument.** A numbered gauge cut into his stair — chiselled, not
-  chalked, because chalk would not last the season. Readable in all three eras.
-- **Four readings**, all in the hero's journal: 31 at year −140, 12 then 11 on
-  the evening of year 0, 0 at year +40.
-- **A 180-year record, not a 40-year one** — and it exists *because the hero's
-  own advice in Chapter 2 told the village to start keeping it.* It contains
-  exactly one night in 180 years on which the water fell two marks at once.
-
-That last point is the part worth noticing: **the hero's advice is what builds
-the case against them.** It also replaces the discarded idea of letting player
-choices rewrite the plank.
-
-**(c) Why everyone else was harmless.** They never crossed and never opened
-the tear. Oreg lifted the shutter once, looked into an empty alcove and let it
-fall.
-
-**This still includes "damage sustained by an open portal", which your brief
-flags as proposal rather than canon.** It is load-bearing: three crossings cost
-four marks, and the open door costs the hill.
-
-**Affected:** Chapters 1–4; four small Chapter 1 additions (design §9).
-**Status: PROPOSED.**
+Neither affects anything Milestone 3 builds.
 
 ---
 
-### 4. The prophecy's provenance, and the information loop
+## Implementation impact
 
-**Recommendation, corrected.** The owner was right that the player must not
-rewrite words they have already read. **The five core lines are now fixed**,
-and they are the shipped plank text; the hero speaks them because they are the
-only words they have. The player chooses **explanation, tone, confidant and
-advice** around them — and the *advice* is the load-bearing one, because it
-decides which 180-year record exists in Chapter 3.
+**No shipped behaviour contradicts the approved decisions.** Audited at
+`31866e6`:
 
-The recognition beat no longer depends on any choice: whatever the hero wraps
-around them, the five sentences in the middle are the ones off the plank they
-read that morning, and they hear it.
+- The shipped prophecy text already matches the fixed claims and contains no
+  date and no anatomy.
+- Sage's *"older than me, older than my aunt, and she had them from hers"* is
+  about three generations — **consistent with exactly 100 years. No edit
+  needed.** Her *"the way you would recite a list you have been made to
+  learn"* already implies the rote learning decision 4 establishes.
+- There are no hard dates anywhere in the content. The "forty" references are
+  lanterns, not years.
+- No universal-rule inscription was ever implemented.
+- No gauge, aquifer or ledger machinery was ever implemented.
 
-Transmission is four mundane steps, and the qualifier *to it* — the thing that
-made "without mercy" an apology rather than a threat — is the first casualty of
-fitting it to a chant.
+**Withdrawn from the old proposal list** — never built, so nothing to undo:
 
-**The consequence to accept:** the specific detail **one-eyed** then has no
-first author. It is a closed information loop. The brief forbids inventing an
-unseen original author, so the draft **owns the loop** instead: the hero
-notices, out loud, once, that they are quoting a plank they read that morning,
-and finds it obscene.
-
-This is the draft's weakest logical point and the most likely place the owner
-will want a different answer. The alternative is to give the one-eyed detail a
-mundane origin in the past — a carver's invention attached to a half-remembered
-stranger — which removes the loop but weakens the moment the hero hears
-themselves.
-
-**Also retained:** Hyssop **counts** the date out of the old lines rather than
-dreaming it (already de-supernaturalised in Milestone 1), is right by luck, and
-is never told. **No foreknowledge exists anywhere in this design.**
-
-**Affected:** Chapter 2's set-piece; Chapter 4 stage 2; all prophecy text.
-**Status: PROPOSED.**
-
----
-
-### 5. The ending: survivable or sacrificial
-
-**Recommendation: survivable, with the sacrificial version as the one real
-branch.**
-
-The hero persuades their earlier self; the earlier self braces the slab; the
-hero swings. Both live.
-
-**The owner was right that two survivors is a substantial consequence and was
-being waved at rather than answered.** It is now written, and it is about eight
-minutes of play:
-
-- **Tyme first**, on the bench, looking at two of them. He is the easy test: he
-  does not need to understand it, he needs to know whether anyone is hurt.
-- **The village**, with forty unlit lanterns still strung and the vigil three
-  nights off. The player chooses: *the truth* (most do not believe it; Sage
-  writes it down anyway, because that is her job, and it goes in the chest with
-  the midwinter minutes — where Saffra put the other one), *the useful part*
-  (true, and leaves the stranger unexplained), or *nothing* (the village
-  arrives at its own explanation, which is worse than the truth and more
-  comfortable).
-- **Where the older one goes.** They cannot be Basil or Basilia; that name is
-  standing next to them, and a forty-person village has no room for two. So
-  they take the one place that fits someone who knows what is in the hill: some
-  weeks later Tyme hands over a coil of rope without making a speech about it,
-  and **the bench becomes theirs.**
-- **Cost, itemised:** no name in the village's reckoning, no family, no record,
-  no birthday, one eye, sole possession of forty years of other people's
-  futures including the ones that were deaths, and the certainty that the
-  person they saved will have an ordinary life and will slowly stop thinking
-  about this.
-- **What the village keeps:** the prophecy, unrepealed, and a one-eyed stranger
-  on the cave path who turned up the night the vigil was called off. They
-  decline, collectively and without discussing it, to put those two things
-  together.
-
-**Why not sacrificial by default.** The product constraints prefer recoverable
-setbacks, the aftermath above is worth playing, and "you are the only one who
-will ever know" is heavier than a death. The variant costs about three hundred
-words, is the same action performed alone, and makes the last decision in the
-game the player's rather than a difficulty setting.
-
-**Affected:** Chapter 4, the aftermath, the final scene.
-**Status: PROPOSED.**
-
----
-
-## Disposition of prototype-only additions
-
-| Addition | Proposed disposition |
+| Withdrawn | Why |
 | --- | --- |
-| Hyssop's **counted** date | Retain as implemented |
-| The earlier prophetic **dream** | Stays removed — would be a second supernatural system |
-| Vigil, strung lanterns, bowl of salt | Retain; the finale needs forty unlit lanterns |
-| Lintel inscription *GO IN. COME OUT. BE EASIER WITH YOURSELF.* | Retain; it pays off in the ruin |
-| Cave-path paragraph naming who is below | Retain; it is the stake-setting |
-| Echo chamber | Retain, optional, gates nothing |
-| **Rose and Mary** as this year's pair | Proposed, and first on the cut list |
-| Chervil and Borage | Replace with Rose and Mary, or keep if the twins are cut |
-| Removed M1 characters (standalone Mint, paired twins, Tyme-as-friend) | Stay removed; Tyme-as-friend's warmth moves into a new Tyme-the-keeper topic |
+| A numbered gauge in `present.deep_chamber` | It existed to serve the quantified water proof, which decision 3 removes |
+| Structured journal data (`data?: Record<string, number>`) | Same: the evidence chain is testimony now, not arithmetic |
 
----
+**Still wanted:**
 
-## Four small Chapter 1 changes this design needs
+| Keep | Why |
+| --- | --- |
+| Optional `TAKE STONE` in `present.outer_gallery` | Parsie asks for one, and a century later it is in the settlement's record chest — an optional payoff that works better under the new plan than the old one |
+| The growing crack in `present.sealed_chamber` | Re-framed as a rupture symptom rather than water strain: a different length each time it is measured |
+| One Tyme topic about the bench | His payoff is now carried by the line that still keeps the hill a century on |
 
-Not made in this milestone. Listed for approval with Milestone 3.
-
-1. An optional `TAKE STONE` in the outer gallery — Parsie already asks for one
-   and there is currently no way to oblige.
-2. **A numbered gauge in the deep chamber, and a journal entry recording its
-   reading.** The whole causation chain is four readings off one instrument;
-   without this there is no year-0 baseline. Worn and unremarkable — it reads
-   as old cave furniture until Lovage explains it in Chapter 2.
-3. A growing hairline in the sealed chamber's description — the damage has to
-   be visible in the era the player starts in.
-4. One new Tyme topic about what he does while you are inside — his Chapter 3
-   payoff needs the bench established as his.
-
-The opening puzzle and the past-arrival endpoint are **unchanged**.
-
----
-
-## Next implementable chapter
-
-**Milestone 3 — the past chapter, ending at a minimal future arrival**, once
-decisions 1–4 are settled. Decision 5 is not needed until Milestone 5.
-
-**Boundary corrected.** The first draft said M3 needed no `future` era; your
-brief ends M3 at a future-arrival checkpoint. Your boundary wins — a chapter
-that ends on a crossing with nowhere to land is not playable. So M3 builds
-`future.deep_chamber` as an **arrival room only**: the buried chamber, the dry
-basin, the gauge reading zero, and a `look`-and-stop endpoint exactly like the
-one Chapter 1 ships today. **All investigation stays in M4.**
-
-Milestone 3 needs:
-
-- Four new rooms: `past.cave_path`, `past.spring`, `past.worksite`, and
-  `future.deep_chamber` (arrival only).
-- One supporting character: Lovage. Extended topics for Saffra and Fenn.
-- Three puzzles: worksite access (two unconditional routes), the aiming
-  drawing, and the warning.
-- About twelve flags; one new item (`water_skins`); the mallet as a carried
-  item.
-- **`schemaVersion` 2 and its migration**, written and tested in M3 rather than
-  deferred, because a save can now hold `era: 'future'`.
-- **Structured journal data** (`data?: Record<string, number>` on
-  `JournalEntry`) for the gauge readings, because Chapter 4's proof compares
-  Chapter 1's and Chapter 2's numbers.
-- The four Chapter 1 additions above — of which **the gauge is the one that
-  matters**, since without a year-0 baseline the causation chain has no
-  starting number.
+See `FULL_GAME_DESIGN.md` §9 for the Milestone 3 plan and the save-format work
+the future-arrival endpoint needs.
