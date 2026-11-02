@@ -54,12 +54,12 @@ Three tiers, kept strictly apart:
 
 | Canon point | In the prototype |
 | --- | --- |
-| Rite at sixteen, open to all | `present.home` establishes the birthday; Orla states plainly that being allowed is the whole of it |
-| Mixed outcomes for others | Tolv found nothing; Nessa was lost and rescued; "H." fled the echo chamber; Bren declined and nothing happened to him; Jens turned back, Mira sat down, Hal counted to a hundred |
-| The hero figures it out by observation, not destiny | The puzzle is relief → alcove → support → light → seam. Orla and Aldren both push back explicitly on the chosen-one reading |
-| The prophecy's content | The chalked plank and Orla's dialogue: one-eyed, a cataclysm, and the one who braves the cave gaining the power to turn it aside |
-| The hero can later *become* what the prophecy describes | The authoritative text says only **one-eyed**. It does not say where the eye sits. The familiar central-eye image is attributed in-world to the old carvings, and Orla says so: "That is the carvers' idea, not the words'." A hero who loses one of two eyes still satisfies the words |
-| The prophecy already old in the opening | Orla says the Wanderer-words are generations old and said at midwinter; what is *new* is Hanne dreaming a date for them. This is what makes a warning given in the past consistent with the opening |
+| Rite at sixteen, open to all | `present.home` establishes the birthday; Sage states plainly that being allowed is the whole of it |
+| Mixed outcomes for others | Oreg found nothing; Dilly was lost and rescued; "H." fled the echo chamber; Bren declined and nothing happened to him; Jens turned back, Mira sat down, Hal counted to a hundred |
+| The hero figures it out by observation, not destiny | The puzzle is relief → alcove → support → light → seam. Sage and Bay both push back explicitly on the chosen-one reading |
+| The prophecy's content | The chalked plank and Sage's dialogue: one-eyed, a cataclysm, and the one who braves the cave gaining the power to turn it aside |
+| The hero can later *become* what the prophecy describes | The authoritative text says only **one-eyed**. It does not say where the eye sits. The familiar central-eye image is attributed in-world to the old carvings, and Sage says so: "That is the carvers' idea, not the words'." A hero who loses one of two eyes still satisfies the words |
+| The prophecy already old in the opening | Sage says the Wanderer-words are generations old and said at midwinter; what is *new* is Hyssop dreaming a date for them. This is what makes a warning given in the past consistent with the opening |
 | The cave differs by era | The past cave has no gallery, no crawl, no squeeze, no rope: a worked stair straight down, still being cut, with daylight reaching further in. The route out is correspondingly shorter |
 | Landmarks echo with differences | Living tree where the stump is; unworn well cap; roofless frame on the workshop's footprint; no lintel inscription; no cord of lanterns |
 | The twist is not pre-announced | Asserted by test: no player-facing string names time travel, the Wanderer's identity, the eye, a future self or a paradox |
@@ -69,7 +69,7 @@ Three tiers, kept strictly apart:
 
 - **No evacuation plan.** The village's preparations are observance, not
   logistics: unlit lanterns strung for a vigil, a bowl of salt nobody can
-  justify, a chalked plank people keep re-reading. Marda's complaint is that
+  justify, a chalked plank people keep re-reading. Marjoram's complaint is that
   eleven days of this is eleven days of roofs not being mended.
 - **No portal-sustained damage.** The threshold is described as unnatural depth
   and a second room's weather bleeding through. No cost, drain or decay is
@@ -77,10 +77,10 @@ Three tiers, kept strictly apart:
 - **No chosen-one bloodline.** Nothing about the protagonist's lineage is
   mentioned at all, and the two characters who have most authority on the
   subject both say nobody has ever come out of that cave with a power.
-- **No cult.** The villagers disagree with each other: Orla keeps the plank
-  accurately while finding the salt useless, Marda thinks it is nonsense and
-  still wants the hero home safe, Hesk is thrilled, Tolv is simply behaving as
-  though there will be a midwinter, Aldren refuses to ask more of a child's
+- **No cult.** The villagers disagree with each other: Sage keeps the plank
+  accurately while finding the salt useless, Marjoram thinks it is nonsense and
+  still wants the hero home safe, Parsie is thrilled, Oreg is simply behaving as
+  though there will be a midwinter, Bay refuses to ask more of a child's
   birthday than the birthday.
 
 ---
@@ -89,10 +89,10 @@ Three tiers, kept strictly apart:
 
 All of this is invention for playability. None of it constrains canon.
 
-**Names.** Orla, Marda, Hesk (village square); Tolv (joiner); Nessa, Aldren
-(cave path); Sabra, Pell (past square). Mentioned but unseen: Hanne, who dreamed
-the date; Edda, whose idea the salt was; Lonn and his sons, cutting the stair in
-the past; Jens, Mira, Hal, Bren, this year's other sixteen-year-olds; Mirri, who
+**Names.** Sage, Marjoram, Parsie (village square); Oreg (joiner); Dilly, Bay
+(cave path); Saffra, Fenn (past square). Mentioned but unseen: Hyssop, who dreamed
+the date; Nettle, whose idea the salt was; Lovage and his sons, cutting the stair in
+the past; Jens, Mira, Hal, Bren, this year's other sixteen-year-olds; Cress, who
 dropped a coin in the basin; "H.", who fled.
 
 **The village has no name anywhere in the build**, because that is undecided —
@@ -103,8 +103,8 @@ water will answer. What stands will not stand.* and the second hand writing
 *and will they, though.* underneath. The canonical claims are the one eye, the
 cataclysm and the power; the rest is texture.
 
-**How the prophecy came to name this year.** Hanne counted a date out of the
-existing lines, "the way you would count a debt", and brought it to Orla. This
+**How the prophecy came to name this year.** Hyssop counted a date out of the
+existing lines, "the way you would count a debt", and brought it to Sage. This
 is deliberately *not* foreknowledge: an earlier draft had her dream the date
 three times, which would have introduced a supernatural mechanism nobody has
 approved. The current version is a woman doing arithmetic on old words and
@@ -112,7 +112,7 @@ being believed. If genuine foreknowledge is wanted, that is a decision to make
 on purpose — see below.
 
 **The old carvings** that give everyone the central-eye picture of the
-Wanderer, and Orla's view that half of what people know about it they know off
+Wanderer, and Sage's view that half of what people know about it they know off
 a wall.
 
 **The vigil, the strung lanterns and the bowl of salt** as the specific form the
@@ -123,7 +123,7 @@ the idea that nobody knows who cut it. This is the only place the prototype
 leans on the cave's name meaning anything.
 
 **The knotted rope** from an iron ring at the mouth to a pillar in the gallery,
-and Aldren's role keeping the path.
+and Bay's role keeping the path.
 
 **The whole first puzzle.** The relief's imagery, the sliding shutter in cut
 grooves, the ankle-height smoke-blackened alcove with a dished floor, the
@@ -136,7 +136,7 @@ Chamber*, "The same room, and nothing like it".
 **Everything about the past era's detail**: the stair being cut in its third
 season, the coins and bone pin in the basin, the chalk setting-out line, the
 leather bucket and tight-headed mallet, the great tree with a rope swing, the
-new well, the roofless frame, Sabra calling the cave just "the cave".
+new well, the roofless frame, Saffra calling the cave just "the cave".
 
 **The household at home.** Bread on a stool, a hooked-back shutter, a cloth tag
 reading *Sixteen. Go carefully.* and the line "Nobody in this house signs
@@ -158,13 +158,13 @@ things." Chosen to imply someone cares without asserting any family facts.
 - The ending.
 - Full combat and progression systems.
 - **Whether anyone in this world has real foreknowledge.** The prototype
-  carefully does not say. Hanne reads a date out of old lines and may simply be
+  carefully does not say. Hyssop reads a date out of old lines and may simply be
   wrong; the prophecy itself is generations old and, per canon, originates with
   the hero's own warning. Nothing here establishes a mechanism by which the
   original words could have been predictive, and nothing here rules one out.
 - **Why the protagonist is personally invested in these particular people.**
-  The prototype builds this out of named villagers — Marda's dough for
-  tomorrow, Hesk waiting four years for his own turn, somebody up a ladder
+  The prototype builds this out of named villagers — Marjoram's dough for
+  tomorrow, Parsie waiting four years for his own turn, somebody up a ladder
   being told how to hang a lantern. That is as far as it can honestly go while
   the protagonist's family remains undecided, which is the obvious place deeper
   stakes would come from.

@@ -28,9 +28,9 @@ describe('both characters', () => {
   });
 
   it('substitutes pronouns in the NPC greetings that use them', () => {
-    const boyPath = ['take lantern', 'down', 'examine plank', 'talk to hesk'];
-    const boy = type(typeAll(begin('basil'), boyPath.slice(0, -1)), 'talk to hesk');
-    const girl = type(typeAll(begin('basilia'), boyPath.slice(0, -1)), 'talk to hesk');
+    const boyPath = ['take lantern', 'down', 'examine plank', 'talk to parsie'];
+    const boy = type(typeAll(begin('basil'), boyPath.slice(0, -1)), 'talk to parsie');
+    const girl = type(typeAll(begin('basilia'), boyPath.slice(0, -1)), 'talk to parsie');
     expect(lastText(boy)).toContain('he read the plank');
     expect(lastText(girl)).toContain('she read the plank');
     expect(lastText(boy)).not.toContain('{');
@@ -57,7 +57,7 @@ describe('both characters', () => {
         'enter threshold',
         'up',
         'east',
-        'talk to sabra',
+        'talk to saffra',
         'cave',
         'wanderer',
       ]);

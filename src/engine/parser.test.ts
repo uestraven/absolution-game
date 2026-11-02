@@ -115,10 +115,10 @@ describe('items', () => {
 
 describe('people and meta commands', () => {
   it('parses talking', () => {
-    for (const form of ['talk to tolv', 'talk tolv', 'speak to tolv', 'speak with tolv', 'ask tolv']) {
-      expect(parse(form), form).toEqual({ type: 'TALK', target: 'tolv' });
+    for (const form of ['talk to oreg', 'talk oreg', 'speak to oreg', 'speak with oreg', 'ask oreg']) {
+      expect(parse(form), form).toEqual({ type: 'TALK', target: 'oreg' });
     }
-    expect(parse('ask tolv about the wedge')).toEqual({ type: 'TALK', target: 'tolv' });
+    expect(parse('ask oreg about the wedge')).toEqual({ type: 'TALK', target: 'oreg' });
   });
 
   it('parses the meta commands', () => {

@@ -216,6 +216,153 @@ describe('objects and people', () => {
   });
 });
 
+/** Every string the player can read, paired with where it came from. */
+function allPlayerText(): Array<[string, string]> {
+  const out: Array<[string, string]> = [];
+  for (const def of Object.values(LOCATIONS)) {
+    out.push([`${def.id}/description`, def.description(state)]);
+    out.push([`${def.id}/subtitle`, def.subtitle(state)]);
+    if (def.firstVisit) out.push([`${def.id}/firstVisit`, def.firstVisit(state)]);
+  }
+  for (const def of Object.values(OBJECTS)) {
+    out.push([`${def.id}/description`, def.description(state)]);
+    out.push([`${def.id}/name`, def.name]);
+    for (const entry of def.onExamine?.journal ?? []) out.push([entry.id, entry.text]);
+  }
+  for (const person of Object.values(PEOPLE)) {
+    out.push([`${person.id}/greeting`, person.greeting(state)]);
+    out.push([`${person.id}/appearance`, person.appearance(state)]);
+    out.push([`${person.id}/listAs`, person.listAs]);
+    for (const topic of person.topics) {
+      out.push([`${person.id}/${topic.id}`, topic.response(state)]);
+      out.push([`${person.id}/${topic.id}/label`, topic.label]);
+      for (const entry of topic.effects?.journal ?? []) out.push([entry.id, entry.text]);
+    }
+  }
+  return out;
+}
+
+describe('the naming convention', () => {
+  /**
+   * The cast is named for herbs and spices. This list is the convention: a new
+   * character that does not belong to it fails here on purpose, so the
+   * convention cannot drift one name at a time.
+   */
+  const HERB_NAMES = new Set([
+    'Sage',
+    'Marjoram',
+    'Mint',
+    'Parsie',
+    'Oreg',
+    'Dilly',
+    'Bay',
+    'Rose and Mary',
+    'Tyme',
+    'Saffra',
+    'Fenn',
+  ]);
+
+  /** Named in dialogue but never met. Same convention. */
+  const OFFSTAGE = ['Hyssop', 'Nettle', 'Lovage', 'Cress', 'Rose', 'Mary', 'Mint'];
+
+  it('names every character on stage from the herb convention', () => {
+    for (const person of Object.values(PEOPLE)) {
+      expect(HERB_NAMES, `${person.id} is outside the naming convention`).toContain(person.name);
+    }
+  });
+
+  it('gives each person an id that matches their name', () => {
+    for (const person of Object.values(PEOPLE)) {
+      const expected = person.name.toLowerCase().replace(/\s+/g, '_');
+      expect(person.id, person.name).toBe(expected);
+    }
+  });
+
+  it('keeps every offstage name inside the convention too', () => {
+    const everything = allPlayerText()
+      .map(([, text]) => text)
+      .join('\n');
+    for (const name of OFFSTAGE) {
+      expect(everything, `${name} should be mentioned somewhere`).toContain(name);
+    }
+    // No survivor of the earlier provisional cast.
+    for (const old of ['Orla', 'Marda', 'Hesk', 'Tolv', 'Nessa', 'Aldren', 'Sabra', 'Pell']) {
+      expect(everything, `${old} should have been renamed`).not.toMatch(
+        new RegExp(`\\b${old}\\b`)
+      );
+    }
+  });
+
+  it('never makes a joke of a name', () => {
+    const puns = [
+      /rosemary/i,
+      /sage advice/i,
+      /sage wisdom/i,
+      /mint condition/i,
+      /in good thyme/i,
+      /\bthyme\b/i,
+      /parsley/i,
+      /herb/i,
+      /spice rack/i,
+      /well.seasoned/i,
+    ];
+    for (const [where, text] of allPlayerText()) {
+      for (const pun of puns) {
+        expect(text, `${where} matches ${pun}`).not.toMatch(pun);
+      }
+    }
+  });
+
+  it('lets the twins register without anyone explaining them', () => {
+    const twins = PEOPLE['rose_and_mary']!;
+    const theirText = [
+      twins.greeting(state),
+      twins.appearance(state),
+      twins.listAs,
+      ...twins.topics.map((t) => t.response(state)),
+    ].join('\n');
+    // The two names together do the work; nothing points at it.
+    expect(twins.name).toBe('Rose and Mary');
+    expect(theirText).not.toMatch(/rosemary/i);
+    expect(theirText).not.toMatch(/\btwins?\b/i);
+    // And they genuinely disagree: both voices in every answer.
+    for (const topic of twins.topics) {
+      const response = topic.response(state);
+      expect(response, `rose_and_mary/${topic.id}`).toMatch(/\bRose\b/);
+      expect(response, `rose_and_mary/${topic.id}`).toMatch(/\bMary\b/);
+    }
+  });
+
+  it('keeps time out of the childhood friend entirely', () => {
+    // Tyme must never read as a signal, so their own words avoid the register.
+    const tyme = PEOPLE['tyme']!;
+    const theirText = [
+      tyme.greeting(state),
+      tyme.appearance(state),
+      tyme.listAs,
+      ...tyme.topics.map((t) => t.response(state)),
+      ...tyme.topics.map((t) => t.label),
+    ].join('\n');
+    for (const loaded of [
+      /\btimes?\b/i,
+      /\btiming\b/i,
+      /\bclock\b/i,
+      /\bhours?\b/i,
+      /\bminutes?\b/i,
+      /\byears?\b/i,
+      /\bpast\b/i,
+      /\bfuture\b/i,
+      /\bera\b/i,
+      /\bcentury\b/i,
+      /\beternit/i,
+      /\btemporal\b/i,
+      /\bage\b/i,
+    ]) {
+      expect(theirText, `tyme's dialogue matches ${loaded}`).not.toMatch(loaded);
+    }
+  });
+});
+
 describe('player-facing text keeps the chapter secrets', () => {
   /**
    * Development notes hold the canon. Nothing the player can read in this
@@ -235,28 +382,6 @@ describe('player-facing text keeps the chapter secrets', () => {
     /bloodline/i,
     /chosen one/i,
   ];
-
-  function allPlayerText(): Array<[string, string]> {
-    const out: Array<[string, string]> = [];
-    for (const def of Object.values(LOCATIONS)) {
-      out.push([`${def.id}/description`, def.description(state)]);
-      out.push([`${def.id}/subtitle`, def.subtitle(state)]);
-      if (def.firstVisit) out.push([`${def.id}/firstVisit`, def.firstVisit(state)]);
-    }
-    for (const def of Object.values(OBJECTS)) {
-      out.push([`${def.id}/description`, def.description(state)]);
-      for (const entry of def.onExamine?.journal ?? []) out.push([entry.id, entry.text]);
-    }
-    for (const person of Object.values(PEOPLE)) {
-      out.push([`${person.id}/greeting`, person.greeting(state)]);
-      out.push([`${person.id}/appearance`, person.appearance(state)]);
-      for (const topic of person.topics) {
-        out.push([`${person.id}/${topic.id}`, topic.response(state)]);
-        for (const entry of topic.effects?.journal ?? []) out.push([entry.id, entry.text]);
-      }
-    }
-    return out;
-  }
 
   it('never names the later reveals', () => {
     for (const [where, text] of allPlayerText()) {

@@ -855,7 +855,7 @@ function requireHeldItem(
     events.push({
       kind: 'failure',
       text:
-        'You have no wedge with you. Tolv keeps a basket of them under the bench in his ' +
+        'You have no wedge with you. Oreg keeps a basket of them under the bench in his ' +
         'workshop and hands them out to anyone who asks.',
     });
     return commit(draft, events, false);

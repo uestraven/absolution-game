@@ -101,12 +101,12 @@ and the wedge back out cannot undo the discovery.
 Stated briefly in the descriptions, not in author's notes:
 
 - The alcove is at ankle height and set back beyond arm's reach from the room, so
-  it reads as neither a torch bracket nor a cupboard. Tolv found it, looked in it,
+  it reads as neither a torch bracket nor a cupboard. Oreg found it, looked in it,
   found it empty, and his hands got tired.
-- The shutter will not stay up. Tolv's dialogue is where the wedge comes from.
+- The shutter will not stay up. Oreg's dialogue is where the wedge comes from.
 - The scale pattern flattens under any light held in the hand. The seam is only
   a shadow when the light comes from below, through the eye, crossing the wall
-  almost edge-on. Nessa's account says the same thing from the other side: she
+  almost edge-on. Dilly's account says the same thing from the other side: she
   kept moving her torch and the relief kept going flatter.
 
 ### Distinct failure messages
@@ -161,9 +161,9 @@ setting-out line, a squared hand-cut mouth with no bench, no iron ring and no
 lintel inscription, a new well with an unworn cap, a roofless half-built wall on
 the joiner's exact footprint, and a living tree where the stump is.
 
-The prototype ends when `heard_no_prophecy` is set in `past.square` — Sabra's
+The prototype ends when `heard_no_prophecy` is set in `past.square` — Saffra's
 "whether anything is coming" topic, which needs her "the cave on the hill" topic
-heard first. She knows the cave perfectly well: Lonn and his sons are cutting
+heard first. She knows the cave perfectly well: Lovage and his sons are cutting
 the stair down to the water, third season on it, and young ones walk in on a
 dare. Only the Wanderer prophecy is missing, so no established tradition is
 accidentally erased.
@@ -183,30 +183,30 @@ that no command in the run was rejected.
 | Location | Objects | People |
 | --- | --- | --- |
 | `present.home` | lantern, cloth tag (hidden until the lantern is examined), window, bread | — |
-| `present.square` | chalked plank, strung lanterns, bowl of salt, well | Orla, Marda, Hesk |
-| `present.workshop` | offcut basket, wedge, bench | Tolv |
-| `present.cave_path` | old stump, chalk marks | Nessa, Aldren |
-| `present.entrance` | knotted rope, lintel, bench | — |
+| `present.square` | chalked plank, strung lanterns, bowl of salt, well | Sage, Marjoram, Mint, Parsie |
+| `present.workshop` | offcut basket, wedge, bench | Oreg |
+| `present.cave_path` | old stump, chalk marks | Dilly, Bay, Rose and Mary |
+| `present.entrance` | knotted rope, lintel, bench | Tyme |
 | `present.outer_gallery` | scratches, relief, pillar, old ash | — |
 | `present.echo_chamber` | scratched account, boot, standing water | — |
 | `present.sealed_chamber` | shutter, alcove*, eye, patterned wall, seam*, passage* | — |
 | `present.deep_chamber` | threshold, cut steps | — |
 | `past.deep_chamber` | basin, fresh tool-work | — |
 | `past.entrance` | cave mouth, the village below | — |
-| `past.square` | great tree, unfinished building, new well | Sabra, Pell |
+| `past.square` | great tree, unfinished building, new well | Saffra, Fenn |
 
 `*` starts undiscovered.
 
 ## Automated coverage
 
-171 tests across eight files.
+177 tests across eight files.
 
 | File | Covers |
 | --- | --- |
 | `engine/parser.test.ts` | Synonyms, case, punctuation, articles, directions, the crossing phrasings, topic numbers and names, disambiguation answers, cancel, every unparsed reason |
 | `engine/engine.test.ts` | Hidden-object access (typed *and* dispatched directly), identical refusal for hidden exits, ambiguity, the four distinct puzzle failures, order independence, latching, item recovery, optional branch, the crossing, the endpoint, journal contents, the hint ladder, useless-input invariants |
 | `engine/equivalence.test.ts` | Step-for-step state equality between typed and clicked play; one end-to-end completion per input mode; the twenty-command route above, run verbatim; completion after crossing with both items left behind; recovering a dropped item with buttons only, and finishing the chapter after doing so; selectable labels giving nothing away; undiscovered things absent from the panel |
-| `content/content.test.ts` | Map matches the brief, era/id agreement, reverse routes, unique ids and directions, only the deep exit gated, flag and reveal references valid, journal id consistency, no placeholder prose, no later reveals in player-facing text |
+| `content/content.test.ts` | Map matches the brief, era/id agreement, reverse routes, unique ids and directions, only the deep exit gated, flag and reveal references valid, journal id consistency, no placeholder prose, no later reveals in player-facing text, the herb naming convention (every name on the list, ids matching names, no survivors of the earlier cast, no puns, the twins never explained, and no time vocabulary anywhere in Tyme's dialogue) |
 | `content/characters.test.ts` | Both names and pronoun sets, pronoun substitution in NPC lines, identical progress for either character, no unrendered placeholders anywhere |
 | `persistence/persistence.test.ts` | Round trip, export/import, reload mid-puzzle, resuming pending conversations and questions, atomic crossing, backup and checkpoint fallbacks, quarantine, storage-failure reporting, loading and exporting while writes are impossible, preferences kept apart from progress, 27 rejected-import cases, transcript sanitising |
 | `ui/app.dom.test.tsx` | Title screen states, both modes end to end in the DOM, mode switching preserving state and transcript, option lists per mode, live region carrying only new output, focus not stolen |

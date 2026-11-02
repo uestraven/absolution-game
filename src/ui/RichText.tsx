@@ -82,14 +82,15 @@ function escape(value: string): string {
  * Hyphens are treated as part of a word, so "well" does not match inside
  * "well-cap".
  */
-function patternFor(term: string): RegExp {
+function patternFor(term: string, caseSensitive = false): RegExp {
   const body = escape(term);
   const open = `(?<![\\w-])`;
   const close = `(?![\\w-])`;
-  if (REQUIRES_DETERMINER.has(term.toLowerCase())) {
-    return new RegExp(`(?<=(?<![\\w-])(?:${DETERMINERS.join('|')})\\s)${body}${close}`, 'gi');
+  const flags = caseSensitive ? 'g' : 'gi';
+  if (!caseSensitive && REQUIRES_DETERMINER.has(term.toLowerCase())) {
+    return new RegExp(`(?<=(?<![\\w-])(?:${DETERMINERS.join('|')})\\s)${body}${close}`, flags);
   }
-  return new RegExp(`${open}${body}${close}`, 'gi');
+  return new RegExp(`${open}${body}${close}`, flags);
 }
 
 /**
@@ -100,11 +101,18 @@ function patternFor(term: string): RegExp {
  * christmas tree; marking it once per paragraph is enough to say "this is a
  * thing you can act on", and keeps most of the text soft white.
  */
-function collect(text: string, terms: string[], as: Tint, hits: Hit[], claimed: Set<string>): void {
+function collect(
+  text: string,
+  terms: string[],
+  as: Tint,
+  hits: Hit[],
+  claimed: Set<string>,
+  caseSensitive = false
+): void {
   for (const term of terms) {
     const key = term.toLowerCase();
     if (claimed.has(key)) continue;
-    for (const match of text.matchAll(patternFor(term))) {
+    for (const match of text.matchAll(patternFor(term, caseSensitive))) {
       const start = match.index;
       const end = start + match[0].length;
       // First claim wins, so mystery terms beat interactive ones and longer
@@ -130,6 +138,7 @@ function tint(
 
   const hits: Hit[] = [];
   collect(text, vocabulary.mystery, 'mystery', hits, claimed);
+  collect(text, vocabulary.people, interactiveTint, hits, claimed, true);
   collect(text, vocabulary.interactive, interactiveTint, hits, claimed);
   if (hits.length === 0) {
     return [<Fragment key={`t${keyPrefix}`}>{text}</Fragment>];

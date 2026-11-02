@@ -52,7 +52,7 @@ const PUZZLE_LADDER: Array<(state: GameState) => string> = [
   (state) => {
     const steps: string[] = [];
     if (!state.inventory.includes('wedge') && !f(state, FLAGS.shutterHeld)) {
-      steps.push('Take a wedge from the basket in the joiner\'s workshop — Tolv gives them away.');
+      steps.push('Take a wedge from the basket in the joiner\'s workshop — Oreg gives them away.');
     }
     if (!f(state, FLAGS.shutterHeld)) {
       steps.push('In the sealed chamber: USE WEDGE ON SHUTTER, which lifts it and holds it up.');
@@ -79,8 +79,8 @@ const PREP_LADDER: Array<(state: GameState) => string> = [
       : 'Take the hooded lantern from your windowsill before you go anywhere.',
   () =>
     'Nobody is timing you and you can come back down the hill whenever you like. Two people ' +
-    'in the village have something specifically useful to hand over: Tolv in the workshop, and ' +
-    'Aldren on the path.',
+    'in the village have something specifically useful to hand over: Oreg in the workshop, and ' +
+    'Bay on the path.',
   () =>
     'Minimum to get started: take the lantern at home, take a wedge from the basket in the ' +
     'workshop, then go west from the square to the path, west again to the cave mouth, and in.',
@@ -102,7 +102,7 @@ const PAST_LADDER: Array<(state: GameState) => string> = [
     'The square is full of things you know, laid out wrong. Look at the well, the half-built ' +
     'wall, and the tree.',
   () =>
-    'Talk to Sabra on the plank. Ask her about the cave first, and then ask her whether ' +
+    'Talk to Saffra on the plank. Ask her about the cave first, and then ask her whether ' +
     'anything is coming.',
 ];
 

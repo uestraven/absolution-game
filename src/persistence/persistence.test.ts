@@ -79,7 +79,7 @@ describe('round trip', () => {
   });
 
   it('resumes a pending conversation, keeping the topics it had', () => {
-    const talking = typeAll(begin(), ['take lantern', 'down', 'east', 'talk to tolv']);
+    const talking = typeAll(begin(), ['take lantern', 'down', 'east', 'talk to oreg']);
     expect(talking.pending?.kind).toBe('conversation');
     writeAutosave(talking);
     const reloaded = loadBest().state!;
@@ -384,7 +384,7 @@ describe('imports are validated before anything is touched', () => {
     [
       'a pending conversation claiming a topic that person does not have',
       corrupt((d) => {
-        d.pending = { kind: 'conversation', personId: 'tolv', heard: ['the_moon'] };
+        d.pending = { kind: 'conversation', personId: 'oreg', heard: ['the_moon'] };
       }),
       /unreadable pending choice/,
     ],

@@ -18,8 +18,15 @@ import { peopleHere, reachableItems, visibleExits, visibleObjects } from './sele
 export interface Vocabulary {
   /** Unusual phenomena and significant story terms. */
   mystery: string[];
-  /** Exits, interactive objects, people and carried items the player knows of. */
+  /** Exits, interactive objects and carried items the player knows of. */
   interactive: string[];
+  /**
+   * People present. Held apart because these are proper nouns and are matched
+   * case-sensitively: several of this village's names are also ordinary
+   * English words, and "the ground rose" must not light up merely because Rose
+   * is standing on the path.
+   */
+  people: string[];
 }
 
 function usable(term: string): boolean {
@@ -50,8 +57,14 @@ export function vocabulary(state: GameState): Vocabulary {
   for (const def of visibleObjects(state)) {
     addName(interactive, def.name);
   }
+  const people = new Set<string>();
   for (const person of peopleHere(state)) {
-    if (usable(person.name)) interactive.add(person.name);
+    if (!usable(person.name)) continue;
+    people.add(person.name);
+    // "Rose and Mary" is one person entry with two names in it.
+    for (const part of person.name.split(/\s+and\s+/)) {
+      if (usable(part)) people.add(part);
+    }
   }
   for (const itemId of new Set(reachableItems(state))) {
     addName(interactive, ITEMS[itemId].name);
@@ -69,5 +82,6 @@ export function vocabulary(state: GameState): Vocabulary {
     mystery,
     // Longest first, so "stone shutter" wins over "shutter".
     interactive: [...interactive].sort((a, b) => b.length - a.length),
+    people: [...people].sort((a, b) => b.length - a.length),
   };
 }

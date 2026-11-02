@@ -65,7 +65,7 @@ describe('what the interface is allowed to tint', () => {
     const square = typeAll(begin(), ['take lantern', 'down']);
     const vocab = vocabulary(square);
     expect(vocab.interactive).toContain('chalked plank');
-    expect(vocab.interactive).toContain('Orla');
+    expect(vocab.people).toContain('Sage');
     expect(vocab.interactive).toContain('lantern');
     expect(vocab.interactive.some((t) => t.includes('cave path'))).toBe(true);
   });
@@ -73,7 +73,7 @@ describe('what the interface is allowed to tint', () => {
   it('keeps colour on short spans, leaving most of a paragraph plain', () => {
     const square = typeAll(begin(), ['take lantern', 'down']);
     const text =
-      'The square is busier than a working morning should be. Orla is at the plank with a stub ' +
+      'The square is busier than a working morning should be. Sage is at the plank with a stub ' +
       'of chalk, correcting something that does not need correcting.';
     const out = tints(text, vocabulary(square));
     const tinted = [...out.mystery, ...out.interactive].join('').length;
@@ -141,6 +141,28 @@ describe('each colour keeps its meaning', () => {
     expect(twoParagraphs.interactive).toEqual(['well', 'well']);
   });
 
+  it('matches a person by name case-sensitively, so ordinary words are safe', () => {
+    // Several villagers are named for things you can also say in a sentence.
+    const path = typeAll(begin(), ['take lantern', 'down', 'west']);
+    const vocab = vocabulary(path);
+    expect(vocab.people).toContain('Rose');
+    expect(vocab.people).toContain('Mary');
+    expect(vocab.people).toContain('Bay');
+
+    expect(tints('Rose has the sleeves.', vocab).interactive).toEqual(['Rose']);
+    // Lower case is the verb, not the person.
+    expect(tints('The ground rose under you.', vocab).interactive).toEqual([]);
+    expect(tints('a bay of still water', vocab).interactive).toEqual([]);
+  });
+
+  it('tints both halves of a paired name', () => {
+    const path = typeAll(begin(), ['take lantern', 'down', 'west']);
+    const vocab = vocabulary(path);
+    expect(vocab.people).toContain('Rose and Mary');
+    const out = tints('Rose and Mary have come up the hill.', vocab);
+    expect(out.interactive).toEqual(['Rose and Mary']);
+  });
+
   it('renders plain soft white when no vocabulary is supplied', () => {
     const { container } = render(<RichText text="The Wanderer and the well." />);
     expect(container.querySelectorAll('[class^=tint-]')).toHaveLength(0);
@@ -151,7 +173,7 @@ describe('each colour keeps its meaning', () => {
 describe('text rendering safety', () => {
   it('renders markup in text as literal characters, never as HTML', () => {
     const { container } = render(
-      <RichText text={'<img src=x onerror="boom"> <b>bold?</b>'} vocabulary={{ mystery: [], interactive: [] }} />
+      <RichText text={'<img src=x onerror="boom"> <b>bold?</b>'} vocabulary={{ mystery: [], interactive: [], people: [] }} />
     );
     expect(container.querySelector('img')).toBeNull();
     expect(container.querySelector('b')).toBeNull();

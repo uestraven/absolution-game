@@ -109,7 +109,7 @@ export function App() {
 
   const topics = useMemo(() => (state ? activeTopics(state) : []), [state]);
   const terms = useMemo(
-    () => (state ? vocabulary(state) : { mystery: [], interactive: [] }),
+    () => (state ? vocabulary(state) : { mystery: [], interactive: [], people: [] }),
     [state]
   );
 

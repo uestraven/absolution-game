@@ -369,7 +369,7 @@ describe('the crossing', () => {
     expect(lastText(type(state, 'examine well'))).toContain('unworn');
     expect(lastText(type(state, 'examine building'))).toContain('No roof');
 
-    state = typeAll(state, ['talk to sabra', 'cave']);
+    state = typeAll(state, ['talk to saffra', 'cave']);
     expect(state.ended).toBe(false);
     const ending = type(state, 'wanderer');
     expect(ending.accepted).toBe(true);
@@ -381,7 +381,7 @@ describe('the crossing', () => {
 
   it('keeps the village aware of its own cave while lacking the prophecy', () => {
     let state = type(typeAll(begin(), TO_THRESHOLD), 'enter threshold').state;
-    state = typeAll(state, ['up', 'east', 'talk to sabra']);
+    state = typeAll(state, ['up', 'east', 'talk to saffra']);
     const aboutCave = type(state, 'cave');
     const text = lastText(aboutCave);
     // They know it, they work in it, and young people go in: the tradition is intact.

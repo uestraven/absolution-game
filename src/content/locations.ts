@@ -80,9 +80,10 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         'half a hand to the left.\n\n' +
         board +
         '\n\n' +
-        'Orla is at the plank with a stub of chalk, correcting something that does not need ' +
-        'correcting. Marda has her board out in front of the bakehouse and is working dough ' +
-        'like it owes her money. Hesk, who is twelve, is orbiting.\n\n' +
+        'Sage is at the plank with a stub of chalk, correcting something that does not need ' +
+        'correcting. Marjoram has her board out in front of the bakehouse and is working dough ' +
+        'like it owes her money. Mint is at the well filling a bucket with no particular ' +
+        'urgency. Parsie, who is eleven, is orbiting.\n\n' +
         'The lane climbs north to your door. The joiner\'s workshop stands open to the east. ' +
         'West, past the last house, the cave path starts up the hill.'
       );
@@ -124,7 +125,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'The workshop is one long room with the big door hooked open for the light. Shavings ' +
       'have drifted into the corners in pale banks. A glue-pot sits off the heat with a skin ' +
       'on it.\n\n' +
-      'Tolv the joiner works at the bench with the unhurried rhythm of someone who has made ' +
+      'Oreg the joiner works at the bench with the unhurried rhythm of someone who has made ' +
       'the same joint four thousand times. Under the bench is a basket of offcuts: dowels, ' +
       'tapered blocks, scraps too good to burn.\n\n' +
       'The square is back out to the west.',
@@ -151,14 +152,15 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'An old stump sits beside the path at the turn, worn smooth on top by generations of ' +
       'people sitting down to think about it. Chalk marks on the rocks count off the last ' +
       'stretch.\n\n' +
-      'Nessa is sitting on the stump with her boots off. Aldren is further up, coiling rope ' +
-      'and watching the weather.\n\n' +
+      'Dilly is sitting on the stump with her boots off. Bay is further up, coiling rope ' +
+      'and watching the weather. Rose and Mary have come up from the square to watch somebody ' +
+      'else do it, and are sharing one coat about it.\n\n' +
       'The square is back down to the east. The cave mouth is up and west.',
     firstVisit: (state) =>
       'From down in the square the hill looks like a hill. From here it looks like a door ' +
       'somebody left in the ground.\n\n' +
-      'And from here you can pick out the roofs by who is under them. Marda is working dough ' +
-      'she means to sell tomorrow. Hesk has four years to wait for his turn at this and has ' +
+      'And from here you can pick out the roofs by who is under them. Marjoram is working dough ' +
+      'she means to sell tomorrow. Parsie has four years to wait for his turn at this and has ' +
       'already decided he is going right to the back. Somebody is still up a ladder being told ' +
       'how to hang a lantern.' +
       (f(state, FLAGS.heardProphecy)
@@ -198,6 +200,8 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'has been keeping them clear of moss.\n\n' +
       'A rope runs from an iron ring by the bench into the dark, knotted at intervals, the ' +
       'knots polished by hands.\n\n' +
+      'Tyme is on the bench with two apples and an unconvincing air of having come up for the ' +
+      'walk.\n\n' +
       'Daylight reaches a good way in. From the first gallery you will still be able to see ' +
       'this slot of sky behind you.\n\n' +
       lightNote(state, 'outer') +
@@ -207,7 +211,8 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'chalk on the shale every spring, and spliced that rope onto that ring, and put a bench ' +
       'here because people wait.\n\n' +
       'From the bench you can see the whole roofline below, and the cord strung across it, and ' +
-      'the forty lanterns on the cord that nobody has lit.',
+      'the forty lanterns on the cord that nobody has lit. Tyme walked up here to sit where ' +
+      'they could see all of that, which you do not think was the plan they had in mind.',
     exits: [
       {
         id: 'to_path',
@@ -506,7 +511,7 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
           'chalked plank by the well, and the well-cap has no bowl of salt on it.'
       );
       parts.push(
-        'Sabra is up on a plank at the half-built wall with a trowel. A boy called Pell is ' +
+        'Saffra is up on a plank at the half-built wall with a trowel. A boy called Fenn is ' +
           'holding the mortar board for her and not watching it.'
       );
       parts.push('The track back up to the cave mouth is west.');

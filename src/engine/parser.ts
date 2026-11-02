@@ -458,7 +458,7 @@ export function unparsedMessage(reason: string, raw: string): string {
     case 'no-direction':
       return `"${raw.trim()}" needs somewhere to go. Try EXITS to see the ways out.`;
     case 'no-person':
-      return 'Name who you want to talk to, as in TALK TO ALDREN.';
+      return 'Name who you want to talk to, as in TALK TO BAY.';
     case 'no-topic':
       return 'That is not one of the things you can ask about just now.';
     case 'bad-topic-number':

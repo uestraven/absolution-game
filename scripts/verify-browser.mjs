@@ -140,7 +140,7 @@ async function newPage(viewport) {
     'examine relief','east','open shutter','use wedge on shutter',
     'place lantern in alcove','light lantern','examine wall','open seam',
     'take lantern','take wedge','down','examine threshold','enter threshold',
-    'up','east','talk to sabra','the cave on the hill','whether anything is coming',
+    'up','east','talk to saffra','the cave on the hill','whether anything is coming',
   ];
   for (const line of script) {
     await field.fill(line);

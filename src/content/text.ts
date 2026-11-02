@@ -63,9 +63,9 @@ Not *nobody believes it*. Not *nobody speaks of it*. You watched it land on her 
 
 Words like that have to start somewhere. They have not started here.
 
-Above you, the hill holds its cave, and the cave holds a stair that Lonn and his boys are still cutting, down to a basin with two coins in it, and behind you, up the track, there is no rope and no bench and no letters on the lintel because there is no lintel yet.
+Above you, the hill holds its cave, and the cave holds a stair that Lovage and his boys are still cutting, down to a basin with two coins in it, and behind you, up the track, there is no rope and no bench and no letters on the lintel because there is no lintel yet.
 
-Sabra scrapes her trowel and waits, patiently, for you to say something sensible.
+Saffra scrapes her trowel and waits, patiently, for you to say something sensible.
 
 You are a long way from home. You have not moved an inch.`;
 

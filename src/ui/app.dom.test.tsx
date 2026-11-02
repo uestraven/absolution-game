@@ -129,7 +129,7 @@ describe('dialogue options in each mode', () => {
   it('writes the numbered list out for type-only play', async () => {
     const user = await startPlaying('type');
     const field = screen.getByLabelText('What do you do?');
-    for (const line of ['take lantern', 'down', 'talk to orla']) {
+    for (const line of ['take lantern', 'down', 'talk to sage']) {
       await user.clear(field);
       await user.type(field, `${line}{Enter}`);
     }
@@ -142,7 +142,7 @@ describe('dialogue options in each mode', () => {
     const user = await startPlaying('select');
     const panel = () => within(screen.getByRole('region', { name: 'Actions' }));
     await user.click(panel().getByRole('button', { name: /lane down to the square/ }));
-    await user.click(panel().getByRole('button', { name: 'Talk to Orla' }));
+    await user.click(panel().getByRole('button', { name: 'Talk to Sage' }));
 
     expect(panel().getByRole('button', { name: '1. the prophecy' })).toBeTruthy();
     const log = screen.getByRole('log', { name: 'Story so far' });

@@ -159,7 +159,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
       (state.inventory.includes('wedge')
         ? 'There are plenty more wedges in here, cut the same way.'
         : 'Near the top, a handful of tapered blocks — wedges, cut off-square so they bite. ' +
-          'Tolv waves a hand at the basket without looking up. "Help yourself. That\'s what ' +
+          'Oreg waves a hand at the basket without looking up. "Help yourself. That\'s what ' +
           'it\'s for."'),
     onExamine: {
       reveals: ['workshop.wedge'],
@@ -183,7 +183,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
       journal: [
         {
           id: 'j.wedge',
-          text: 'Tolv gives away oak wedges from the offcut basket. They bite rather than slide.',
+          text: 'Oreg gives away oak wedges from the offcut basket. They bite rather than slide.',
         },
       ],
     },
@@ -194,11 +194,11 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['bench', 'workbench', 'tools', 'joint'],
     locationId: 'present.workshop',
     initiallyVisible: true,
-    listAs: "Tolv's bench",
+    listAs: "Oreg's bench",
     verbs: () => ['examine'],
     description: () =>
       'Elm, four inches thick, scarred to a map of itself. A row of chisels stand in a rack ' +
-      'with their edges turned in. The joint under Tolv\'s hands is a housed dovetail and it ' +
+      'with their edges turned in. The joint under Oreg\'s hands is a housed dovetail and it ' +
       'is going together without being forced.',
   },
 
