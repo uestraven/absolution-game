@@ -301,6 +301,58 @@ describe('the documented shortest route', () => {
   });
 });
 
+describe('selectable mode can reach everything typing can', () => {
+  it('can pick an item back up after putting it down', () => {
+    // A player who only ever clicks must not be able to lose the lantern.
+    let state = typeAll(begin(), ['take lantern', 'down']);
+    state = click(state, itemVerb('lantern', 'drop'));
+    expect(state.inventory).toEqual([]);
+
+    const dropped = getAffordances(state).objects.find((o) => o.id === 'lantern');
+    expect(dropped, 'the dropped lantern is listed among the things here').toBeDefined();
+    expect(dropped!.actions.map((a) => a.label)).toEqual(['Examine', 'Take']);
+
+    state = click(state, objectVerb('lantern', 'take'));
+    expect(state.inventory).toEqual(['lantern']);
+  });
+
+  it('lists a dropped item only in the room it was left in', () => {
+    let state = typeAll(begin(), ['take lantern', 'down', 'drop lantern']);
+    expect(getAffordances(state).objects.some((o) => o.id === 'lantern')).toBe(true);
+    state = typeAll(state, ['east']);
+    expect(getAffordances(state).objects.some((o) => o.id === 'lantern')).toBe(false);
+    state = typeAll(state, ['west']);
+    expect(getAffordances(state).objects.some((o) => o.id === 'lantern')).toBe(true);
+  });
+
+  it('can still finish the chapter after dropping and recovering both items', () => {
+    let state = typeAll(begin(), ['take lantern', 'down', 'east', 'take wedge']);
+    state = typeAll(state, ['drop lantern', 'drop wedge']);
+    state = click(state, objectVerb('lantern', 'take'));
+    state = click(state, objectVerb('wedge', 'take'));
+    expect(state.inventory).toEqual(expect.arrayContaining(['lantern', 'wedge']));
+    const finished = typeAll(state, [
+      'west',
+      'west',
+      'west',
+      'in',
+      'east',
+      'use wedge on shutter',
+      'place lantern in alcove',
+      'light lantern',
+      'open seam',
+      'down',
+      'enter threshold',
+      'up',
+      'east',
+      'talk to sabra',
+      'cave',
+      'whether anything is coming',
+    ]);
+    expect(finished.ended).toBe(true);
+  });
+});
+
 describe('selectable mode gives nothing away', () => {
   it('offers no label phrased in terms of what it will achieve', () => {
     const sealed = typeAll(begin(), [

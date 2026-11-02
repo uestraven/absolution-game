@@ -14,6 +14,8 @@ import {
   loadBest,
   readPrefs,
   readSlot,
+  storageAvailable,
+  storageReadable,
   writeAutosave,
   writeCheckpoint,
   writePrefs,
@@ -55,9 +57,22 @@ export function App() {
     setPrefs(readPrefs());
     const outcome = loadBest();
     setStartNotes(outcome.notes);
+    // Reading works independently of writing, so an existing save stays
+    // loadable even on a store that can no longer be written to.
     setCanContinue(outcome.state !== null);
     setHasCheckpoint(readSlot('checkpoint').state !== null);
     if (outcome.state) setState(outcome.state);
+    // Say so before the first action is lost, not after.
+    if (!storageAvailable()) {
+      setStorage({
+        working: false,
+        message: storageReadable()
+          ? 'This browser is not accepting new saves, so progress from here is not being kept. ' +
+            'Your existing save still loads, and Export Save still works.'
+          : 'This browser is not letting the game store anything, so progress is not being ' +
+            'saved. Use Export Save to keep a copy.',
+      });
+    }
   }, []);
 
   const updatePrefs = useCallback((next: Prefs) => {

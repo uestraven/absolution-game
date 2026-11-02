@@ -55,24 +55,75 @@ function isPlacement(value: unknown): value is ItemPlacement {
   return false;
 }
 
+/** Fields each action type requires, beyond `type`. */
+const ACTION_SHAPES: Record<string, { strings?: string[]; optional?: string[] }> = {
+  LOOK: {},
+  EXITS: {},
+  INVENTORY: {},
+  JOURNAL: {},
+  HINT: {},
+  HELP: {},
+  CANCEL: {},
+  END_CONVERSATION: {},
+  CROSS_THRESHOLD: {},
+  GO: { strings: ['target'] },
+  EXAMINE: { strings: ['target'] },
+  TAKE: { strings: ['target'], optional: ['from'] },
+  DROP: { strings: ['target'] },
+  OPEN: { strings: ['target'] },
+  CLOSE: { strings: ['target'] },
+  LIGHT: { strings: ['target'] },
+  TALK: { strings: ['target'] },
+  USE: { strings: ['item'], optional: ['target'] },
+  PLACE: { strings: ['item', 'target'] },
+  TOPIC: { strings: ['topic'] },
+  CHOOSE: { strings: ['value'] },
+  UNPARSED: { strings: ['raw', 'reason'] },
+  SELECT_CHARACTER: {},
+};
+
+/**
+ * Checks that a stored action is one the engine actually has, with the fields
+ * that action needs.
+ *
+ * A pending disambiguation stores the action each option would dispatch, so an
+ * imported save gets to hand the reducer an action directly. The reducer's own
+ * discovery checks already stop a crafted target reaching a hidden object, but
+ * a malformed action would still be a crash waiting to happen, so the shape is
+ * verified before the save is accepted at all.
+ */
+function isGameAction(value: unknown): boolean {
+  if (!isPlainObject(value)) return false;
+  if (typeof value.type !== 'string') return false;
+  const shape = ACTION_SHAPES[value.type];
+  if (!shape) return false;
+  if (value.type === 'SELECT_CHARACTER' && !isCharacterId(value.character)) return false;
+  for (const field of shape.strings ?? []) {
+    if (typeof value[field] !== 'string') return false;
+  }
+  for (const field of shape.optional ?? []) {
+    if (value[field] !== undefined && typeof value[field] !== 'string') return false;
+  }
+  return true;
+}
+
 function isPending(value: unknown): value is PendingState | null {
   if (value === null || value === undefined) return true;
   if (!isPlainObject(value)) return false;
   if (value.kind === 'conversation') {
-    return (
-      typeof value.personId === 'string' &&
-      value.personId in PEOPLE &&
-      isStringArray(value.heard)
-    );
+    if (typeof value.personId !== 'string') return false;
+    const person = PEOPLE[value.personId];
+    if (!person || !isStringArray(value.heard)) return false;
+    // Heard topics must be topics this person actually has.
+    const known = new Set(person.topics.map((topic) => topic.id));
+    return value.heard.every((id) => known.has(id));
   }
   if (value.kind === 'clarification') {
     if (typeof value.question !== 'string' || !Array.isArray(value.options)) return false;
+    if (value.options.length === 0) return false;
     return value.options.every(
       (option: unknown) =>
-        isPlainObject(option) &&
-        typeof option.label === 'string' &&
-        isPlainObject(option.action) &&
-        typeof option.action.type === 'string'
+        isPlainObject(option) && typeof option.label === 'string' && isGameAction(option.action)
     );
   }
   return false;
@@ -269,12 +320,24 @@ export function validateSave(input: unknown, rawBytes?: number): ValidationResul
     return { ok: false, error: 'That save has no content version.' };
   }
 
-  // Inventory and placements must agree, or an item could be carried and
-  // sitting in an alcove at the same time.
+  // Inventory and placements must agree in BOTH directions, or an item could
+  // be carried and sitting in an alcove at the same time, or be marked carried
+  // while the player is not holding it — which would leave it unreachable.
   for (const item of inventory) {
     if (placements[item]?.kind !== 'carried') {
       return { ok: false, error: `That save both carries and stores "${item}".` };
     }
+  }
+  for (const [item, placement] of Object.entries(placements)) {
+    if (placement.kind === 'carried' && !inventory.includes(item as ItemId)) {
+      return {
+        ok: false,
+        error: `That save marks "${item}" as carried but does not list it in the inventory.`,
+      };
+    }
+  }
+  if (new Set(inventory).size !== inventory.length) {
+    return { ok: false, error: 'That save lists the same item in the inventory twice.' };
   }
 
   // The transcript is display history, not progress. Keep only well-shaped

@@ -44,11 +44,27 @@ export interface LoadOutcome {
   quarantined: boolean;
 }
 
-function area(): Storage | null {
+/**
+ * Reading and writing are deliberately separated.
+ *
+ * A full or write-blocked store can still be read perfectly well, and a player
+ * in that position must keep being able to Continue an existing save and export
+ * it. Probing with a write before every read would hide their progress at
+ * exactly the moment they most need to get it out.
+ */
+function readArea(): Storage | null {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Write access, confirmed by probe: Safari in private mode throws on write. */
+function writeArea(): Storage | null {
   try {
     const ls = globalThis.localStorage;
     if (!ls) return null;
-    // Safari in private mode exposes localStorage but throws on write.
     const probe = `${NS}:probe`;
     ls.setItem(probe, '1');
     ls.removeItem(probe);
@@ -58,20 +74,26 @@ function area(): Storage | null {
   }
 }
 
+/** True when a save could be written. Reads may work regardless. */
 export function storageAvailable(): boolean {
-  return area() !== null;
+  return writeArea() !== null;
+}
+
+/** True when stored saves can be read, even if nothing can be written. */
+export function storageReadable(): boolean {
+  return readArea() !== null;
 }
 
 function readRaw(key: string): string | null {
   try {
-    return area()?.getItem(key) ?? null;
+    return readArea()?.getItem(key) ?? null;
   } catch {
     return null;
   }
 }
 
 function writeRaw(key: string, value: string): StorageStatus {
-  const store = area();
+  const store = writeArea();
   if (!store) {
     return {
       working: false,
@@ -99,7 +121,7 @@ function writeRaw(key: string, value: string): StorageStatus {
 
 function removeRaw(key: string): void {
   try {
-    area()?.removeItem(key);
+    readArea()?.removeItem(key);
   } catch {
     /* nothing to do: removal failing is not worth reporting */
   }

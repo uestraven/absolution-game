@@ -2,7 +2,7 @@ import type { GameAction, GameState, ItemId } from './types';
 import { ITEMS } from '../content/items';
 import { OBJECTS, objectVerbs } from '../content/objects';
 import { FLAGS } from '../content/flags';
-import { activeTopics, peopleHere, visibleExits, visibleObjects } from './selectors';
+import { activeTopics, peopleHere, roomItems, visibleExits, visibleObjects } from './selectors';
 
 /**
  * The selectable-mode action list, computed by the engine rather than the UI.
@@ -115,7 +115,7 @@ export function getAffordances(state: GameState): Affordances {
 
   const visible = visibleObjects(state);
 
-  const objects: ObjectAffordances[] = visible.map((def) => ({
+  const objects: ObjectAffordances[] = visible.map<ObjectAffordances>((def) => ({
     id: def.id,
     name: def.name,
     actions: objectVerbs(def, state)
@@ -130,6 +130,30 @@ export function getAffordances(state: GameState): Affordances {
       })
       .filter((a): a is Affordance => a !== null),
   }));
+
+  /*
+   * Items the player has put down in this room are listed among the things
+   * here, with Examine and Take.
+   *
+   * Without this, a player using only buttons could drop the lantern and have
+   * no way to pick it back up, while `TAKE LANTERN` still worked for a player
+   * who types. The two modes have to be able to reach the same actions, and a
+   * lost lantern is exactly the sort of dead end the chapter must not have.
+   */
+  for (const itemId of roomItems(state)) {
+    objects.push({
+      id: itemId,
+      name: `${ITEMS[itemId].name} (where you put it down)`,
+      actions: [
+        {
+          key: `${itemId}-examine`,
+          label: 'Examine',
+          action: { type: 'EXAMINE', target: itemId },
+        },
+        { key: `${itemId}-take`, label: 'Take', action: { type: 'TAKE', target: itemId } },
+      ],
+    });
+  }
 
   // Plausible places to try an item: authored, modest, and including decoys.
   const itemTargets = visible.filter((def) => def.acceptsItems);

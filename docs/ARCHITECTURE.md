@@ -138,6 +138,21 @@ invents no steps for versions that never existed.
 | `SettingsDialog` | Input mode, text size, saves, checkpoint restart |
 | `RichText` | Paragraphs, `*emphasis*`, and all colour — as React nodes |
 
+## Known debt
+
+`engine/reducer.ts` is around 1,400 lines and mixes the generic action pipeline
+with puzzle-specific logic and the prose those puzzles print. That is workable
+for one chapter and will not be for several.
+
+The seam to cut along is already visible: `checkIllumination`, `openPassage`,
+`liftShutter`, `wedgeShutter` and the alcove branches of `doPlace` are the only
+parts that know about this particular puzzle, and they communicate with the rest
+of the reducer solely through flags, `discover` and pushed events. Extracting
+them — one module per puzzle, exporting handlers of the same
+`(draft, events) => ResolveResult` shape the reducer already uses internally,
+with their prose beside them — leaves the shared action pipeline untouched.
+Worth doing before a second era is added, not during.
+
 ## Colour
 
 One palette, applied by `RichText` and nowhere else. Three meanings, used

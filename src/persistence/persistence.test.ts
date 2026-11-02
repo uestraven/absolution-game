@@ -10,6 +10,7 @@ import {
   readSlot,
   serialize,
   storageAvailable,
+  storageReadable,
   writeAutosave,
   writeCheckpoint,
   writePrefs,
@@ -212,16 +213,49 @@ describe('storage failure is reported, never pretended away', () => {
     spy.mockRestore();
   });
 
-  it('keeps reads working when writes do not', () => {
-    writeAutosave(begin());
+  it('still loads an existing save when writing is impossible', () => {
+    // The player's progress must stay reachable precisely when saving breaks:
+    // that is when they need Continue and Export most.
+    const saved = typeAll(begin(), MID_PUZZLE);
+    expect(writeAutosave(saved).working).toBe(true);
+
     const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError');
     });
-    // storageAvailable probes with a write, so a read-only store reports as
-    // unavailable, and loadBest returns nothing rather than lying.
-    expect(loadBest().state).toBeNull();
+
+    expect(storageAvailable()).toBe(false);
+    expect(storageReadable()).toBe(true);
+
+    const outcome = loadBest();
+    expect(outcome.state).not.toBeNull();
+    expect(outcome.slot).toBe('save');
+    expect(progressOf(outcome.state!)).toEqual(progressOf(saved));
+    expect(readSlot('save').state).not.toBeNull();
+    expect(readSlot('checkpoint').state).toBeNull();
+
     spy.mockRestore();
-    expect(loadBest().state).not.toBeNull();
+  });
+
+  it('can still export what it loaded while writing is impossible', async () => {
+    const saved = typeAll(begin(), MID_PUZZLE);
+    writeAutosave(saved);
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError');
+    });
+    const loaded = loadBest().state!;
+    const text = await exportBlob(loaded).text();
+    const reimported = importFromText(text);
+    expect(reimported.ok).toBe(true);
+    spy.mockRestore();
+  });
+
+  it('reports unreadable storage separately from unwritable storage', () => {
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    expect(loadBest().state).toBeNull();
+    expect(loadBest().quarantined).toBe(false);
+    spy.mockRestore();
   });
 });
 
@@ -307,6 +341,51 @@ describe('imports are validated before anything is touched', () => {
     [
       'a pending conversation with nobody',
       corrupt((d) => (d.pending = { kind: 'conversation', personId: 'ghost', heard: [] })),
+      /unreadable pending choice/,
+    ],
+    [
+      'an item carried without being in the inventory',
+      corrupt((d) => {
+        d.inventory = [];
+        d.placements = { lantern: { kind: 'carried' } };
+      }),
+      /marks "lantern" as carried but does not list it/,
+    ],
+    [
+      'the same item listed twice',
+      corrupt((d) => {
+        d.inventory = ['lantern', 'lantern'];
+        d.placements = { lantern: { kind: 'carried' } };
+      }),
+      /same item in the inventory twice/,
+    ],
+    [
+      'a pending option with an action the engine does not have',
+      corrupt((d) => {
+        d.pending = {
+          kind: 'clarification',
+          question: 'Which one?',
+          options: [{ label: 'x', action: { type: 'LAUNCH_MISSILES' } }],
+        };
+      }),
+      /unreadable pending choice/,
+    ],
+    [
+      'a pending option whose action is missing its target',
+      corrupt((d) => {
+        d.pending = {
+          kind: 'clarification',
+          question: 'Which one?',
+          options: [{ label: 'x', action: { type: 'EXAMINE' } }],
+        };
+      }),
+      /unreadable pending choice/,
+    ],
+    [
+      'a pending conversation claiming a topic that person does not have',
+      corrupt((d) => {
+        d.pending = { kind: 'conversation', personId: 'tolv', heard: ['the_moon'] };
+      }),
       /unreadable pending choice/,
     ],
     [

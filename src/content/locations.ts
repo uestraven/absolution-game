@@ -154,9 +154,16 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       'Nessa is sitting on the stump with her boots off. Aldren is further up, coiling rope ' +
       'and watching the weather.\n\n' +
       'The square is back down to the east. The cave mouth is up and west.',
-    firstVisit: () =>
+    firstVisit: (state) =>
       'From down in the square the hill looks like a hill. From here it looks like a door ' +
-      'somebody left in the ground.',
+      'somebody left in the ground.\n\n' +
+      'And from here you can pick out the roofs by who is under them. Marda is working dough ' +
+      'she means to sell tomorrow. Hesk has four years to wait for his turn at this and has ' +
+      'already decided he is going right to the back. Somebody is still up a ladder being told ' +
+      'how to hang a lantern.' +
+      (f(state, FLAGS.heardProphecy)
+        ? '\n\nThat is the list. That is what the plank says is going to stop.'
+        : '\n\nIt is an ordinary Tuesday down there, and it is the eleventh day of the lanterns.'),
     exits: [
       {
         id: 'to_square',
@@ -196,8 +203,11 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       lightNote(state, 'outer') +
       '\n\nThe path back down is east. The gallery is in, and down.',
     firstVisit: () =>
-      'It is not a mouth that wants anything from you. That is the strange part. It is just a ' +
-      'hole in a hill with a bench outside it.',
+      'Somebody swept this floor. Somebody keeps the moss off the letters, and refreshes the ' +
+      'chalk on the shale every spring, and spliced that rope onto that ring, and put a bench ' +
+      'here because people wait.\n\n' +
+      'From the bench you can see the whole roofline below, and the cord strung across it, and ' +
+      'the forty lanterns on the cord that nobody has lit.',
     exits: [
       {
         id: 'to_path',
@@ -275,7 +285,9 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
       lightNote(state, 'inner') +
       '\n\nThe crawl back to the gallery is south.',
     firstVisit: () =>
-      'Nothing here wants to hurt you. You check anyway, twice, and feel foolish both times.',
+      'You say your own name, once, quietly, to hear what the room does with it.\n\n' +
+      'It arrives back from above you and a half-beat late, and it is not quite the shape you ' +
+      'put into the air. You do not do it again.',
     exits: [
       {
         id: 'to_gallery',

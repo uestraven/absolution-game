@@ -20,7 +20,7 @@ First playthrough is roughly 20–30 minutes.
 npm install
 npm run dev          # local dev server
 npm run typecheck    # tsc --noEmit
-npm run test         # vitest, 161 tests
+npm run test         # vitest, 171 tests
 npm run build        # typecheck, then a static bundle in dist/
 npm run check        # typecheck + test + build
 ```

@@ -26,9 +26,13 @@ const PERSON_LIST: PersonDef[] = [
         label: 'the prophecy',
         aliases: ['wanderer', 'plank', 'lines', 'chalk'],
         response: () =>
-          '"It came to Hanne in the winter, three times the same, and she is not a woman who ' +
-          'invents things." Orla taps the plank. "A wanderer. One eye in the middle of its ' +
-          'face, like the old carvings. It comes, and what stands does not stand after."\n\n' +
+          '"Hanne put the lines together with the year and came to me about it in the winter, ' +
+          'and she is not a woman who invents things." Orla taps the plank. "A cyclops. One ' +
+          'eye. It comes, and what stands does not stand after."\n\n' +
+          '"Mind, the words only say the one eye. The old carvings put it in the middle of the ' +
+          'face, big as a dish, and everyone has had that picture in their head since they were ' +
+          'four. That is the carvers\' idea, not the words\'." She shrugs. "Half of what people ' +
+          '*know* about the Wanderer, they know off a wall."\n\n' +
           '"That is the part people repeat. The part they do not repeat is the last line. ' +
           'Someone who braves the Cave of Absolution will have the power to turn it aside." ' +
           'She wipes chalk off her thumb. "Which is why the whole village has opinions about ' +
@@ -55,16 +59,17 @@ const PERSON_LIST: PersonDef[] = [
           '"Older than the plank." Orla shrugs. "People have said the Wanderer-words at ' +
           'midwinter since my grandmother was small, and she had them from hers. Nobody ever ' +
           'thought they were about next year."\n\n' +
-          '"Then Hanne dreamed a date in them. That is all that has changed. The words have not ' +
-          'changed at all." She looks at the plank as though it has personally inconvenienced ' +
-          'her. "They are very old words. They have simply become rude."',
+          '"Then Hanne read a date out of them — counted it off the lines, the way you would ' +
+          'count a debt. That is all that has changed. The words have not changed at all." She ' +
+          'looks at the plank as though it has personally inconvenienced her. "They are very ' +
+          'old words. They have simply become rude."',
         effects: {
           journal: [
             {
               id: 'j.prophecy_age',
               text:
                 'The Wanderer-words are generations old and said at midwinter. What is new is ' +
-                'that Hanne dreamed a date for them.',
+                'that Hanne has counted a date out of them.',
             },
           ],
         },

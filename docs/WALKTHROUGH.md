@@ -199,16 +199,16 @@ that no command in the run was rejected.
 
 ## Automated coverage
 
-161 tests across eight files.
+171 tests across eight files.
 
 | File | Covers |
 | --- | --- |
 | `engine/parser.test.ts` | Synonyms, case, punctuation, articles, directions, the crossing phrasings, topic numbers and names, disambiguation answers, cancel, every unparsed reason |
 | `engine/engine.test.ts` | Hidden-object access (typed *and* dispatched directly), identical refusal for hidden exits, ambiguity, the four distinct puzzle failures, order independence, latching, item recovery, optional branch, the crossing, the endpoint, journal contents, the hint ladder, useless-input invariants |
-| `engine/equivalence.test.ts` | Step-for-step state equality between typed and clicked play; one end-to-end completion per input mode; the twenty-command route above, run verbatim; completion after crossing with both items left behind; selectable labels giving nothing away; undiscovered things absent from the panel |
+| `engine/equivalence.test.ts` | Step-for-step state equality between typed and clicked play; one end-to-end completion per input mode; the twenty-command route above, run verbatim; completion after crossing with both items left behind; recovering a dropped item with buttons only, and finishing the chapter after doing so; selectable labels giving nothing away; undiscovered things absent from the panel |
 | `content/content.test.ts` | Map matches the brief, era/id agreement, reverse routes, unique ids and directions, only the deep exit gated, flag and reveal references valid, journal id consistency, no placeholder prose, no later reveals in player-facing text |
 | `content/characters.test.ts` | Both names and pronoun sets, pronoun substitution in NPC lines, identical progress for either character, no unrendered placeholders anywhere |
-| `persistence/persistence.test.ts` | Round trip, export/import, reload mid-puzzle, resuming pending conversations and questions, atomic crossing, backup and checkpoint fallbacks, quarantine, storage-failure reporting, preferences kept apart from progress, 22 rejected-import cases, transcript sanitising |
+| `persistence/persistence.test.ts` | Round trip, export/import, reload mid-puzzle, resuming pending conversations and questions, atomic crossing, backup and checkpoint fallbacks, quarantine, storage-failure reporting, loading and exporting while writes are impossible, preferences kept apart from progress, 27 rejected-import cases, transcript sanitising |
 | `ui/app.dom.test.tsx` | Title screen states, both modes end to end in the DOM, mode switching preserving state and transcript, option lists per mode, live region carrying only new output, focus not stolen |
 | `ui/highlighting.dom.test.tsx` | What may be tinted and in which colour: nothing undiscovered, tinting starting the moment something is discovered, magenta beating cyan where a term is both, interactive terms turning green inside a success, ordinary English left alone, once-per-paragraph, hyphen boundaries, and that text is never rendered as HTML |
 

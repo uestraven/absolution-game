@@ -57,7 +57,8 @@ Three tiers, kept strictly apart:
 | Rite at sixteen, open to all | `present.home` establishes the birthday; Orla states plainly that being allowed is the whole of it |
 | Mixed outcomes for others | Tolv found nothing; Nessa was lost and rescued; "H." fled the echo chamber; Bren declined and nothing happened to him; Jens turned back, Mira sat down, Hal counted to a hundred |
 | The hero figures it out by observation, not destiny | The puzzle is relief → alcove → support → light → seam. Orla and Aldren both push back explicitly on the chosen-one reading |
-| The prophecy's content | The chalked plank and Orla's dialogue: one eye, a cataclysm, and the one who braves the cave gaining the power to turn it aside |
+| The prophecy's content | The chalked plank and Orla's dialogue: one-eyed, a cataclysm, and the one who braves the cave gaining the power to turn it aside |
+| The hero can later *become* what the prophecy describes | The authoritative text says only **one-eyed**. It does not say where the eye sits. The familiar central-eye image is attributed in-world to the old carvings, and Orla says so: "That is the carvers' idea, not the words'." A hero who loses one of two eyes still satisfies the words |
 | The prophecy already old in the opening | Orla says the Wanderer-words are generations old and said at midwinter; what is *new* is Hanne dreaming a date for them. This is what makes a warning given in the past consistent with the opening |
 | The cave differs by era | The past cave has no gallery, no crawl, no squeeze, no rope: a worked stair straight down, still being cut, with daylight reaching further in. The route out is correspondingly shorter |
 | Landmarks echo with differences | Living tree where the stump is; unworn well cap; roofless frame on the workshop's footprint; no lintel inscription; no cord of lanterns |
@@ -102,6 +103,18 @@ water will answer. What stands will not stand.* and the second hand writing
 *and will they, though.* underneath. The canonical claims are the one eye, the
 cataclysm and the power; the rest is texture.
 
+**How the prophecy came to name this year.** Hanne counted a date out of the
+existing lines, "the way you would count a debt", and brought it to Orla. This
+is deliberately *not* foreknowledge: an earlier draft had her dream the date
+three times, which would have introduced a supernatural mechanism nobody has
+approved. The current version is a woman doing arithmetic on old words and
+being believed. If genuine foreknowledge is wanted, that is a decision to make
+on purpose — see below.
+
+**The old carvings** that give everyone the central-eye picture of the
+Wanderer, and Orla's view that half of what people know about it they know off
+a wall.
+
 **The vigil, the strung lanterns and the bowl of salt** as the specific form the
 village's preparation takes, including that the salt arrived this spring.
 
@@ -144,6 +157,17 @@ things." Chosen to imply someone cares without asserting any family facts.
 - The closure mechanism for the portal, and its cost.
 - The ending.
 - Full combat and progression systems.
+- **Whether anyone in this world has real foreknowledge.** The prototype
+  carefully does not say. Hanne reads a date out of old lines and may simply be
+  wrong; the prophecy itself is generations old and, per canon, originates with
+  the hero's own warning. Nothing here establishes a mechanism by which the
+  original words could have been predictive, and nothing here rules one out.
+- **Why the protagonist is personally invested in these particular people.**
+  The prototype builds this out of named villagers — Marda's dough for
+  tomorrow, Hesk waiting four years for his own turn, somebody up a ladder
+  being told how to hang a lantern. That is as far as it can honestly go while
+  the protagonist's family remains undecided, which is the obvious place deeper
+  stakes would come from.
 
 The prototype contains no combat, levelling, hunger, durability, timers or
 consumable resources, so nothing here presumes a system for any of them.

@@ -85,7 +85,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
     description: () =>
       'A door-plank set on its edge and written over in a careful hand. Some lines have been ' +
       'gone over twice where the chalk wore thin.\n\n' +
-      '    The Wanderer comes with one eye and no mercy.\n' +
+      '    The Wanderer comes one-eyed and without mercy.\n' +
       '    The hill will open. The water will answer.\n' +
       '    What stands will not stand.\n' +
       '    One who braves the Cave of Absolution will have the power to turn it aside.\n\n' +
