@@ -25,7 +25,8 @@ const OBJECT_LIST: WorldObjectDef[] = [
       'on a short chain — fixed on, so it cannot be left behind.\n\n' +
       'There is a strip of cloth knotted round the handle, with writing on it.',
     onExamine: {
-      reveals: ['home.tag'],
+      // The parts the description names, so each of them answers afterwards.
+      reveals: ['home.tag', 'home.striker', 'home.lamphood'],
       journal: [
         {
           id: 'j.lantern',
@@ -40,11 +41,197 @@ const OBJECT_LIST: WorldObjectDef[] = [
     nouns: ['tag', 'cloth', 'strip', 'writing', 'cloth tag', 'note'],
     locationId: 'present.home',
     initiallyVisible: false,
+    // Knotted to the handle, so it goes where the lantern goes.
+    attachedTo: 'lantern',
     listAs: c('a cloth tag knotted to the lantern handle'),
-    verbs: () => ['examine'],
+    verbs: () => ['examine', 'touch'],
     description: () =>
       'Three words in ink that has run a little:\n\n    Sixteen. Go carefully.\n\n' +
       'No name on it. Nobody in this house signs things.',
+    cannotTake: () =>
+      'Untying it would be taking it off, and you are not going to do that. It can stay on the ' +
+      'handle.',
+    responses: {
+      touch: () => ({
+        text:
+          'Linen, washed thin, with a knot in it that was tied by somebody in a hurry who did ' +
+          'not want it coming off.',
+      }),
+      untie: () => ({
+        text:
+          'You get a thumbnail into the knot and then stop.\n\nIt is a knot somebody tied this ' +
+          'morning, before it was light, standing in a kitchen deciding whether to write ' +
+          'anything at all. It can stay where it is.',
+      }),
+    },
+  },
+  {
+    /*
+     * The lantern's parts.
+     *
+     * Attached, so they travel with it, and deliberately a handful of nouns on
+     * two objects rather than one object per screw: the striker is the part a
+     * player will reach for (it is how the lamp gets lit, and it reappears in
+     * the finale on the earlier self's lamp), and the rest of the ironmongery
+     * answers as one.
+     */
+    id: 'home.striker',
+    name: 'striker',
+    nouns: ['striker', 'flint', 'steel', 'chain', 'short chain', 'firesteel'],
+    locationId: 'present.home',
+    initiallyVisible: false,
+    attachedTo: 'lantern',
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'A flint and a curl of steel on a short chain, bolted through the base of the lamp so it ' +
+      'cannot be put down anywhere and lost. Oreg\'s father did that to all forty of them, ' +
+      'because he had watched somebody try to find a dropped striker in the dark.',
+    cannotTake: () =>
+      'It is bolted to the lamp. That is the entire point of it, and you have been grateful for ' +
+      'it twice already today without noticing.',
+    responses: {
+      touch: () => ({
+        text:
+          'The flint is worn to a flat on one face and the steel is bright along one edge. It ' +
+          'has been used a great many times by people who were not in a hurry.',
+      }),
+      pull: () => ({
+        text: 'The chain is short and the bolt is through the base. It goes where the lamp goes.',
+      }),
+      untie: () => ({ text: 'It is bolted, not tied.' }),
+    },
+  },
+  {
+    id: 'home.lamphood',
+    name: 'hood and pane',
+    nouns: [
+      'hood',
+      'sliding hood',
+      'pane',
+      'horn pane',
+      'horn',
+      'wick',
+      'handle',
+      'bail',
+      'shutter of the lamp',
+    ],
+    locationId: 'present.home',
+    initiallyVisible: false,
+    attachedTo: 'lantern',
+    verbs: () => ['examine', 'touch'],
+    description: (state) =>
+      'A pane of scraped horn in a tin frame, gone the colour of weak tea, with a sliding hood ' +
+      'above it that comes down over the flame when you want the light off without putting the ' +
+      'lamp out. The handle is a wire bail, bent to sit flat.\n\n' +
+      (f(state, FLAGS.lanternLit)
+        ? 'The wick is up and burning, and the horn has a soft ring of brighter yellow in the ' +
+          'middle of it where the flame is.'
+        : 'The wick is down and black at the tip, and the horn is cold.'),
+    cannotTake: () =>
+      'It is all one lamp. Taking it apart in a bedroom on the morning of the rite would be a ' +
+      'remarkable way to begin.',
+    responses: {
+      touch: (state) =>
+        f(state, FLAGS.lanternLit)
+          ? {
+              text:
+                'The tin above the pane is hot enough to make you take your hand back. The bail ' +
+                'is cool, which is why the bail is where it is.',
+            }
+          : { text: 'Cold tin and warm-feeling horn, which is a thing horn does.' },
+      smell: (state) =>
+        f(state, FLAGS.lanternLit)
+          ? { text: 'Burning oil, close up, and hot tin.' }
+          : { text: 'Cold oil and old smoke. It smells like every lamp in the village.' },
+    },
+  },
+  {
+    id: 'home.flue',
+    name: 'flue',
+    nouns: ['flue', 'chimney', 'cold patch', 'corner', 'warm corner'],
+    locationId: 'present.home',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'The kitchen chimney comes up through the corner of your room in a bulge of lime-washed ' +
+      'stone, which is the reason this is the warm room and your brother\'s is not. There is a ' +
+      'cold patch on the floor beside it where the draught comes in at the joint, and you have ' +
+      'known the exact shape of that cold patch since you were four.',
+    cannotTake: () => 'It is a chimney.',
+    responses: {
+      touch: () => ({
+        text:
+          'Warm, about as warm as a hand, and the lime-wash comes off on your fingers in a fine ' +
+          'white dust. It has been doing that your whole life.',
+      }),
+      smell: () => ({ text: 'Woodsmoke. The whole room smells of it; here it smells of it more.' }),
+      listen: () => ({
+        text:
+          'The kitchen, faintly, through a stone: somebody moving about down there and not ' +
+          'saying anything.',
+      }),
+      sit: () => ({
+        text:
+          'You sit down on the floor against the warm side of the flue, which is what you did ' +
+          'every winter morning until you got too tall for it.\n\nThen you get up, because of ' +
+          'the day.',
+      }),
+    },
+  },
+  {
+    id: 'home.floor',
+    name: 'floorboards',
+    nouns: ['floorboards', 'floorboard', 'floor', 'boards'],
+    locationId: 'present.home',
+    initiallyVisible: true,
+    description: () =>
+      'Wide boards, pegged, with the grain standing up where a hundred years of feet have worn ' +
+      'the soft summer wood out from between it. The third one from the window has always ' +
+      'creaked and always will.',
+    cannotTake: () => 'They are the floor.',
+    responses: {
+      touch: () => ({ text: 'Cold at the window end and not cold by the flue.' }),
+      pull: () => ({
+        text:
+          'You put your fingers in the gap at the end of the creaking board and lift, out of an ' +
+          'old habit from being nine, and it does not come up, because it never did.',
+      }),
+      knock: () => ({
+        text:
+          'You stand on the third board from the window and it creaks, exactly as it has every ' +
+          'morning of your life. Somebody downstairs now knows you are awake.',
+      }),
+    },
+  },
+  {
+    id: 'home.door',
+    name: 'door',
+    nouns: ['door', 'bedroom door', 'latch'],
+    locationId: 'present.home',
+    initiallyVisible: true,
+    description: () =>
+      'A plank door on strap hinges, standing half open the way it always does because the ' +
+      'frame has dropped and it will not sit shut without being lifted. The stool is beside it. ' +
+      'Through the gap, the stair goes down.',
+    cannotTake: () => 'It is on its hinges and the hinges are in the frame.',
+    responses: {
+      touch: () => ({ text: 'Smooth at the height of a hand and rough everywhere else.' }),
+      pull: () => ({
+        text:
+          'You lift it on the latch and swing it, and it grinds on the frame at the same point ' +
+          'as always and then stands half open again.',
+      }),
+      knock: () => ({
+        text:
+          'You knock on your own bedroom door, which is a strange thing to do. Nobody answers, ' +
+          'because nobody is in here but you.',
+      }),
+      listen: () => ({
+        text:
+          'Down the stair: the kitchen, and somebody being quiet in it on purpose so as not to ' +
+          'wake you, several hours after you woke.',
+      }),
+    },
   },
   {
     id: 'home.window',
@@ -59,6 +246,9 @@ const OBJECT_LIST: WorldObjectDef[] = [
       'stringing cord between the eaves across the way, working out along a ladder, and ' +
       'somebody at the bottom is telling them how to do it.\n\n' +
       'Further up, above the roofs, the cave path shows as a pale scar in the thistle.',
+    cannotTake: () =>
+      'It is a window in a wall. The sill is where the lantern was, and that is as much as ' +
+      'you need from it.',
   },
   {
     id: 'home.bread',
@@ -306,7 +496,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'square.well',
     name: 'well',
-    nouns: ['well', 'windlass', 'bucket'],
+    nouns: ['well', 'windlass'],
     locationId: 'present.square',
     initiallyVisible: true,
     listAs: c('the well'),
@@ -320,6 +510,159 @@ const OBJECT_LIST: WorldObjectDef[] = [
   /* ================================================================ *
    * present.workshop
    * ================================================================ */
+  {
+    id: 'square.bucket',
+    name: 'bucket',
+    nouns: ['bucket', 'buckets', 'pail', 'well bucket', 'well rope', 'rope'],
+    locationId: 'present.square',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch', 'pull'],
+    description: () =>
+      'The well bucket, hung on its hook on the windlass frame with the rope coiled over it: ' +
+      'oak, iron-bound, black inside with a century of being wet. There is only the one. ' +
+      'Everybody brings their own for carrying and uses this one for drawing.',
+    cannotTake: () =>
+      'It is the village\'s bucket and it lives on the windlass. Walking off up a hill with it ' +
+      'would be noticed before you reached the lane.',
+    responses: {
+      pull: () => ({
+        text:
+          'You take it off the hook and let it down a turn or two, and the rope goes over the ' +
+          'drum with the noise it has always made, and then you wind it back up because you are ' +
+          'not thirsty and there is a cap on the well anyway.',
+      }),
+      touch: () => ({ text: 'Cold iron bands and wet-smelling oak. It is always a little damp.' }),
+      drink: () => ({
+        text:
+          'There is a slab of stone on the well and a bowl of salt on the slab, and your mother ' +
+          'filled a jug at the kitchen end of the morning anyway. You are not thirsty.',
+      }),
+    },
+  },
+  {
+    id: 'square.bakehouse',
+    name: 'bakehouse',
+    nouns: ['bakehouse', 'bake house', 'oven', 'doorway', 'bakehouse door'],
+    locationId: 'present.square',
+    initiallyVisible: true,
+    description: () =>
+      'The long low end of the square, with its door propped and the heat coming out of it in a ' +
+      'way you can see as well as feel. Marjoram works outside it in any weather that will let ' +
+      'her, because inside it is the temperature of inside an oven.\n\nYou have been sent to ' +
+      'fetch things out of there more times than you can count.',
+    cannotTake: () => 'It is a building.',
+    responses: {
+      smell: () => ({
+        text:
+          'Bread, hot stone, and woodash — the smell of the square, which is a thing you will ' +
+          'not notice again until it is not there.',
+      }),
+      touch: () => ({
+        text:
+          'The stone of the doorway is warm to the hand on a cold morning, which is why ' +
+          'everybody in the village leans on it.',
+      }),
+      sit: () => ({
+        text:
+          'You lean on the warm jamb of the bakehouse door for a moment, which is what everyone ' +
+          'does, and then remember that today you are going somewhere.',
+      }),
+      listen: () => ({
+        text:
+          'The oven, ticking as it cools, and the scrape of a peel on stone somewhere inside.',
+      }),
+    },
+  },
+  {
+    /*
+     * Sage's chalk. `chalk` has always meant the plank's writing, which is
+     * right — so this answers to the stub in her hand and to her apron, the two
+     * props her dialogue puts there.
+     */
+    id: 'square.sagekit',
+    name: "Sage's chalk and apron",
+    nouns: [
+      'stub of chalk',
+      'chalk stub',
+      'her chalk',
+      'sage chalk',
+      'apron',
+      'her apron',
+      'sage apron',
+      'pocket',
+    ],
+    locationId: 'present.square',
+    initiallyVisible: true,
+    description: () =>
+      'A stub of white chalk about the length of a thumb joint, carried in the front pocket of ' +
+      'a canvas apron that has been white and is now the colour of the plank. She takes the ' +
+      'chalk out, writes nothing, and puts it back, four or five times an hour.\n\nThe apron ' +
+      'has one pocket, and the pocket has chalk dust in the seam of it a finger deep.',
+    cannotTake: () =>
+      '"You can ask," says Sage, who has noticed you looking at her pocket. "You will not get ' +
+      'it. I have had three of these in forty years and I have lost two."',
+    responses: {
+      touch: () => ({
+        text:
+          'You would have to put your hand in a woman\'s apron pocket to do that, and she is ' +
+          'standing in it.',
+      }),
+      taste: () => ({ text: 'You are not eating chalk in front of the whole square.' }),
+    },
+  },
+  {
+    id: 'square.stick',
+    name: "Parsie's stick",
+    nouns: ['stick', 'measuring pole', 'pole', 'his stick', 'parsie stick'],
+    locationId: 'present.square',
+    initiallyVisible: true,
+    description: () =>
+      'A straight ash switch as tall as he is, peeled white, with a notch cut round it about a ' +
+      'hand from the top. He holds it up like a measuring pole whenever he is explaining ' +
+      'something, which is most of the time.\n\nThe notch does not measure anything. He cut it ' +
+      'because measuring poles have notches.',
+    cannotTake: () =>
+      '"That is my pole," says Parsie, with the whole of his eleven years behind it, and takes ' +
+      'it back out of reach.',
+    responses: {
+      touch: () => ({
+        text: 'Peeled smooth, and warm from being held all morning by somebody who never sits down.',
+      }),
+      pull: () => ({
+        text:
+          'He hangs on to it. There is a brief undignified moment and then you let go, because ' +
+          'he is eleven and you are not.',
+      }),
+    },
+  },
+  {
+    /*
+     * Seen, not reached. The audit's rule six: you can look at the far side of
+     * the square from here, and you cannot pick anything up from it.
+     */
+    id: 'square.ladder',
+    name: 'ladder',
+    nouns: ['ladder', 'boy on the ladder', 'man on the ladder', 'person hanging lanterns'],
+    locationId: 'present.square',
+    initiallyVisible: true,
+    description: () =>
+      'A ladder against the gable on the far side of the square, with Hyssop\'s boy at the top ' +
+      'of it threading the cord of lanterns along under the eaves. He has been at it since ' +
+      'before you came down and has about a third of them up.\n\nNobody will light them until ' +
+      'the eleventh day. That is the arrangement, and nobody has said so out loud in weeks.',
+    cannotTake: () =>
+      'It is across the square with a boy standing on it. You would have to ask him to come ' +
+      'down, and then explain what you wanted a ladder for.',
+    responses: {
+      touch: () => ({ text: 'It is on the other side of the square.' }),
+      pull: () => ({ text: 'From here? It is forty paces away with somebody on it.' }),
+      listen: () => ({
+        text:
+          'The knock of the ladder shifting on the cobbles, and the boy swearing quietly at a ' +
+          'tangle in the cord.',
+      }),
+    },
+  },
   {
     id: 'workshop.basket',
     name: 'basket of offcuts',
@@ -365,7 +708,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'workshop.bench',
     name: 'bench',
-    nouns: ['bench', 'workbench', 'tools', 'joint'],
+    nouns: ['bench', 'workbench', 'tools', 'vice'],
     locationId: 'present.workshop',
     initiallyVisible: true,
     listAs: "Oreg's bench",
@@ -379,6 +722,133 @@ const OBJECT_LIST: WorldObjectDef[] = [
   /* ================================================================ *
    * present.cave_path
    * ================================================================ */
+  {
+    id: 'workshop.gluepot',
+    name: 'glue-pot',
+    nouns: ['glue pot', 'gluepot', 'glue', 'pot', 'skin on the glue'],
+    locationId: 'present.workshop',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'smell'],
+    description: () =>
+      'An iron pot in a second pot of water over a brazier turned right down, with a brown skin ' +
+      'across the top of the glue and a brush standing in it handle-up. It has to be warm and ' +
+      'it must not boil, and Oreg has had it going since before light.',
+    cannotTake: () =>
+      'It is hot, it is full of hide glue, and the whole room is organised around it being ' +
+      'exactly that temperature. Leave it.',
+    responses: {
+      smell: () => ({
+        text:
+          'Hide glue, which smells like something that was recently an animal and is now ' +
+          'furniture. Everyone in the village knows this smell and nobody describes it kindly.',
+      }),
+      touch: () => ({
+        text:
+          'You get a fingertip to the rim and take it away. The skin on the glue dents and ' +
+          'closes over, which is unpleasant in a way you cannot name.',
+      }),
+      taste: () => ({ text: 'It is glue.' }),
+      eat: () => ({ text: 'It is glue, and it is hot, and Oreg is standing right there.' }),
+    },
+  },
+  {
+    id: 'workshop.shavings',
+    name: 'shavings',
+    nouns: ['shavings', 'shaving', 'sawdust', 'dust', 'floor of the workshop'],
+    locationId: 'present.workshop',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'smell'],
+    description: () =>
+      'Long pale curls of it to the depth of your ankle along one side of the bench, and a drift ' +
+      'of sawdust under the saw-horse. Oreg sweeps it into sacks on a Saturday and sells it to ' +
+      'the bakehouse for lighting the oven.\n\nThere is oak in it, and ash, and something ' +
+      'resinous that has come up the valley from somewhere else.',
+    cannotTake: () =>
+      'You could fill both pockets with wood shavings. You would then be a person going into a ' +
+      'cave with two pockets full of wood shavings.',
+    responses: {
+      smell: () => ({
+        text:
+          'Cut wood, which is the best smell there is, and which this room has had in it every ' +
+          'day of your life.',
+      }),
+      touch: () => ({
+        text: 'They crackle and spring back. The oak ones have an edge to them if you are careless.',
+      }),
+      pull: () => ({
+        text: 'You scuff a drift of them into a heap with your boot and Oreg does not look up.',
+      }),
+    },
+  },
+  {
+    id: 'workshop.chisels',
+    name: 'chisels in their rack',
+    nouns: ['chisels', 'chisel', 'rack', 'chisel rack', 'gouges'],
+    locationId: 'present.workshop',
+    initiallyVisible: true,
+    verbs: () => ['examine'],
+    description: () =>
+      'A rack of them above the bench in order of width, handles up, the leather washers worn ' +
+      'flat on the ones he favours. Firmers, bevel-edges, two gouges and a mortice chisel like ' +
+      'a crowbar.\n\nEvery edge in the rack will take the hair off your arm. He checks them all ' +
+      'on a Sunday whether they need it or not.',
+    cannotTake: () =>
+      '"Not those," says Oreg, without turning round. "Everything in that rack is sharper than ' +
+      'you are expecting and none of it is for stone."',
+    responses: {
+      touch: () => ({
+        text:
+          '"Mind." He says it mildly and does not look up, and you put your hand back down by ' +
+          'your side.',
+      }),
+    },
+  },
+  {
+    id: 'workshop.door',
+    name: 'big door',
+    nouns: ['big door', 'door', 'doors', 'hook', 'hooked door'],
+    locationId: 'present.workshop',
+    initiallyVisible: true,
+    description: () =>
+      'The whole of the front of the workshop, hooked back against the wall so the light can get ' +
+      'in and the long stuff can get out. There is a worn patch on the flags where the bottom ' +
+      'edge has dragged for thirty years before somebody finally planed it.',
+    cannotTake: () => 'It is a door the size of a wall.',
+    responses: {
+      pull: () => ({
+        text:
+          'You lift it off the hook an inch and the room goes noticeably darker, and Oreg says ' +
+          '"leave it" without raising his voice, so you put it back.',
+      }),
+      touch: () => ({ text: 'Sun-warm on the outside face and cold on the inside one.' }),
+    },
+  },
+  {
+    id: 'workshop.joint',
+    name: 'housed dovetail',
+    nouns: ['joint', 'dovetail', 'housed dovetail', 'his work', 'the work'],
+    locationId: 'present.workshop',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'Half-cut, in the vice: a housed dovetail, the socket chopped and the shoulder not yet ' +
+      'pared, with the knife lines still showing on either side of the waste. He is working to ' +
+      'the lines and leaving them, which is the difference between a joiner and somebody with ' +
+      'tools.\n\nIt will go together dry and stay together without the glue. The glue is ' +
+      'because he is being thorough.',
+    cannotTake: () =>
+      'It is in the vice, half-done, and it is the thing he will be doing when you get back.',
+    responses: {
+      touch: () => ({
+        text:
+          'The chopped socket is crisp enough to catch a fingernail at every corner. You put ' +
+          'your hand back in your pocket before he sees you touching it.',
+      }),
+      pull: () => ({
+        text: 'It is in a vice. Pulling on it would be a way of making Oreg say something.',
+      }),
+    },
+  },
   {
     id: 'path.stump',
     name: 'old stump',
@@ -403,6 +873,42 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+    cannotTake: () =>
+      'It is the better part of a tree, cut off at the knee and rooted under the whole corner ' +
+      'of the track. You tried to move it once, aged about nine, with a bar.',
+  },
+  {
+    /*
+     * Tyme's own coil, as distinct from the installed safety rope down in the
+     * cave and from the spare on the hook at the mouth. `rope` on the path has
+     * always been Tyme — he is the man with the rope — so this answers to what
+     * is across his knees.
+     */
+    id: 'path.coil',
+    name: 'coil of rope',
+    nouns: ['coil', 'his rope', 'tyme rope', 'hemp', 'coil of rope', 'coil of hemp'],
+    locationId: 'present.cave_path',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'Thirty feet of three-strand hemp across his knees, coiled the proper way so it pays out ' +
+      'without kinking, with a whipping on each end that somebody has redone recently. He runs ' +
+      'it through his hands while he talks without looking at it.\n\nThis is not the rope that ' +
+      'is tied off in the cave. This is the one he keeps for the days somebody needs a rope.',
+    cannotTake: () =>
+      '"There is one down there already," says Tyme, "tied off where it wants to be. This one ' +
+      'stays with me."\n\nHe says it kindly, and he does not stop running it through his hands.',
+    responses: {
+      touch: () => ({
+        text:
+          'Furred, slightly greasy, and warm from his knees. It has been looked after by ' +
+          'somebody with time on their hands and a reason to care.',
+      }),
+      pull: () => ({
+        text: 'He lets out a yard of it, and then takes the yard back. "No," he says, comfortably.',
+      }),
+      smell: () => ({ text: 'Hemp and tar and a man who has been sitting in the sun.' }),
+    },
   },
   {
     id: 'path.marks',
@@ -424,7 +930,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'entrance.rope',
     name: 'knotted rope',
-    nouns: ['rope', 'knotted rope', 'ring', 'iron ring', 'line'],
+    nouns: ['rope', 'knotted rope', 'ring', 'iron ring', 'line', 'knots', 'knot', 'safety rope'],
     locationId: 'present.entrance',
     initiallyVisible: true,
     listAs: c('a knotted rope running into the dark'),
@@ -445,6 +951,10 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+    cannotTake: () =>
+      'It is tied to an iron ring in the floor of the mouth and it goes down into the dark, ' +
+      'and it is there so that anybody who gets into trouble has something to find with a ' +
+      'hand. Untying it would be the single most selfish act in the history of the village.',
   },
   {
     id: 'entrance.lintel',
@@ -470,7 +980,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'entrance.bench',
     name: 'bench',
-    nouns: ['bench', 'seat', 'hook'],
+    nouns: ['bench', 'seat', 'hook', 'spare rope', 'spare coil', 'coil', 'spare line'],
     locationId: 'present.entrance',
     initiallyVisible: true,
     listAs: c('a bench, and a hook with spare rope'),
@@ -480,11 +990,154 @@ const OBJECT_LIST: WorldObjectDef[] = [
       'Above it, a hook holds a spare coil.\n\n' +
       'Somebody has scratched a shallow line into the bench for every rite kept this year. You ' +
       'count eleven, which with yours makes twelve.',
+    cannotTake: () =>
+      'The bench is pegged to the rock, and the coil on the hook is the one that stays here ' +
+      'for the day somebody needs a rope and Tyme is not sitting on it.',
   },
 
   /* ================================================================ *
    * present.outer_gallery
    * ================================================================ */
+  {
+    id: 'path.scrub',
+    name: 'thistles and shale',
+    nouns: ['thistles', 'thistle', 'shale', 'grass', 'scree', 'scrub', 'hillside'],
+    locationId: 'present.cave_path',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'Where the grass gives up: a slope of grey shale with thistles growing out of it at the ' +
+      'angles that thistles choose, and the track cut across the face of it on the only line a ' +
+      'cart could take.\n\nYou have rolled down this and been shouted at for it.',
+    cannotTake: () => 'A handful of shale and a thistle. You have no use for either.',
+    responses: {
+      touch: () => ({
+        text:
+          'The shale comes away in flakes that ring faintly against each other. The thistle you ' +
+          'leave alone, having learned.',
+      }),
+      pull: () => ({
+        text:
+          'You pull a flake of shale out of the slope and three more come with it, and a small ' +
+          'quantity of hill goes down the track ahead of you.',
+      }),
+      smell: () => ({
+        text: 'Hot stone and bruised thistle, which is the smell of the top of this track.',
+      }),
+    },
+  },
+  {
+    id: 'path.boots',
+    name: "Dilly's boots",
+    nouns: ['boots', 'boot', 'laces', 'lace', 'her boots', 'dilly boots'],
+    locationId: 'present.cave_path',
+    initiallyVisible: true,
+    description: (state) =>
+      'Heavy and much-mended, with the laces of the left one undone where she has been sitting ' +
+      'with her foot up on the bank. There is a repair across the toe of the right one that ' +
+      'somebody has done with waxed thread and real care.\n\n' +
+      (f(state, FLAGS.heardRescued)
+        ? 'She was wearing these, or ones like them, the night they went in after her.'
+        : 'She keeps looking up the track while she does the lace, and then not saying anything.'),
+    cannotTake: () =>
+      'They are on her feet, or near enough. There are limits.',
+    responses: {
+      touch: () => ({ text: 'You are not touching somebody else\'s boots.' }),
+      untie: () => ({
+        text:
+          'One of them is already undone and she is doing it up. Interfering with the other ' +
+          'would be the strangest thing anybody has done in this village in years.',
+      }),
+    },
+  },
+  {
+    id: 'entrance.moss',
+    name: 'moss',
+    nouns: ['moss', 'overhang', 'swept earth', 'earth', 'threshold'],
+    locationId: 'present.entrance',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'Moss round the lintel in a band about a hand wide, where the overhang keeps the rain off ' +
+      'but not the damp — bright green at the outer edge and nearly black where it goes under ' +
+      'the stone.\n\nUnder the overhang the earth is swept. Somebody does that. Nobody has ' +
+      'ever said who, and now that you think about it, it is probably Tyme.',
+    cannotTake: () => 'It is moss on a rock.',
+    responses: {
+      touch: () => ({
+        text:
+          'Cold and springy and wetter than it looks. It comes away in a sheet if you are rough ' +
+          'with it, so you are not.',
+      }),
+      smell: () => ({
+        text: 'Wet stone and green. The outside of the cave smells of this and the inside does not.',
+      }),
+    },
+  },
+  {
+    id: 'gallery.roof',
+    name: 'gallery roof',
+    nouns: ['roof', 'ceiling', 'gallery roof', 'overhead'],
+    locationId: 'present.outer_gallery',
+    initiallyVisible: true,
+    description: () =>
+      'Two spans above you where the gallery is widest, and close enough to touch where it is ' +
+      'not — natural rock, water-cut, with a long shallow dome to it that no mason made. The ' +
+      'drips come off the same four places every time and have done long enough to leave ' +
+      'stains.',
+    cannotTake: () => 'It is the inside of a hill.',
+    responses: {
+      touch: () => ({
+        text:
+          'Wet, where you can reach it. You wipe your hand on your shirt and it goes on being ' +
+          'wet.',
+      }),
+      listen: () => ({
+        text:
+          'Four drips, out of time with each other, and the one furthest off is the loudest, ' +
+          'which is the kind of thing this cave does.',
+      }),
+    },
+  },
+  {
+    /*
+     * The things *in* the relief, as opposed to the things they depict.
+     *
+     * The audit's depiction gap: the carving shows a lamp in a recess, an eye,
+     * and a figure asleep, and the nouns either failed or — worse — `lamp`
+     * identified the hero's actual lantern. These are pictures of things.
+     */
+    id: 'gallery.depicted',
+    name: 'figures in the relief',
+    nouns: [
+      'carved eye',
+      'pictured lamp',
+      'carved lamp',
+      'recess',
+      'bedding',
+      'carved figure',
+      'figures',
+      'sleeper',
+    ],
+    locationId: 'present.outer_gallery',
+    initiallyVisible: false,
+    description: () =>
+      'Cut into the stone, not standing in it: a lamp in a recess, an eye above it, and a shape ' +
+      'on the floor of the picture that is somebody lying down with bedding over them.\n\n' +
+      'None of it is a thing you could pick up. It is a hand\'s depth of relief carving on a ' +
+      'wall, and whoever cut it was telling you how to do something, in the only way they had.',
+    cannotTake: () =>
+      'They are carvings. The lamp in the picture is a picture of a lamp — the one you want is ' +
+      'in your own hand.',
+    responses: {
+      touch: () => ({
+        text:
+          'You put your fingers into the carved recess, which is exactly as deep as the first ' +
+          'joint of your fingers, and there is nothing in it. There has never been anything in ' +
+          'it. It is a drawing.',
+      }),
+    },
+  },
   {
     id: 'gallery.scratches',
     name: 'scratches',
@@ -562,6 +1215,8 @@ const OBJECT_LIST: WorldObjectDef[] = [
     },
     onExamine: {
       flags: { [FLAGS.reliefExamined]: true },
+      // The things the carving shows, so each of them answers as a carving.
+      reveals: ['gallery.depicted'],
       journal: [
         {
           id: 'j.relief',
@@ -572,6 +1227,9 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+    cannotTake: () =>
+      'It is cut into the wall to the depth of a hand. Whoever made it meant it to be here ' +
+      'when they were not, and it has been.',
   },
   {
     id: 'gallery.pillar',
@@ -587,6 +1245,9 @@ const OBJECT_LIST: WorldObjectDef[] = [
       'off with something sensible.\n\n' +
       'Behind you up the slope, the entrance is still a bright slot. You could put your thumb ' +
       'over it.',
+    cannotTake: () =>
+      'It is a column of hill, floor to roof, made by water out of the hill itself. You could ' +
+      'put both arms round it and not shift it by the width of a hair.',
   },
   {
     id: 'gallery.ash',
@@ -606,6 +1267,25 @@ const OBJECT_LIST: WorldObjectDef[] = [
   /* ================================================================ *
    * present.echo_chamber
    * ================================================================ */
+  {
+    id: 'echo.silt',
+    name: 'silt in the water',
+    nouns: ['silt', 'sediment', 'bottom', 'mud'],
+    locationId: 'present.echo_chamber',
+    initiallyVisible: false,
+    description: () =>
+      'A finger of pale silt over the floor of the standing water, flat and undisturbed except ' +
+      'where you have just put your hand in it. It settles slowly and completely, which tells ' +
+      'you how long it has been since anything moved down here.',
+    cannotTake: () => 'A handful of wet grit. No.',
+    responses: {
+      touch: () => ({
+        text:
+          'Soft, and colder than the water above it. It comes up in a slow cloud and takes a ' +
+          'long time to go back down, and while it is up you cannot see the bottom at all.',
+      }),
+    },
+  },
   {
     id: 'echo.account',
     name: 'scratched words',
@@ -640,7 +1320,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'echo.boot',
     name: 'boot',
-    nouns: ['boot', 'shoe'],
+    nouns: ['boot', 'shoe', 'laces', 'lace', 'bow', 'tied bow'],
     locationId: 'present.echo_chamber',
     initiallyVisible: true,
     listAs: c('a single boot by the water'),
@@ -651,6 +1331,29 @@ const OBJECT_LIST: WorldObjectDef[] = [
       'It has been here long enough that the water has moved away from it. Whoever walked out ' +
       'of here did it one-shod and in a hurry, and lived, because somebody tied that bow and ' +
       'nobody unties a bow in a panic.',
+    cannotTake: () =>
+      'You pick it up and the leather creaks like a board.\n\nIt is a child\'s left boot that ' +
+      'has been on the floor of a cave for forty years, and it belongs to somebody who is ' +
+      'probably still alive and definitely does not want it. You put it back on its side the way ' +
+      'it was lying.',
+    responses: {
+      touch: () => ({
+        text:
+          'Hard as a shoe-last, and cold, and furred with a century of nothing. The shape of a ' +
+          'foot is still in it.',
+      }),
+      untie: () => ({
+        text:
+          'You get a thumbnail into the bow and the lace does not give at all. It has set — it ' +
+          'is as much a part of the boot as the eyelets are now.\n\nWhich is just as well. ' +
+          'Somebody tied that in the dark forty years ago with their hands shaking, and it has ' +
+          'held ever since.',
+      }),
+      pull: () => ({
+        text: 'The lace is as hard as the leather. Nothing about this boot is going to move again.',
+      }),
+      smell: () => ({ text: 'Old leather and cold stone. Nothing worse, which is a mercy.' }),
+    },
   },
   {
     id: 'echo.water',
@@ -666,6 +1369,31 @@ const OBJECT_LIST: WorldObjectDef[] = [
       'you put a hand in it. Cold enough to ache.\n\n' +
       'The drip you can hear is not falling into this. It is falling into something else, ' +
       'somewhere behind the wall, with a lower note.',
+    onExamine: {
+      // The silt is the floor of it, and reads as a thing once seen.
+      reveals: ['echo.silt'],
+    },
+    responses: {
+      touch: () => ({
+        text:
+          'Cold enough to ache in the bones of your hand within about four seconds, and the ' +
+          'silt comes up off the bottom in a slow cloud where you disturb it.',
+      }),
+      drink: () => ({
+        text:
+          'You could. It is clear, it is cold, and there is a cupful of fine grey silt in the ' +
+          'bottom of it that will come up the moment you put your hand in.\n\nYou have a full ' +
+          'morning\'s water in you and there is a spring on the hill. You leave it.',
+      }),
+      listen: () => ({
+        text:
+          'Not this. The drip is behind the wall, lower, and in this room everything you hear ' +
+          'is in the wrong place by a moment.',
+      }),
+    },
+    cannotTake: () =>
+      'You can put your hands in it, and carry a little of it a short distance in them. There ' +
+      'is no sensible version of taking a pool.',
   },
 
   /* ================================================================ *
@@ -721,6 +1449,9 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+    cannotTake: () =>
+      'It is a slab of the hill in a pair of cut grooves, and the whole point of it is that it ' +
+      'goes up and comes down and stays where the grooves put it.',
   },
   {
     id: 'sealed.alcove',
@@ -841,6 +1572,64 @@ const OBJECT_LIST: WorldObjectDef[] = [
     },
   },
   {
+    /*
+     * The opening era's own crack and grit. The return chapter has its own
+     * version with the strike state in it; this is the one Lovage's warning a
+     * century earlier is about, before anybody has swung at anything.
+     */
+    id: 'sealed.crackearly',
+    name: 'crack at the foot of the pillar',
+    nouns: ['pillar crack', 'crack at the base', 'grit', 'fan of grit', 'crack'],
+    locationId: 'present.sealed_chamber',
+    initiallyVisible: true,
+    hiddenWhen: (state) => state.chapter === 'return',
+    description: () =>
+      'A crack in the dressed stone at the foot of the pillar, about the length of your forearm, ' +
+      'running up from the floor and closing to nothing. There is a small grey fan of grit on ' +
+      'the flags underneath it.\n\nEverything in this room has been here four hundred years. ' +
+      'The grit is what four hundred years looks like when it happens to a pillar.',
+    cannotTake: () => 'A handful of grit off the floor of a cave.',
+    responses: {
+      touch: () => ({
+        text: 'Dry, fine, and it gets under your nails. The crack takes a fingertip and narrows.',
+      }),
+      listen: () => ({
+        text: 'You put your ear to the pillar. Nothing. It is a column of rock holding up a hill.',
+      }),
+    },
+  },
+  {
+    id: 'sealed.grooves',
+    name: 'grooves and lip',
+    nouns: ['grooves', 'groove', 'lip', 'cut grooves', 'runners'],
+    locationId: 'present.sealed_chamber',
+    initiallyVisible: true,
+    hiddenWhen: (state) => state.chapter === 'return',
+    description: (state) =>
+      'A pair of channels cut into the jambs either side of the shutter, square and true, so ' +
+      'the slab can only go straight up and straight down. There is a lip along the bottom edge ' +
+      'of the slab, worn smooth and shallow, that a set of fingers fits under.\n\n' +
+      (f(state, FLAGS.shutterHeld)
+        ? 'The slab is up in the grooves with the wedge under the lip, and the whole arrangement ' +
+          'is doing exactly what it was cut to do.'
+        : 'Somebody cut this so that one person could do it alone, and then made the gap under ' +
+          'the lip the width of four fingers.'),
+    cannotTake: () => 'They are channels cut in a wall.',
+    responses: {
+      touch: () => ({
+        text:
+          'The grooves are gritty at the bottom with four hundred years of dust and clean where ' +
+          'the slab runs. Somebody meant this to be used.',
+      }),
+      pull: () => ({
+        text:
+          'You get your fingers under the lip and lift, which is the right idea and not quite ' +
+          'enough on its own — it comes up and it comes straight back down the moment you let ' +
+          'go of it.',
+      }),
+    },
+  },
+  {
     id: 'sealed.seam',
     name: 'seam',
     nouns: ['seam', 'line', 'crack', 'joint', 'edge'],
@@ -885,6 +1674,26 @@ const OBJECT_LIST: WorldObjectDef[] = [
       'A slab of patterned wall standing open on a pivot cut into the floor and the lintel. ' +
       'Beyond it the rock has been cut into steps, going down and bending right.\n\n' +
       'The air coming up the steps is still, and warmer than the room you are in.',
+    onExamine: {
+      // The pivot the whole slab turns on, named here and nowhere else.
+      reveals: ['sealed.pivot'],
+    },
+    responses: {
+      touch: () => ({
+        text:
+          'The edge of the slab is as sharp as the day it was cut on the inside face and worn ' +
+          'smooth on the outside one, where four hundred years of nobody has still been enough ' +
+          'to round it.',
+      }),
+      listen: () => ({
+        text:
+          'Nothing comes up the steps. Not water, not air moving, not an echo of your own ' +
+          'breathing. It is the quietest thing you have ever listened to.',
+      }),
+      smell: () => ({
+        text: 'Warmer air than the room, and it smells of nothing at all. Not even of stone.',
+      }),
+    },
   },
 
   /* ================================================================ *
@@ -924,6 +1733,55 @@ const OBJECT_LIST: WorldObjectDef[] = [
             ', and the sound of somewhere else comes up out of it.',
         },
       ],
+    },
+    cannotTake: () =>
+      'It is the surface of a pool of water in the bottom of a hill. There is nothing there to ' +
+      'take hold of, which you have just established with your hand.',
+  },
+  {
+    /*
+     * The reflection. State-aware for the obvious reason: the hero's face is
+     * not the same face in the last chapter as in the first.
+     */
+    id: 'deep.reflection',
+    name: 'reflection',
+    nouns: ['reflection', 'my reflection', 'my face', 'face in the water'],
+    locationId: 'present.deep_chamber',
+    initiallyVisible: true,
+    description: (state) => {
+      if (f(state, FLAGS.lostEye)) {
+        return (
+          'The water gives you back a shape with a lamp beside it and a strip of linen round ' +
+          'its head, and you look at it for about as long as you can manage.\n\nThe linen is ' +
+          'grey. The face above it is sixteen and does not look it. You put the lamp down on ' +
+          'the rim and the shape does the same thing with its own lamp, slightly out of time, ' +
+          'because the water is not quite still.'
+        );
+      }
+      return (
+        'Black water, dead flat, with your own head and shoulders in it and the lamp beside ' +
+        'them, and the roof a long way behind that.\n\nYou look sixteen, which you are, and ' +
+        'pleased with yourself, which you also are. The reflection breaks when you put a ' +
+        'finger in and takes a surprisingly long time to come back.'
+      );
+    },
+    cannotTake: () => 'It is a reflection.',
+    responses: {
+      touch: () => ({
+        text:
+          'You put a fingertip on it and the whole surface answers, and your own face goes into ' +
+          'rings and comes slowly back.',
+      }),
+      listen: () => ({
+        text:
+          'Nothing from the water. Everything you can hear is coming down the stair behind you ' +
+          'from a hillside in weather, several hundred paces and one hill away.',
+      }),
+      drink: () => ({
+        text:
+          'You are not drinking out of the bottom of a cave. You have water, there is a spring ' +
+          'on the hill, and whatever this is, it has been standing here a very long time.',
+      }),
     },
   },
   {
@@ -1208,7 +2066,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'pastsquare.tree',
     name: 'great tree',
-    nouns: ['tree', 'great tree', 'leaves', 'branches', 'stump'],
+    nouns: ['tree', 'great tree', 'leaves', 'branches', 'stump', 'swing', 'rope swing'],
     locationId: 'past.square',
     initiallyVisible: true,
     listAs: c('a great tree at the turn of the path'),
@@ -1357,9 +2215,117 @@ const OBJECT_LIST: WorldObjectDef[] = [
     },
   },
   {
+    id: 'pastsquare.trowel',
+    name: "Saffra's trowel",
+    nouns: ['trowel', 'her trowel', 'saffra trowel', 'float'],
+    locationId: 'past.square',
+    initiallyVisible: true,
+    description: () =>
+      'A pointing trowel with the blade worn narrow and the handle bound in cloth where the ' +
+      'ferrule has gone. She holds it the whole time she is talking to you, and rests it on the ' +
+      'course when she wants both hands, and picks it up again without looking.',
+    cannotTake: () =>
+      '"No," says Saffra, pleasantly, and goes on with what she was saying. She does not even ' +
+      'move it out of reach; she simply knows you are not going to.',
+    responses: {
+      touch: () => ({
+        text: 'The handle binding is damp with lime and the blade is bright from use.',
+      }),
+    },
+  },
+  {
+    id: 'pastsquare.apron',
+    name: "Saffra's apron",
+    nouns: ['apron', 'her apron', 'saffra apron', 'sleeves'],
+    locationId: 'past.square',
+    initiallyVisible: true,
+    description: () =>
+      'Canvas, grey-white with lime to the hem, with her sleeves rolled above the elbow and the ' +
+      'dust gone into the creases of her forearms the way it does when a person has been at it ' +
+      'since first light. She wipes her hands on it about once a minute without noticing.',
+    cannotTake: () => 'It is a woman\'s apron and she is wearing it.',
+    responses: {
+      touch: () => ({ text: 'You are not doing that.' }),
+      smell: () => ({ text: 'Lime, mostly, which is a sharp clean smell and not a pleasant one.' }),
+    },
+  },
+  {
+    id: 'pastsquare.mortarboard',
+    name: "Fenn's mortar board",
+    nouns: ['mortar board', 'mortarboard', 'hawk', 'his board', 'fenn board'],
+    locationId: 'past.square',
+    initiallyVisible: true,
+    description: () =>
+      'A square of board with a short handle under it — a hawk, for carrying mortar up to the ' +
+      'work — and Fenn is holding it at the wrong angle, so a slow tongue of mortar is making ' +
+      'its way towards his wrist and he has not noticed.\n\nIt is not the board she writes on. ' +
+      'That one comes later, and out of the workshop.',
+    cannotTake: () =>
+      'He would give it to you. That is the trouble: he would give it to you instantly and then ' +
+      'have nothing to do, and Saffra would be short of mortar.',
+    responses: {
+      touch: () => ({
+        text:
+          'Wet mortar, gritty, cold. Fenn watches you do it with enormous interest and then ' +
+          'looks at his own hand to see whether he should be doing it too.',
+      }),
+      smell: () => ({ text: 'Lime and sand and water. It smells like a building going up.' }),
+    },
+  },
+  {
+    id: 'pastsquare.scaffold',
+    name: 'scaffold plank',
+    nouns: ['scaffold', 'scaffold plank', 'standing plank', 'staging', 'trestles'],
+    locationId: 'past.square',
+    initiallyVisible: true,
+    description: () =>
+      'One plank on two trestles at about the height of your chest, running along the face of ' +
+      'the half-built wall, with a bucket of mortar and a pile of stones on it and Saffra ' +
+      'standing on the end of it in her boots.\n\nIt is the plainest possible way of getting a ' +
+      'person up to the second course, and it is exactly as safe as it looks.',
+    cannotTake: () => 'There is a mason standing on it.',
+    responses: {
+      sit: () => ({
+        text:
+          '"Not on the staging," says Saffra, before you have properly started. She does not ' +
+          'look round.',
+      }),
+      touch: () => ({
+        text:
+          'Springy under the hand, and dusted white. It bounces when she shifts her weight, and ' +
+          'she does not appear to notice that either.',
+      }),
+    },
+  },
+  {
+    id: 'pastsquare.reeds',
+    name: 'reed bundles',
+    nouns: ['reeds', 'reed bundles', 'bundles', 'thatch', 'cloth', 'covering cloth', 'tarpaulin'],
+    locationId: 'past.square',
+    initiallyVisible: true,
+    description: () =>
+      'Bundles of cut reed stacked against the inside of the unfinished wall with a cloth over ' +
+      'the top of them and stones on the corners of the cloth. They are for the roof that is ' +
+      'not on yet.\n\nIn your own century this building has a roof, and has had one for longer ' +
+      'than anybody can remember, and nobody has ever once wondered where the reeds came from.',
+    cannotTake: () =>
+      'It is somebody\'s roof, in bundles, waiting for the weather to be dependable.',
+    responses: {
+      touch: () => ({
+        text: 'Dry and hollow and faintly squeaking against itself. The cloth over them is damp.',
+      }),
+      smell: () => ({ text: 'Cut reed, dust, and wet canvas.' }),
+      pull: () => ({
+        text:
+          'You lift the corner of the cloth to see what is under it. Reeds. You put the cloth ' +
+          'back and the stone back on top of it.',
+      }),
+    },
+  },
+  {
     id: 'pastsquare.well',
     name: 'new well',
-    nouns: ['well', 'new well', 'cap', 'windlass', 'rope'],
+    nouns: ['well', 'new well', 'cap', 'windlass', 'rope', 'bucket', 'buckets'],
     locationId: 'past.square',
     initiallyVisible: true,
     listAs: c('the well, new'),
@@ -1379,6 +2345,31 @@ const OBJECT_LIST: WorldObjectDef[] = [
             'new and white.',
         },
       ],
+    },
+    cannotTake: () =>
+      'It is a well, three-quarters dug, and it is the thing this village is building its next ' +
+      'hundred years around.',
+    responses: {
+      /*
+       * Why the crew walk to the spring instead, asked and answered — the
+       * audit's point, and it keeps the water puzzle honest.
+       */
+      pull: () =>
+        ({
+          text:
+            'You let the bucket down and bring it up, and it comes up about a third full of ' +
+            'water with a grey cast to it and grit in the bottom.\n\nThey are still cutting ' +
+            'this well. It is down as far as they have got and no further, and what is in it ' +
+            'is what has seeped in. Nobody is carrying that up a hill to drink. There is a ' +
+            'spring on the hillside that comes out clean.',
+        }),
+      drink: () =>
+        ({
+          text:
+            'Grey water with grit in it, out of a well that is not finished. The spring is up ' +
+            'the hill and it is better in every way.',
+        }),
+      touch: () => ({ text: 'New stone, square-cut, and not yet worn anywhere at all.' }),
     },
   },
   /* ================================================================ *
@@ -1402,6 +2393,35 @@ const OBJECT_LIST: WorldObjectDef[] = [
       'time and rolled downhill to here.\n\n' +
       'Parsie wanted one. He was extremely specific that it had to be from properly inside, ' +
       'and that he would know.',
+  },
+  {
+    id: 'sealed.pivot',
+    name: 'pivot',
+    nouns: ['pivot', 'pivot cut', 'hinge', 'socket in the floor', 'floor cut'],
+    locationId: 'present.sealed_chamber',
+    initiallyVisible: false,
+    description: () =>
+      'A socket cut into the floor at the near edge of the slab, round, with a matching one ' +
+      'above it in the lintel, so the whole weight of the door turns on two points of stone and ' +
+      'nothing else.\n\nThere is a worn arc on the flags where the bottom edge has swept, and ' +
+      'the arc is clean. Somebody kept this swept once. Nobody has swept it in four hundred ' +
+      'years, and it still moves.',
+    cannotTake: () => 'It is a socket cut in a floor.',
+    responses: {
+      touch: () => ({
+        text:
+          'Smooth inside, and greasy with the fine stone-flour that a pivot makes out of itself ' +
+          'over a long enough time.',
+      }),
+      pull: () => ({
+        text:
+          'You lean on the edge of the slab and it turns on the pivot, slowly and evenly, with ' +
+          'a sound like a millstone a long way off. Then you let it come back.',
+      }),
+      listen: () => ({
+        text: 'Grinding, very faintly, when you lean on the slab. Stone on stone, and no grit in it.',
+      }),
+    },
   },
   {
     id: 'sealed.pillar',
@@ -1473,7 +2493,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'pastpath.tree',
     name: 'great tree',
-    nouns: ['tree', 'great tree', 'swing', 'shade', 'limb'],
+    nouns: ['tree', 'great tree', 'shade', 'limb', 'trunk'],
     locationId: 'past.cave_path',
     initiallyVisible: true,
     listAs: c('the tree, and the swing on it'),
@@ -1518,9 +2538,168 @@ const OBJECT_LIST: WorldObjectDef[] = [
    * past.spring
    * ================================================================ */
   {
+    id: 'pastpath.swing',
+    name: 'rope swing',
+    nouns: ['swing', 'rope swing', 'swing rope', 'seat', 'plank seat', 'knot'],
+    locationId: 'past.cave_path',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'sit', 'touch'],
+    description: () =>
+      'A length of hemp over the low limb, doubled and spliced, with a plank through a hole in ' +
+      'each end for a seat. The bark under the rope is worn pale in a band, which takes years, ' +
+      'and the grass below is kicked to bare earth in a crescent, which takes a summer.\n\n' +
+      'Somebody\'s children use this. The tree it hangs from is a stump in your own century, and ' +
+      'the swing is not anything, and there is a bare patch of earth under where it was.',
+    cannotTake: () =>
+      'It is spliced over the limb and somebody\'s children are expecting it to be there this ' +
+      'evening.',
+    responses: {
+      sit: () => ({
+        text:
+          'You sit on it, because it is there, and take two swings and stop.\n\nYou are too ' +
+          'heavy for it, and sixteen, and a hundred years from home, and this is somebody ' +
+          'else\'s swing in a village where you have no business being.',
+      }),
+      touch: () => ({
+        text: 'Hemp, furred with use, warm on the sunny side. The splice is a good one.',
+      }),
+      pull: () => ({
+        text: 'It takes your weight without complaint. Whoever hung it knew what they were doing.',
+      }),
+      untie: () => ({ text: 'It is spliced, not knotted. You would need a knife and a reason.' }),
+    },
+  },
+  {
+    id: 'pastpath.bark',
+    name: 'bark',
+    nouns: ['bark', 'carved letter', 'letter', 'initial', 'carving on the tree'],
+    locationId: 'past.cave_path',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'Grey and ridged, with the band worn pale where the swing rope goes over the limb — and ' +
+      'cut into it at about the height of a child on tiptoe, one letter, done with something ' +
+      'blunter than a knife.\n\nIt is an H. There is no second letter and no date. It will ' +
+      'still be a single letter when this tree is a stump.',
+    cannotTake: () => 'It is bark on a living tree.',
+    responses: {
+      touch: () => ({
+        text:
+          'The letter is shallow and the edges of it have healed into rolls, which means it was ' +
+          'cut years ago and the tree has been growing round it since.',
+      }),
+      smell: () => ({ text: 'Bark, and the sap where somebody cut a letter into it.' }),
+    },
+  },
+  {
+    id: 'pastpath.chippings',
+    name: 'stone chippings',
+    nouns: ['chippings', 'chips', 'stone chippings', 'gravel'],
+    locationId: 'past.cave_path',
+    initiallyVisible: true,
+    description: () =>
+      'Pale angular chippings trodden into the ruts and scattered along the verge, every one of ' +
+      'them with a chisel facet on it. Somebody has been bringing stone down this hill all ' +
+      'season, and losing a little of it at every rut.',
+    cannotTake: () =>
+      'A handful of chippings off a cart track. They would be in your pocket for a hundred ' +
+      'years and come out as a handful of chippings.',
+    responses: {
+      touch: () => ({ text: 'Sharp, dry, and faintly warm from the sun.' }),
+    },
+  },
+  {
+    id: 'pastpath.wet',
+    name: 'wet patch',
+    nouns: ['wet patch', 'patch', 'damp', 'wet ground'],
+    locationId: 'past.cave_path',
+    initiallyVisible: true,
+    hiddenWhen: (state) => !f(state, FLAGS.symptomWeather),
+    /*
+     * No second flag for drying. Nothing in the game dries it, and inventing a
+     * timer to make an authored response more granular would be a simulation
+     * where a sentence will do: the patch is described as already going.
+     */
+    description: () =>
+      'A patch of the track as wet as if it had rained on it, about four paces across, with a ' +
+      'clean dry edge all the way round. Nothing is dripping onto it. Nothing is running off ' +
+      'it, and the edge has already started to pull in on itself as it dries.\n\nIt rained ' +
+      'here. It rained on this and on nothing else, and you watched the sky while it did not ' +
+      'happen.',
+    cannotTake: () => 'It is a wet patch on a track.',
+    responses: {
+      touch: () => ({
+        text:
+          'Wet. Ordinary cold rainwater on warm stone, and the dry line at the edge is as clean ' +
+          'as a drawn line.',
+      }),
+      taste: () => ({ text: 'Rain. You wish it had tasted of something.' }),
+      smell: () => ({
+        text: 'Wet dust, which is the smell of the first rain after a dry fortnight, and it is not.',
+      }),
+    },
+  },
+  {
+    id: 'pastspring.moss',
+    name: 'moss and cup-marks',
+    nouns: [
+      'moss',
+      'cup marks',
+      'cupmarks',
+      'cup-marks',
+      'marks',
+      'stone lining',
+      'lining',
+      'basin stones',
+    ],
+    locationId: 'past.spring',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'The spring comes out between two stones that somebody set there, and round them the moss ' +
+      'grows in a bright ring the exact shape of the splash. Cut into the flat of the upper ' +
+      'stone are five or six round hollows the size of a thumb-end — cup-marks, old, smoothed ' +
+      'by water.\n\nNobody in your century knows what those are for either. They are older ' +
+      'than anything, including this.',
+    cannotTake: () => 'They are set stones with a spring coming out between them.',
+    responses: {
+      touch: () => ({
+        text:
+          'The moss is cold and sodden. The cup-marks are smooth all the way round their rims, ' +
+          'which is a very great deal of water.',
+      }),
+      smell: () => ({ text: 'Wet moss and cold stone. Nothing else at all.' }),
+    },
+  },
+  {
     id: 'pastspring.spring',
     name: 'spring',
     nouns: ['spring', 'water', 'cleft', 'rock', 'basin', 'runnel'],
+    responses: {
+      /*
+       * The one place in the game with drinkable water in it, and the audit's
+       * example of a verb the prose invites. Nothing turns on it: there is no
+       * thirst, and this is a sentence rather than a system.
+       */
+      drink: () => ({
+        text:
+          'You get down on one elbow and drink straight out of the runnel, which is how ' +
+          'everybody drinks here and always has been.\n\nIt is so cold it hurts the back of ' +
+          'your jaw, and it tastes of stone, and it is the best thing that has happened to you ' +
+          'since you came out of the hill.',
+      }),
+      touch: () => ({
+        text:
+          'Cold enough to ache. The rock under the runnel is worn into a shallow smooth channel ' +
+          'that is nobody\'s work but the water\'s.',
+      }),
+      taste: () => ({ text: 'Cold, and faintly of stone. DRINK FROM THE SPRING properly.' }),
+      listen: () => ({
+        text:
+          'Water coming out of a hillside: a small continuous noise with no pattern in it, the ' +
+          'only thing on this hill that is exactly the same in your own century.',
+      }),
+    },
     locationId: 'past.spring',
     initiallyVisible: true,
     acceptsItems: true,
@@ -1544,6 +2723,9 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+    cannotTake: () =>
+      'It is water coming out of a hillside. You can fill something from it and you can drink ' +
+      'out of it, and that is the whole of what it offers.',
   },
 
   /* ================================================================ *
@@ -1597,6 +2779,28 @@ const OBJECT_LIST: WorldObjectDef[] = [
             'a hole in a hill with nothing to drink.',
         },
       ],
+    },
+  },
+  {
+    id: 'pastentrance.groove',
+    name: 'handrail groove',
+    nouns: ['handrail groove', 'groove', 'handrail', 'worked stair'],
+    locationId: 'past.entrance',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'A channel cut into the wall beside the stair at about the height of a hand, running the ' +
+      'whole way down out of sight — square at the back and rounded at the lip, so a palm sits ' +
+      'in it and does not catch.\n\nThere is no groove in your own century. There is no stair ' +
+      'either: there is a crawl and a squeeze and a rope. Somebody spent a winter cutting this ' +
+      'and the hill took it back.',
+    cannotTake: () => 'It is a channel cut into a wall.',
+    responses: {
+      touch: () => ({
+        text:
+          'Your hand fits it exactly, which is not a coincidence — it was cut by somebody ' +
+          'putting their own hand in it as they went. The lip is smooth all the way down.',
+      }),
     },
   },
   {
@@ -1799,6 +3003,9 @@ const OBJECT_LIST: WorldObjectDef[] = [
         ? '\n\nThere are two lines. The faint one is a hand\'s width from the sharp one, and it ' +
           'is in the same chalk and the same hand, and the plumb-bob hangs over neither of them.'
         : ''),
+    cannotTake: () =>
+      'It is a line of chalk on a wall, snapped there this week by somebody who is coming back ' +
+      'to work to it.',
   },
 
   /* ================================================================ *
@@ -2428,7 +3635,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'futuredeep.stair',
     name: 'blocked stair',
-    nouns: ['stair', 'stairs', 'steps', 'blocked stair', 'fall', 'rubble'],
+    nouns: ['stair', 'stairs', 'steps', 'blocked stair', 'fall', 'rubble', 'handrail groove'],
     locationId: 'future.deep_chamber',
     initiallyVisible: true,
     listAs: c('the stair, stopped four treads up'),
@@ -2511,6 +3718,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+    cannotTake: () => 'It is the sky.',
   },
   {
     id: 'futurepath.bird',
@@ -2563,6 +3771,90 @@ const OBJECT_LIST: WorldObjectDef[] = [
   /* ================================================================ *
    * future.entrance
    * ================================================================ */
+  {
+    id: 'futuredeep.slab',
+    name: 'fallen roof slab',
+    nouns: ['slab', 'fallen slab', 'roof slab', 'fallen roof', 'crust', 'mineral crust', 'dust'],
+    locationId: 'future.deep_chamber',
+    initiallyVisible: true,
+    description: () =>
+      'A third of the roof, on the floor, in one piece — a slab you could lie down on with room ' +
+      'to spare, tilted against the basin rim where it came to rest.\n\nThere is a crust of ' +
+      'pale mineral over everything down here, over the slab and the basin and the floor alike, ' +
+      'which is what a century of wet and then dry does to cut limestone. It crunches.',
+    cannotTake: () =>
+      'It is a third of a ceiling. A gang with bars could move it in a day; you have one eye ' +
+      'and an afternoon.',
+    responses: {
+      touch: () => ({
+        text:
+          'The crust comes off under your palm in a fine white meal, and underneath it the stone ' +
+          'is the same stone you walked on three days ago.',
+      }),
+      pull: () => ({ text: 'It does not move, and it was never going to.' }),
+      knock: () => ({
+        text:
+          'You rap it with a knuckle and it answers dead, which means it is bedded on the floor ' +
+          'and not bridging anything. There is nothing under it.',
+      }),
+      sit: () => ({
+        text:
+          'You sit down on the fallen roof of a room you were standing in three days ago, and ' +
+          'it is exactly the right height to sit on, and that is somehow the worst detail yet.',
+      }),
+    },
+  },
+  {
+    /*
+     * Seen from the hillside, not reached: the tear is an exit from down there
+     * and a thing on a hill from up here. Rule six.
+     */
+    id: 'futurepath.tear',
+    name: 'tear in the hillside',
+    nouns: ['tear', 'fissure', 'crack in the hill', 'split', 'gash'],
+    locationId: 'future.cave_path',
+    initiallyVisible: true,
+    description: () =>
+      'Below you and to the left, the hill has opened: a long ragged tear running down the face ' +
+      'of the slope with grass growing right up to both lips of it, and daylight going a little ' +
+      'way into the dark of it and then stopping.\n\nYou came out through that. From up here ' +
+      'it is a crack in a hillside that nobody has been down, and the grass on the edges says ' +
+      'nobody ever will.',
+    cannotTake: () => 'It is a hole in a hill.',
+    responses: {
+      touch: () => ({
+        text:
+          'You go to the lip and put a hand on the edge of it. Cold air coming up, and a smell ' +
+          'of wet stone, and the grass grows right to the brink as though nothing in the valley ' +
+          'minds.',
+      }),
+      listen: () => ({
+        text: 'Air moving in it, and nothing else. No water. The hill is drier than it was.',
+      }),
+    },
+  },
+  {
+    id: 'futurepath.water',
+    name: 'distant water',
+    nouns: ['distant water', 'shoreline', 'lake', 'flood', 'water in the valley'],
+    locationId: 'future.cave_path',
+    initiallyVisible: true,
+    description: () =>
+      'Away down the valley floor, past where the ford was, a wide flat sheet of standing water ' +
+      'with a pale rim round it where it has been wider and gone back. Nothing is growing at ' +
+      'the rim.\n\nThe ford is under it. The track to the ford is under it. You have crossed ' +
+      'that ford on somebody\'s shoulders.',
+    cannotTake: () => 'It is a day\'s walk away and it is a lake.',
+    responses: {
+      touch: () => ({ text: 'It is most of an hour down the hill. You can look at it from here.' }),
+      drink: () => ({
+        text:
+          'From here? It is a long way off, and there is a pale dead rim round it, and these ' +
+          'people are pumping their water out of a sealed well a hundred paces from it.\n\n' +
+          'Whatever is wrong with that water, they know and you do not.',
+      }),
+    },
+  },
   {
     id: 'futureentrance.seal',
     name: 'seal',
@@ -2617,6 +3909,84 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+    cannotTake: () =>
+      'It is a wall, built into the mouth of the cave by people who meant it to stay. Taking ' +
+      'it is not the word for what you are going to have to do to it.',
+  },
+  {
+    /*
+     * The props the treatment scene introduces.
+     *
+     * The audit's rule seven: a cutscene that leaves water, a cloth and a
+     * bucket in the room has to make them addressable or remove them. These
+     * are addressable, and the prose is explicit that the dressing is already
+     * on and the bowl is already going — so no bandage is invented that was
+     * never applied.
+     */
+    id: 'futureentrance.dressing',
+    name: 'water and cloth',
+    nouns: [
+      'water',
+      'cloth',
+      'bowl',
+      'linen',
+      'bandage',
+      'dressing',
+      'strip of linen',
+      'older woman',
+    ],
+    locationId: 'future.entrance',
+    initiallyVisible: true,
+    hiddenWhen: (state) => !f(state, FLAGS.lostEye),
+    description: () =>
+      'A shallow bowl of water with a pink cast to it, and a folded cloth beside it, and the ' +
+      'grey-haired woman already packing both into a basket because the job is done.\n\nThe ' +
+      'dressing is on. It goes round your head twice and over the socket once, and she tied it ' +
+      'at the back where you cannot reach it, which was deliberate.',
+    cannotTake: () =>
+      'She takes the bowl out of your reach without appearing to notice she has done it, and ' +
+      'goes on packing.\n\n"It is on," she says, of the dressing. "Leave it on."',
+    responses: {
+      touch: () => ({
+        text:
+          'You put a hand up to the linen and she says "don\'t" from four feet away without ' +
+          'looking round, and you put your hand down.',
+      }),
+      drink: () => ({
+        text:
+          'It is the water she has just washed your face with. She watches you work that out ' +
+          'and says nothing, which is how you know she is good at this.',
+      }),
+      untie: () => ({
+        text:
+          'She tied it at the back of your head on purpose. You can get a finger to the knot ' +
+          'and no further, and she is still in the room.',
+      }),
+      smell: () => ({ text: 'Clean water and something bitter in it that she put there.' }),
+    },
+  },
+  {
+    id: 'futureentrance.bucket',
+    name: "the man's bucket",
+    nouns: ['his bucket', 'the bucket', 'bucket', 'pail'],
+    locationId: 'future.entrance',
+    initiallyVisible: true,
+    hiddenWhen: (state) => !f(state, FLAGS.namedWanderer),
+    description: () =>
+      'He put it down when he saw your face and has not picked it up again. It is standing ' +
+      'between the two of you on the track, a quarter full, with the water going still.\n\n' +
+      'He has gone backwards three steps and said a word, and the bucket is where it was.',
+    cannotTake: () =>
+      'He is four paces away watching you, and the one thing you could do that would be worse ' +
+      'than standing here is picking up his bucket.',
+    responses: {
+      touch: () => ({ text: 'You do not go near it, and neither does he.' }),
+      drink: () => ({
+        text:
+          'You are not drinking out of the bucket of a man who has just backed away from you ' +
+          'saying a word off a plank.',
+      }),
+    },
   },
   {
     id: 'futureentrance.mark',
@@ -2644,11 +4014,174 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+    cannotTake: () =>
+      'It is scratched into the stone. You could not take it if you wanted to, and you do not ' +
+      'want to — it is the only thing in this century that was left for you on purpose.',
   },
 
   /* ================================================================ *
    * future.sealed_chamber
    * ================================================================ */
+  {
+    id: 'futureentrance.sorrelkit',
+    name: "Sorrel's tally and knife",
+    nouns: [
+      'her tally',
+      'sorrel tally',
+      'tally stick',
+      'knife',
+      'her knife',
+      'coat',
+      'her coat',
+      'her boots',
+    ],
+    locationId: 'future.entrance',
+    initiallyVisible: true,
+    description: () =>
+      'A flat tally stick and a short knife, both on the stone beside her where she has put them ' +
+      'down to talk to you, and her coat folded under her instead of on her, and her boots off ' +
+      'and standing side by side.\n\nThe knife is for cutting the tally. The blade is a hand ' +
+      'long and has been sharpened so many times that the back of it is thicker than the front.',
+    cannotTake: () =>
+      'She stops talking and looks at the knife, and then at you, and does not say anything at ' +
+      'all — which is worse than if she had.\n\nYou take your hand back. There is nothing you ' +
+      'need a knife for that is any business of hers.',
+    responses: {
+      touch: () => ({
+        text:
+          'She watches you pick the tally stick up and turn it over and put it back, and says ' +
+          '"that is this month" and nothing else.',
+      }),
+    },
+  },
+  {
+    /*
+     * After the seal is opened: the stones that came down, and the stone that
+     * found the hero's eye. The audit asked for this to be addressable or
+     * explicitly accounted for, so it is both.
+     */
+    id: 'futureentrance.rubble',
+    name: 'fallen seal stones',
+    nouns: [
+      'fallen stones',
+      'seal stones',
+      'rubble',
+      'lintel rubble',
+      'course',
+      'loose course',
+      'inscription',
+      'buried inscription',
+      'the stone that hit me',
+    ],
+    locationId: 'future.entrance',
+    initiallyVisible: true,
+    hiddenWhen: (state) => !f(state, FLAGS.sealOpened),
+    description: (state) =>
+      'The third course and most of two above it, down in a heap across the threshold: dressed ' +
+      'blocks, a hundred years of lime dust, and the lintel stone itself face-down with the ' +
+      'letters underneath it where nobody will read them again without a gang and a day.\n\n' +
+      (f(state, FLAGS.lostEye)
+        ? 'Somewhere in that heap is the one that found you. There is no way of telling which, ' +
+          'and you have been standing here for a while not looking for it.'
+        : 'It came down more or less where you were standing, which you will think about later.'),
+    cannotTake: () =>
+      'Dressed blocks, the lightest of them two hands thick. You have already moved as much of ' +
+      'this hill as you are going to move today.',
+    responses: {
+      touch: () => ({
+        text:
+          'Lime dust, cold stone, and sharp broken edges where the courses have parted. It is ' +
+          'all shifting very slightly as it settles.',
+      }),
+      pull: () => ({
+        text:
+          'You get a hand to one of the smaller blocks and work it a thumb\'s width before the ' +
+          'whole heap grumbles and you take your hand out.\n\nThe way in is open. The way in ' +
+          'is enough.',
+      }),
+    },
+  },
+  {
+    id: 'futuresealed.scales',
+    name: 'patterned wall',
+    nouns: ['patterned wall', 'scales', 'pattern', 'wall', 'walls', 'carving'],
+    locationId: 'future.sealed_chamber',
+    initiallyVisible: true,
+    description: () =>
+      'The same overlapping scales, and most of them still on the wall — but the room has moved ' +
+      'since they were cut. A crack runs up through four rows of them from the floor, and along ' +
+      'the top course the lips have broken off in a line where something settled.\n\nYou ran ' +
+      'your hand along these on the way in. On the way in they were perfect.',
+    cannotTake: () => 'It is the wall.',
+    responses: {
+      touch: () => ({
+        text:
+          'Sharp where they are whole and crumbling where they are not, and the whole surface is ' +
+          'furred with the pale crust that is on everything down here.',
+      }),
+      knock: () => ({
+        text:
+          'It sounds like a hill with a crack in it, which is what it is. Nothing in this room ' +
+          'answers the way the panel in the workings answered.',
+      }),
+    },
+  },
+  {
+    id: 'futuresealed.positions',
+    name: 'low and high dishes',
+    nouns: ['low dish', 'high dish', 'lamp positions', 'positions', 'filled dishes', 'other dishes'],
+    locationId: 'future.sealed_chamber',
+    initiallyVisible: true,
+    hiddenWhen: (state) => !f(state, FLAGS.fillCleared),
+    description: () =>
+      'Two of the three, and both of them filled: lime mortar packed into each socket flush with ' +
+      'the panel face and smoothed off, gone the colour of the stone and hard as the stone, with ' +
+      'a hair of a line round each one where the fill meets the cut.\n\nWhoever sealed this ' +
+      'room filled two and left the middle. They knew what the three of them were for, and they ' +
+      'were not guessing, and that is as much as this room is ever going to tell you about them.',
+    cannotTake: () => 'They are holes in a wall, and they are full.',
+    responses: {
+      touch: () => ({
+        text:
+          'Hard, and cold, and flush. You can just feel the join with a fingertip and you cannot ' +
+          'get a nail into it.',
+      }),
+      pull: () => ({
+        text:
+          'You go at the edge of the low one with the point of the mallet and get a smear of ' +
+          'lime dust for it.\n\nThis is not a job for one tired person in an afternoon, and ' +
+          'you do not want it done. You want the middle one, and the middle one is open.',
+      }),
+      knock: () => ({
+        text: 'Both of them sound solid, and the open middle one sounds like a hole. So they are full.',
+      }),
+    },
+  },
+  {
+    id: 'futuresealed.debris',
+    name: 'broken fill',
+    nouns: ['broken fill', 'debris', 'mortar pieces', 'lime', 'hair', 'stone dust', 'mortar'],
+    locationId: 'future.sealed_chamber',
+    initiallyVisible: true,
+    hiddenWhen: (state) => !f(state, FLAGS.fillCleared),
+    description: () =>
+      'What came out of the middle dish, in a heap at your feet: broken lime mortar in plates ' +
+      'and crumbs, with the shape of the socket still readable on the back of the biggest piece.' +
+      '\n\nThere is hair in it. Animal hair, chopped short and mixed through the lime to bind ' +
+      'it, the way a plasterer does — and a great deal of stone dust, which is what they had ' +
+      'instead of sand. Somebody mixed this properly. Somebody who was not in a hurry sealed ' +
+      'this hole on purpose and did a good job of it.',
+    cannotTake: () =>
+      'A double handful of broken mortar. You have carried enough up and down this hill.',
+    responses: {
+      touch: () => ({
+        text:
+          'It crumbles further. The hair in it comes away between your fingers in short dark ' +
+          'threads, perfectly preserved, from an animal that has been dead a hundred years.',
+      }),
+      smell: () => ({ text: 'Lime, and cold dust, and very faintly something that was once an animal.' }),
+    },
+  },
   {
     id: 'futuresealed.fill',
     name: 'cracked fill',
@@ -2756,11 +4289,148 @@ const OBJECT_LIST: WorldObjectDef[] = [
         },
       ],
     },
+    cannotTake: () =>
+      'It is in pieces, and the pieces are holding each other up, and above them is a great ' +
+      'deal of hill that has already moved once.',
   },
 
   /* ================================================================ *
    * future.square
    * ================================================================ */
+  {
+    id: 'futuresquare.oilcloth',
+    name: 'oilcloth',
+    nouns: ['oilcloth', 'cloth', 'cover', 'weighting stones', 'corner stones'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    description: () =>
+      'A square of waxed cloth over the chest, gone stiff and pale at the folds, with a smooth ' +
+      'stone on each corner to keep the wind off it. The stones are river stones, which is ' +
+      'interesting, because there is no river.\n\nSomebody re-waxes this. You can see where ' +
+      'the last coat went on unevenly.',
+    cannotTake: () =>
+      'Rue has her shoulders against that chest and the cloth is what keeps a hundred years of ' +
+      'writing dry. Ask her, if you are going to.',
+    responses: {
+      pull: () => ({
+        text:
+          'Rue puts one hand flat on the cloth without getting up and without looking round, ' +
+          'and that is the end of that.',
+      }),
+      touch: () => ({
+        text: 'Waxed canvas, cold and slightly tacky, and the corner stones are river-smooth.',
+      }),
+    },
+  },
+  {
+    id: 'futuresquare.recordkit',
+    name: 'boards and slates in the chest',
+    nouns: [
+      'boards',
+      'slates',
+      'slate',
+      'winter tally',
+      'tally of winters',
+    ],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    description: () =>
+      'What they have kept, seen past her shoulder with the cloth back: boards written on in ' +
+      'charcoal and gone over in charcoal again, slates with the writing half rubbed away and ' +
+      'rewritten higher up, and a strip of wood notched once for every winter ' +
+      'with the notches getting shallower towards the near end.\n\nIt is a hundred years of ' +
+      'people deciding what was worth the slate.',
+    cannotTake: () =>
+      '"Not those," says Rue, and she is not unfriendly about it, and she does not move. "You ' +
+      'can have the roll. You can look at the roll. The rest of it stays in the box."',
+    responses: {
+      touch: () => ({
+        text:
+          'She lets you put a hand on the edge of the nearest board and takes the lid out of ' +
+          'your other hand while you are doing it.',
+      }),
+    },
+  },
+  {
+    id: 'futuresquare.ruethings',
+    name: "Rue's blanket and slate",
+    nouns: [
+      'blanket',
+      'her blanket',
+      'rue blanket',
+      'her slate',
+      'rue slate',
+      'writing nail',
+      'nail',
+    ],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    description: () =>
+      'She has a blanket round her shoulders that was a good one and has been darned by somebody ' +
+      'who was not in a hurry, and across her knees a slate with a nail tied to it on a length ' +
+      'of thread. She writes on the slate with the nail, in a small fast hand, and rubs it out ' +
+      'with the heel of her palm.\n\nShe is keeping the roll up to date. Today she will have ' +
+      'something to put on it.',
+    cannotTake: () =>
+      'It is her blanket and her slate, and she is sitting under one and writing on the other.',
+    responses: {
+      touch: () => ({ text: 'You keep your hands to yourself. She is an old woman in a cold square.' }),
+    },
+  },
+  {
+    /*
+     * The keepsake tray. Only in the branch where the player carried Parsie's
+     * pebble a hundred years, which is why delivery is never assumed: this
+     * exists when that happened and does not when it did not.
+     */
+    id: 'futuresquare.tray',
+    name: 'tray of keepsakes',
+    nouns: [
+      'tray',
+      'keepsakes',
+      'shallow tray',
+      'button',
+      'copper button',
+      'teeth',
+      'tooth',
+      'bead',
+      'pebble in the tray',
+      'grey pebble',
+    ],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    hiddenWhen: (state) => !f(state, FLAGS.gaveStone),
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'A shallow wooden tray of things too small to be anything but kept: a copper button gone ' +
+      'green, two teeth, a blue glass bead with the hole worn oval.\n\nAnd a grey pebble with ' +
+      'a pale band through it, with a label beside it in a hand that has been copied and ' +
+      'recopied until the letters have gone square: *from past the names, given*.\n\nYou gave ' +
+      'that to a boy of eleven about three days ago. It has been in this box for a hundred ' +
+      'years, and somebody has recopied the label, which means somebody thought it mattered ' +
+      'enough to do that more than once.',
+    onExamine: {
+      journal: [
+        {
+          id: 'j.keepsakes',
+          text:
+            'The record chest has a tray of keepsakes in it. Parsie\'s pebble is in the tray, ' +
+            'labelled "from past the names, given", in a hand that has been recopied.',
+        },
+      ],
+    },
+    cannotTake: () =>
+      'These are the things thirty people have decided to keep, in a century when almost ' +
+      'nothing was kept.\n\nAnd one of them is yours, in a sense that does not survive being ' +
+      'said out loud. You put the lid of the tray back where it was.',
+    responses: {
+      touch: () => ({
+        text:
+          'You put a fingertip on the pebble and take it off again straight away. It is a stone. ' +
+          'It is exactly as warm as the tray.',
+      }),
+    },
+  },
   {
     id: 'futuresquare.memorial',
     name: 'memorial stone',
@@ -2798,7 +4468,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'futuresquare.well',
     name: 'capped well',
-    nouns: ['well', 'cap', 'pump', 'capped well', 'slab', 'bucket'],
+    nouns: ['well', 'cap', 'capped well', 'slab'],
     locationId: 'future.square',
     initiallyVisible: true,
     listAs: c('the well, capped and pumped'),
@@ -2826,7 +4496,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'futuresquare.workshop',
     name: 'roofless shell',
-    nouns: ['shell', 'workshop', 'roofless shell', 'goats', 'ruin'],
+    nouns: ['shell', 'workshop', 'roofless shell', 'ruin'],
     locationId: 'future.square',
     initiallyVisible: true,
     listAs: c("the shell where the joiner's workshop was"),
@@ -2898,7 +4568,7 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'futuresquare.chest',
     name: 'record chest',
-    nouns: ['chest', 'record chest', 'box', 'oilcloth', 'records'],
+    nouns: ['chest', 'record chest', 'box', 'records'],
     locationId: 'future.square',
     initiallyVisible: true,
     listAs: c('a chest under a scrap of oilcloth'),
@@ -2924,6 +4594,184 @@ const OBJECT_LIST: WorldObjectDef[] = [
             'tally of winters, and the Account. Rue sits against it.',
         },
       ],
+    },
+  },
+  {
+    id: 'futuresquare.pump',
+    name: 'hand pump',
+    nouns: ['pump', 'hand pump', 'handle', 'pump handle', 'spout'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'pull', 'touch'],
+    description: () =>
+      'Iron, bolted through the slab that caps the well, with a lead spout and a handle polished ' +
+      'bright on the underside by a great many hands. It is the only machine in the village and ' +
+      'it is maintained like one.\n\nThere is a tally stick on a nail beside it.',
+    cannotTake: () =>
+      'It is bolted through a stone cap and it is where thirty people get their water. There is ' +
+      'no conceivable version of today in which you take it.',
+    responses: {
+      pull: () => ({
+        text:
+          'You take the handle and give it two strokes before you think better of it. It is ' +
+          'stiff on the up-stroke and the water comes with a knock and a gasp, and about a cup ' +
+          'of it goes onto the stone and runs away.\n\nA woman twenty paces off watches you do ' +
+          'it and says nothing at all, and you stop. There is a stick on a nail here with marks ' +
+          'on it, and you have just made one of them wrong.',
+      }),
+      drink: () => ({
+        text:
+          'You could work the handle and put your mouth under the spout. It would be a cup of ' +
+          'somebody\'s ration, counted on a stick, in a village of thirty people who have ' +
+          'worked out exactly how much there is.\n\nYou are thirsty. You leave it.',
+      }),
+      touch: () => ({
+        text: 'Cold iron, and the underside of the handle is worn to a shine.',
+      }),
+      listen: () => ({
+        text:
+          'A slow knock somewhere down in the shaft, a long way down, which is the sound of a ' +
+          'well that is nearly deep enough.',
+      }),
+    },
+  },
+  {
+    id: 'futuresquare.tally',
+    name: 'tally stick',
+    nouns: ['tally', 'tally stick', 'stick', 'ration stick', 'marks on the stick'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'A flat stick of pale wood hung on a nail beside the pump, cut across with short notches ' +
+      'in groups, and a longer notch every seventh group. Somebody adds to it and somebody else ' +
+      'checks it.\n\nYou can read it in about four seconds, and what it says is that these ' +
+      'people know precisely how much water there is and precisely how fast it is going.',
+    cannotTake: () =>
+      'It is the water ration for thirty people, on a stick, on a nail. Taking it would be ' +
+      'about the worst single thing you could do in this square.',
+    responses: {
+      touch: () => ({
+        text:
+          'The notches are cut sharp and recut where the wood has furred. It has been in use a ' +
+          'long time.',
+      }),
+      pull: () => ({
+        text:
+          'It lifts off the nail easily and you put it straight back, the same way round. The ' +
+          'nail has a bright ring worn round it.',
+      }),
+    },
+  },
+  {
+    id: 'futuresquare.buckets',
+    name: 'buckets',
+    nouns: ['buckets', 'bucket', 'villagers buckets', 'pails'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    description: () =>
+      'Four of them in a row by the pump, each a different shape and two of them patched, and ' +
+      'none of them matching anything else in the village. People bring their own and stand in ' +
+      'the order they arrived in, and nobody is talking while they wait.',
+    cannotTake: () =>
+      'Every one of them belongs to somebody who is standing in this square waiting their turn ' +
+      'with it.',
+    responses: {
+      touch: () => ({
+        text: 'Wet handles, and a patch on one of them that is a strip of hammered tin.',
+      }),
+    },
+  },
+  {
+    id: 'futuresquare.sealant',
+    name: 'tarry sealant',
+    nouns: ['sealant', 'tar', 'tarry sealant', 'pitch', 'black stuff', 'seal round the cap'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    description: () =>
+      'A thick black bead run all the way round the joint between the slab and the well mouth, ' +
+      'gone matte and crazed on the surface, patched in two places with a darker, newer black.' +
+      '\n\nSomebody sealed this well shut and then somebody else has kept the seal up. There ' +
+      'is no version of that which is not frightening.',
+    cannotTake: () => 'It is set hard into the joint it is sealing.',
+    responses: {
+      touch: () => ({
+        text:
+          'Hard, slightly tacky in the sun, and it gives very faintly under a thumbnail. The ' +
+          'patches are softer than the rest.',
+      }),
+      smell: () => ({ text: 'Pitch, faintly, and warm stone.' }),
+      pull: () => ({
+        text:
+          'You get a fingernail to the edge of one of the patches and stop, with a clarity you ' +
+          'do not often manage: whatever is being kept out of that water, these people have ' +
+          'decided it stays out.',
+      }),
+    },
+  },
+  {
+    id: 'futuresquare.shed',
+    name: 'long shed',
+    nouns: ['shed', 'long shed', 'communal shed', 'bakehouse', 'hall', 'cart side', 'door wall'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    description: () =>
+      'The bakehouse, or what the bakehouse has become: the oven end is still standing and the ' +
+      'rest of it has been roofed over long and low with whatever there was. One whole wall is ' +
+      'the side of a cart. Another stretch is a door, lying on its side, with the latch still ' +
+      'on it.\n\nPeople live in there now. Several of them. You can hear it.',
+    cannotTake: () =>
+      'It is somebody\'s wall, and behind it is somebody\'s home, and the fact that it used to ' +
+      'be a cart does not change either of those.',
+    responses: {
+      knock: () => ({
+        text:
+          'You get as far as lifting your hand and then do not. You are a stranger with one eye ' +
+          'and a mason\'s mallet, and there are children in there.',
+      }),
+      touch: () => ({
+        text:
+          'The cart side still has paint on it in the sheltered part, a red that nobody in this ' +
+          'village is making any more.',
+      }),
+      listen: () => ({
+        text:
+          'Somebody inside, moving about, and a child saying the same word four times and ' +
+          'getting no answer.',
+      }),
+      smell: () => ({ text: 'Smoke, and people, and no bread at all.' }),
+    },
+  },
+  {
+    id: 'futuresquare.goats',
+    name: 'goats',
+    nouns: ['goats', 'goat', 'straw', 'trough', 'feed trough', 'nanny'],
+    locationId: 'future.square',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'Two of them, in the roofless shell of what was the workshop, with a trough made out of a ' +
+      'door laid on its edge and a handful of poor straw in it. One is a nanny with a rope ' +
+      'collar and the other is this year\'s and has not been told about anything yet.\n\nThey ' +
+      'are standing where the bench was. You could put your hand on the spot.',
+    cannotTake: () => 'They are the village\'s goats and they are two of the village\'s assets.',
+    responses: {
+      touch: () => ({
+        text:
+          'The nanny lets you, and leans into it, and goes on chewing. The young one comes over ' +
+          'to find out whether you are food and then loses interest.\n\nIt is the first warm ' +
+          'living thing you have touched in a hundred years.',
+      }),
+      smell: () => ({ text: 'Goat. Exactly and entirely goat, which is oddly a relief.' }),
+      listen: () => ({
+        text: 'Chewing, and the rope collar creaking, and a bell that is not on either of them.',
+      }),
+      eat: () => ({ text: 'No.' }),
+      pull: () => ({
+        text:
+          'You take hold of the nanny\'s collar and she looks at you until you let go of it. ' +
+          'She has met people before.',
+      }),
     },
   },
   {
@@ -3209,6 +5057,17 @@ const OBJECT_LIST: WorldObjectDef[] = [
 
 export const OBJECTS: Record<string, WorldObjectDef> = Object.fromEntries(
   OBJECT_LIST.map((o) => [o.id, o])
+);
+
+/**
+ * Objects that are part of a carried item rather than part of a room.
+ *
+ * The cloth tag is knotted to the lantern's handle, so it is wherever the
+ * lantern is. `visibleObjects` consults this so a part travels with its parent
+ * instead of staying on the windowsill it was found on.
+ */
+export const ATTACHED_OBJECTS: WorldObjectDef[] = OBJECT_LIST.filter(
+  (o) => o.attachedTo !== undefined
 );
 
 export const OBJECTS_BY_LOCATION: Record<string, WorldObjectDef[]> = OBJECT_LIST.reduce<

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ALL_LOCATION_IDS, LOCATIONS } from './locations';
 import { OBJECTS, OBJECTS_BY_LOCATION } from './objects';
 import { PEOPLE } from './dialogue';
-import { ALL_FLAG_KEYS, FLAGS } from './flags';
+import { ALL_FLAG_KEYS, FLAGS, FLAG_TYPES } from './flags';
 import { begin } from '../testing/harness';
 import { stripMarkup } from './markup';
 import { eraOf } from '../engine/reducer';
@@ -157,9 +157,23 @@ describe('objects and people', () => {
      */
     const deliberate = new Set(['stone', 'crack']);
     const chapters: Chapter[] = ['rite', 'crossing', 'future', 'return', 'ending'];
+    /*
+     * Chapters *and* flags. Visibility is gated on both — a pair hidden from
+     * each other only because the default state has a flag unset is not
+     * mutually exclusive, it is untested. Every boolean flag on and every
+     * boolean flag off covers the gates that exist.
+     */
+    const allFlagsOn = Object.fromEntries(
+      Object.entries(FLAG_TYPES)
+        .filter(([, type]) => type === 'boolean')
+        .map(([key]) => [key, true])
+    );
+    const spreads = chapters.flatMap((chapter) => [
+      { ...begin(), chapter } as GameState,
+      { ...begin(), chapter, flags: { ...begin().flags, ...allFlagsOn } } as GameState,
+    ]);
     const neverTogether = (a: WorldObjectDef, b: WorldObjectDef): boolean =>
-      chapters.every((chapter) => {
-        const state = { ...begin(), chapter } as GameState;
+      spreads.every((state) => {
         const visible = (def: WorldObjectDef) => !(def.hiddenWhen?.(state) ?? false);
         return !(visible(a) && visible(b));
       });

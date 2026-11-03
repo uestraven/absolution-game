@@ -773,21 +773,60 @@ in the basin because somebody came down a dark stair to leave them. The tiers
 are scenery with authored replies, owned or attached things, genuinely portable
 items, and — once — a consumable.
 
-### Where the tiers got to
+### Where the tiers got to — all three are done
 
-- **Done (first pass).** The small physical vocabulary; the bread as the one
+- **First pass.** The small physical vocabulary; the bread as the one
   consumable; the salt bowl, well-cap, stool and Marjoram's dough; the coins
   and the bone pin in both centuries; room-level `LISTEN`; and the resolver's
   substring fallback, which answered `examine oil` with an exit description
   because `oil` is inside `spoil`.
-- **Done (puzzle-adjacent).** The split water barrel and the rest of the crew
-  kit at the past mouth; the trestle, chisels, oil flask, ledge, nails, scales,
-  chalk line and cut waste in the workings; the basin's bucket and the crew's
-  mallet; Saffra's board after the recitation; and the return chamber's own
-  shutter, wedge, eye, wall, alcove and pillar crack.
-- **Not yet.** The broad pass: remaining NPC props, workshop clutter, spring
-  scenery, the future settlement's goats and keepsakes, and attachment/state
-  consistency for parts that travel with their parents.
+- **Puzzle-adjacent.** The split water barrel and the rest of the crew kit at
+  the past mouth; the trestle, chisels, oil flask, ledge, nails, scales, chalk
+  line and cut waste in the workings; the basin's bucket and the crew's mallet;
+  Saffra's board after the recitation; and the return chamber's own shutter,
+  wedge, eye, wall, alcove and pillar crack.
+- **The broad pass.** NPC props (Sage's chalk and apron, Parsie's pole, Tyme's
+  coil, Dilly's boots, Saffra's trowel and apron, Fenn's hawk, Sorrel's knife
+  and tally, Rue's blanket and slate); workshop clutter (glue-pot, shavings,
+  chisel rack, big door, the dovetail in the vice); the bedroom's flue, floor
+  and door; the lantern's own striker, hood and tag; spring moss and cup-marks;
+  the swing, the bark, the chippings and the unnatural wet patch; the future
+  settlement's pump, tally stick, sealant, shed, goats, keepsake tray and the
+  chest's contents; the hillside's tear and distant water; the injury scene's
+  water, cloth and the man's bucket; and the crushed chamber's filled dishes
+  and broken fill.
+
+**165 objects. 108 have an authored take refusal; 96 answer at least one
+physical verb; 3 travel with the item they are part of.**
+
+### Attachment, and seeing without reaching
+
+Two rules the pass added machinery for:
+
+- **A part goes where its parent goes.** The cloth tag is knotted to the
+  lantern's handle, so it is addressable wherever the lantern is — not left on
+  the windowsill it was found on. Same for the striker and the hood.
+  `attachedTo` on the object; `visibleObjects` resolves it.
+- **Observation is not reach.** The ladder across the square can be examined
+  from the square and not picked up from it; the tear in the hill can be looked
+  at from the hillside above it; the lake down the valley answers and stays a
+  day's walk away.
+
+### The coverage test
+
+`src/engine/interaction.test.ts` turns the audit into a test rather than
+trusting a spot check. For each of twenty rooms it takes the nouns the audit
+named, and asserts three things:
+
+1. every noun **resolves** in that room;
+2. `TOUCH`, `EAT` and `LISTEN TO` each produce an answer that is not "cannot
+   see any X here" or "cannot do that here";
+3. every fixture that cannot be taken has an **authored** refusal rather than
+   the generic "not something you can carry off".
+
+That third rule found twelve pre-existing objects still giving the shrug —
+including the safety rope, the gallery pillar, the relief and the spring — and
+they now give reasons.
 
 ### The ones that must not become solutions
 

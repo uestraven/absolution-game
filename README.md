@@ -232,6 +232,31 @@ player asks. Sizes, conversions, the loop measurements and attribution are in
 [`art/music/README.md`](art/music/README.md). The eight tracks are Paul Cohen's
 own work, written for this game, and are credited in the game after the ending.
 
+## Interaction
+
+A noun the prose puts in a room answers in that room, and a sensible attempt
+gets an answer **about that thing**. "You cannot do that here" in a room with a
+stool in it, and "you cannot see any dough here" while reading about dough, are
+both treated as defects rather than as missing features.
+
+A small physical vocabulary — `TOUCH`, `SMELL`, `TASTE`, `EAT`, `DRINK`,
+`SIT ON`, `LISTEN`, `KNOCK ON`, `UNTIE`, `PULL` — exists for the verbs the text
+invites, and none of it is required to finish the game. Where nobody has
+written a specific response, the default line still names the object.
+
+**A refusal is an interaction.** Marjoram catches your wrist before you put a
+finger in her dough. The offerings in the basin stay in the basin, because
+somebody came down a dark stair in the cold to leave them. Of 165 objects, 108
+have an authored reason they cannot be taken.
+
+Parts travel with their parents: the cloth tag knotted to the lantern's handle
+is readable wherever the lantern is. And looking is not reaching — the ladder
+across the square can be examined and not picked up.
+
+Details, including the coverage test that holds this to its own standard, are in
+[`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md) and
+[`docs/COMMANDS.md`](docs/COMMANDS.md).
+
 ## Documentation
 
 | Document | Contents |

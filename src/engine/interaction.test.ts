@@ -13,7 +13,7 @@ import { parse } from './parser';
 import { resolve as resolveNoun } from './selectors';
 import { OBJECTS } from '../content/objects';
 import { LOCATIONS } from '../content/locations';
-import { FLAGS } from '../content/flags';
+import { FLAGS, FLAG_TYPES } from '../content/flags';
 import { PHYSICAL_VERBS } from './types';
 import { stripMarkup } from '../content/markup';
 import type { GameState, LocationId } from './types';
@@ -461,13 +461,27 @@ describe("Saffra's board, after she writes it", () => {
     }) as GameState;
 
   it('is not there before the recitation', () => {
-    expect(say(square(false), 'examine board')).toMatch(/cannot see any board here/i);
+    expect(say(square(false), 'examine offcut')).toMatch(/cannot see any offcut here/i);
   });
 
   it('is there afterwards, in her hand and in the hero\'s words', () => {
-    const text = say(square(true), 'examine board');
+    const text = say(square(true), 'examine offcut');
     expect(text).toMatch(/four lines on the back of it in charcoal/i);
     expect(text).toMatch(/they are your words/i);
+  });
+
+  it('is not confused with Fenn\'s mortar hawk', () => {
+    /*
+     * The audit's explicit warning. Both are boards and both are in the
+     * square, and the matcher settles it without a prompt: `board` is an exact
+     * noun on hers and only a containment match on his, and exact wins. His
+     * answers to what it actually is.
+     */
+    expect(say(square(true), 'examine board')).toMatch(/four lines on the back/i);
+    expect(say(square(true), 'examine mortar board')).toMatch(/short handle under it/i);
+    expect(say(square(true), 'examine hawk')).toMatch(/short handle under it/i);
+    // Before she writes, the only board in the square is his.
+    expect(say(square(false), 'examine board')).toMatch(/short handle under it/i);
   });
 
   it('cannot be carried off, and says what that would mean', () => {
@@ -539,5 +553,170 @@ describe('the return chamber keeps its own furniture', () => {
     expect(struck(0)).toMatch(/carrying a load for longer than it was meant to/i);
     expect(struck(1)).toMatch(/finger-width now/i);
     expect(struck(2)).toMatch(/all the way through/i);
+  });
+});
+
+/* ================================================================ *
+ * Tier three: the coverage rule itself
+ * ================================================================ */
+
+describe('every room answers for what it describes', () => {
+  /**
+   * Nouns the audit named, room by room, with the answer they must *not* give.
+   *
+   * This is the audit turned into a test. It is deliberately a list of nouns
+   * and not a list of expected sentences: the point is that the word resolves
+   * in the room the prose uses it in, and that the reply is about that thing
+   * rather than "you cannot see any X here".
+   */
+  const COVERAGE: Array<[LocationId, string[]]> = [
+    [
+      'present.home',
+      ['stool', 'flue', 'cold patch', 'floorboards', 'door', 'bread', 'window'],
+    ],
+    [
+      'present.square',
+      [
+        'salt bowl',
+        'well cap',
+        'bucket',
+        'buckets',
+        'dough',
+        'kneading board',
+        'bakehouse',
+        'stub of chalk',
+        'apron',
+        'stick',
+        'ladder',
+        'well rope',
+      ],
+    ],
+    [
+      'present.workshop',
+      ['glue pot', 'glue', 'shavings', 'sawdust', 'chisels', 'rack', 'big door', 'joint', 'dovetail'],
+    ],
+    ['present.cave_path', ['thistles', 'shale', 'grass', 'boots', 'laces', 'coil', 'stump']],
+    ['present.entrance', ['moss', 'overhang', 'swept earth', 'spare rope', 'spare coil', 'knots', 'hook']],
+    ['present.outer_gallery', ['roof', 'ceiling', 'pillar', 'relief']],
+    ['present.echo_chamber', ['boot', 'laces', 'bow', 'water']],
+    ['present.sealed_chamber', ['grooves', 'lip', 'pillar crack', 'grit', 'shutter']],
+    ['present.deep_chamber', ['reflection', 'my face', 'threshold']],
+    ['past.deep_chamber', ['coins', 'bone pin', 'silt', 'bucket', 'mallet', 'plumb bob', 'plumb-bob']],
+    [
+      'past.entrance',
+      ['barrel', 'barrow', 'wheel', 'chisels', 'tarred line', 'bowls', 'handrail groove'],
+    ],
+    ['past.cave_path', ['swing', 'swing rope', 'plank seat', 'bark', 'carved letter', 'chippings']],
+    ['past.spring', ['moss', 'cup marks', 'cup-marks', 'stone lining', 'spring']],
+    [
+      'past.square',
+      ['trowel', 'apron', 'mortar board', 'hawk', 'scaffold', 'standing plank', 'reeds', 'bucket'],
+    ],
+    [
+      'past.worksite',
+      ['trestle', 'chisels', 'chisel basket', 'nails', 'ledge', 'lamps', 'oil', 'flask', 'scales', 'waste', 'chalk line'],
+    ],
+    ['future.deep_chamber', ['coins', 'pin', 'stain', 'slab', 'crust', 'dust']],
+    ['future.cave_path', ['tear', 'fissure', 'distant water', 'shoreline', 'sky']],
+    [
+      'future.square',
+      [
+        'pump',
+        'buckets',
+        'tally',
+        'sealant',
+        'shed',
+        'cart side',
+        'goats',
+        'straw',
+        'trough',
+        'oilcloth',
+        'blanket',
+        'her slate',
+        'boards',
+        'slates',
+      ],
+    ],
+    ['future.entrance', ['knife', 'her tally', 'coat', 'seal', 'mark']],
+    ['future.sealed_chamber', ['scales', 'patterned wall', 'pillar']],
+  ];
+
+  /** Everything discovered, every flag on: the most generous reading. */
+  function fullyExplored(id: LocationId): GameState {
+    const base = begin();
+    const discovered = Object.values(OBJECTS)
+      .filter((def) => def.locationId === id)
+      .map((def) => def.id);
+    const flagsOn = Object.fromEntries(
+      Object.entries(FLAG_TYPES)
+        .filter(([, type]) => type === 'boolean')
+        .map(([key]) => [key, true])
+    );
+    return {
+      ...base,
+      locationId: id,
+      era: id.split('.')[0] as GameState['era'],
+      discovered: [...base.discovered, ...discovered],
+      flags: { ...base.flags, ...flagsOn },
+    } as GameState;
+  }
+
+  for (const [locationId, nouns] of COVERAGE) {
+    it(`resolves the nouns its prose uses in ${locationId}`, () => {
+      const here = fullyExplored(locationId);
+      for (const noun of nouns) {
+        const refs = resolveNoun(here, noun);
+        expect(refs.length, `${locationId}: "${noun}" resolves to nothing`).toBeGreaterThan(0);
+      }
+    });
+
+    it(`answers a physical attempt about each of them in ${locationId}`, () => {
+      const here = fullyExplored(locationId);
+      for (const noun of nouns) {
+        for (const verb of ['touch', 'eat', 'listen to']) {
+          const text = say(here, `${verb} ${noun}`);
+          expect(text, `${locationId}: ${verb} ${noun}`).not.toMatch(/cannot see any/i);
+          expect(text, `${locationId}: ${verb} ${noun}`).not.toMatch(/cannot do that here/i);
+        }
+      }
+    });
+
+    it(`gives a reason rather than a shrug when ${locationId} refuses a take`, () => {
+      /*
+       * Not everything is portable, and the refusals are where the writing
+       * goes. What must not happen is the generic line — that is the shrug the
+       * audit objected to.
+       */
+      const here = fullyExplored(locationId);
+      for (const noun of nouns) {
+        const refs = resolveNoun(here, noun);
+        if (refs.length !== 1 || refs[0]!.kind !== 'object') continue;
+        const def = OBJECTS[refs[0]!.id]!;
+        if (def.item) continue;
+        expect(def.cannotTake, `${locationId}: ${def.id} has no authored take refusal`).toBeDefined();
+      }
+    });
+  }
+});
+
+describe('a part travels with the thing it is part of', () => {
+  it('keeps the cloth tag reachable once the lantern is carried away', () => {
+    /*
+     * The audit's attachment gap: the tag is knotted to the handle, and was a
+     * room object — so reading it meant walking back to an empty windowsill.
+     */
+    const read = typeAll(begin(), ['examine lantern']);
+    expect(say(read, 'examine tag')).toMatch(/sixteen\. go carefully/i);
+
+    const away = typeAll(read, ['take lantern', 'down']);
+    expect(away.locationId).toBe('present.square');
+    expect(say(away, 'examine tag')).toMatch(/sixteen\. go carefully/i);
+    expect(say(away, 'examine striker')).toMatch(/flint and a curl of steel/i);
+  });
+
+  it('leaves it behind with the lantern if the lantern is put down', () => {
+    const dropped = typeAll(begin(), ['examine lantern', 'take lantern', 'down', 'drop lantern', 'west']);
+    // The lamp is in the square; the tag is on the lamp, so it is there too.
+    expect(say(dropped, 'examine tag')).toMatch(/cannot see any tag here/i);
   });
 });

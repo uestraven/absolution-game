@@ -8,7 +8,12 @@ import type {
   WorldObjectDef,
 } from './types';
 import { LOCATIONS } from '../content/locations';
-import { OBJECTS, OBJECTS_BY_LOCATION, objectListLine } from '../content/objects';
+import {
+  ATTACHED_OBJECTS,
+  OBJECTS,
+  OBJECTS_BY_LOCATION,
+  objectListLine,
+} from '../content/objects';
 import { PEOPLE, PEOPLE_BY_LOCATION, availableTopics } from '../content/dialogue';
 import { ALL_ITEM_IDS, ITEMS } from '../content/items';
 
@@ -25,9 +30,27 @@ export function currentLocation(state: GameState): LocationDef {
 /** Objects at the current location the player has noticed and that are not hidden. */
 export function visibleObjects(state: GameState): WorldObjectDef[] {
   const here = OBJECTS_BY_LOCATION[state.locationId] ?? [];
-  return here.filter(
-    (def) => state.discovered.includes(def.id) && !(def.hiddenWhen?.(state) ?? false)
+  const inRoom = here.filter(
+    (def) =>
+      state.discovered.includes(def.id) &&
+      !(def.hiddenWhen?.(state) ?? false) &&
+      // A part that travels with an item is addressable through the item, not
+      // through the room it was first found in.
+      (def.attachedTo === undefined || !reachableItems(state).includes(def.attachedTo))
   );
+  /*
+   * Parts of items the player is carrying. The cloth tag is knotted to the
+   * lantern's handle, so it is wherever the lantern is — not left behind on
+   * the windowsill it was found on.
+   */
+  const carried = ATTACHED_OBJECTS.filter(
+    (def) =>
+      state.discovered.includes(def.id) &&
+      !(def.hiddenWhen?.(state) ?? false) &&
+      reachableItems(state).includes(def.attachedTo!) &&
+      !inRoom.includes(def)
+  );
+  return [...inRoom, ...carried];
 }
 
 /** Objects at the current location the player has NOT yet noticed. */

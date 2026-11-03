@@ -80,7 +80,19 @@ describe('hidden things stay hidden', () => {
       .sort();
     expect(hiddenIds).toEqual(
       [
+        /*
+         * The lantern's own parts. Found by examining the lamp, and attached
+         * to it, so they travel with it rather than staying on the windowsill.
+         */
+        'home.lamphood',
+        'home.striker',
         'home.tag',
+        // The things depicted in the relief, revealed by reading it.
+        'gallery.depicted',
+        // The pivot the shutter turns on, found by examining the passage.
+        'sealed.pivot',
+        // Under the standing water, found by putting a hand in it.
+        'echo.silt',
         'sealed.alcove',
         'sealed.passage',
         'sealed.seam',

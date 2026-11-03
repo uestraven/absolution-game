@@ -417,6 +417,15 @@ export interface WorldObjectDef {
    * with no `item`.
    */
   cannotTake?: (state: GameState) => string;
+  /**
+   * An item this is physically part of, so it goes where the item goes.
+   *
+   * The cloth tag is knotted to the lantern's handle. It was a room object, so
+   * examining it meant walking back to an empty windowsill — a part that did
+   * not travel with its parent. An object with this set is addressable
+   * wherever the item is reachable, and only there.
+   */
+  attachedTo?: ItemId;
 }
 
 export interface PhysicalResponse {
