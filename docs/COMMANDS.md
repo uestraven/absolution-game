@@ -34,6 +34,41 @@ turn passes, no flag moves, no item changes hands.
 Named exits work too: `GO WORKSHOP`, `GO TO THE GALLERY`, `ENTER THE CAVE`.
 Every room's ways out are listed in its description and by `EXITS`.
 
+## Touching things
+
+A small physical vocabulary, for the things the prose invites you to try.
+
+| Command | Synonyms |
+| --- | --- |
+| `TOUCH <thing>` | `FEEL`, `POKE` |
+| `SMELL <thing>` | `SNIFF` |
+| `TASTE <thing>` | `LICK` |
+| `EAT <thing>` | `BITE` |
+| `DRINK <thing>` | `SIP`; `DRINK FROM <thing>` |
+| `SIT ON <thing>` | `SIT <thing>` |
+| `LISTEN` | what you can hear from where you are |
+| `LISTEN TO <thing>` | |
+| `KNOCK ON <thing>` | |
+| `UNTIE <thing>` | `UNFASTEN` |
+| `PULL <thing>` | the same verb as `CLEAR` |
+
+**None of these is a simulation**, and none of them is required to finish the
+game. They exist so that a thing the story describes can be addressed: there is
+bread on a stool in the opening, and `EAT BREAD` should be about the bread.
+
+Two things worth knowing:
+
+- **The answer always names the thing.** Where nobody has written a specific
+  response, you get a line about that object rather than a line about the game.
+  "You could not eat the stool" is an answer; "you cannot do that here" is not.
+- **A refusal is an interaction.** Marjoram stops you putting a finger in her
+  dough; the offerings in the basin stay in the basin and the game says why.
+  Not everything can be picked up, and the ones that cannot should tell you
+  something.
+
+Only one of these changes the world: the bread can be eaten, once, and stays
+eaten.
+
 ## Handling things
 
 | Command | Synonyms |

@@ -6,6 +6,7 @@ import type {
   LocationId,
   NarrativeEvent,
   ResolveResult,
+  PhysicalVerb,
 } from './types';
 import type { Ref } from './selectors';
 import {
@@ -519,6 +520,9 @@ function dispatch(draft: Draft, action: GameAction, events: NarrativeEvent[]): R
       events.push({ kind: 'failure', text: 'You have already chosen who you are.' });
       return commit(draft, events, false);
 
+    case 'PHYSICAL':
+      return doPhysical(draft, action.verb, action.target, events);
+
     default: {
       const exhaustive: never = action;
       events.push({ kind: 'failure', text: String(exhaustive) });
@@ -630,6 +634,143 @@ function doGo(draft: Draft, target: string, events: NarrativeEvent[]): ResolveRe
   return commit(draft, events, true);
 }
 
+/* ------------------------------------------------------------------ *
+ * The small physical vocabulary
+ * ------------------------------------------------------------------ */
+
+/**
+ * What a verb says about a thing nobody wrote a response for.
+ *
+ * This is the floor of the interaction contract, and it is the reason the
+ * family exists: the answer always *names the thing*. A player who tries
+ * `eat stool` is told the stool is not food, which is a reply about the stool.
+ * Being told "you cannot do that here" in a room with a stool in it, or
+ * "you cannot see any stool here" while reading about one, is the defect.
+ *
+ * `{it}` is filled with the thing's own name.
+ */
+const PHYSICAL_DEFAULTS: Record<PhysicalVerb, string> = {
+  eat: 'You could not eat {it}, and you are not hungry enough to try.',
+  drink: 'There is nothing about {it} to drink.',
+  taste: 'You decline to put your tongue on {it}.',
+  touch: 'You put a hand on {it}. It is as it looks, and tells you nothing new.',
+  smell: '{It} smells of this place and nothing in particular.',
+  listen: '{It} is not making a sound.',
+  sit: 'There is no sitting on {it}.',
+  pull: '{It} does not move for pulling.',
+  untie: 'There is nothing tied about {it}.',
+  knock: 'You rap your knuckles on {it}. It is solid, and nobody answers.',
+};
+
+/** Fills `{it}` / `{It}` with a name, leaving the rest of the line alone. */
+function fillIt(template: string, name: string): string {
+  const named = name.trim().length > 0 ? name.trim() : 'it';
+  const article = /^(a|an|the) /i.test(named) ? named : `the ${named}`;
+  return template
+    .replace(/\{it\}/g, article)
+    .replace(/\{It\}/g, `${article[0]!.toUpperCase()}${article.slice(1)}`);
+}
+
+/**
+ * Eat, touch, listen, sit, and the rest.
+ *
+ * Resolution is `doExamine`'s, deliberately: the same nouns, the same
+ * ambiguity prompt, the same "cannot see any X here" when the noun genuinely
+ * is not here. What differs is the answer, which comes from the object's own
+ * authored `responses` where there is one and from the table above where there
+ * is not.
+ *
+ * Nothing here can change the world unless an authored response says so, and
+ * what it says is applied through the ordinary effects path — so a consumed
+ * thing is consumed in the save, once, and survives a reload.
+ */
+function doPhysical(
+  draft: Draft,
+  verb: PhysicalVerb,
+  target: string,
+  events: NarrativeEvent[]
+): ResolveResult {
+  /*
+   * `listen` with nothing after it is about the room, not an object in it —
+   * the one place in this family where a bare verb means something.
+   */
+  if (verb === 'listen' && (target.trim() === '' || target.trim() === 'here')) {
+    const here = LOCATIONS[draft.locationId]!;
+    events.push({
+      kind: 'narration',
+      text: renderText(
+        here.sounds?.(draft) ??
+          'You stand still and listen. Nothing in this place is making a sound worth the name.',
+        draft
+      ),
+    });
+    return commit(draft, events, false);
+  }
+
+  const refs = resolveNoun(draft, target);
+  if (refs.length === 0) {
+    events.push({ kind: 'failure', text: `You cannot see any ${target.trim()} here.` });
+    return commit(draft, events, false);
+  }
+  if (refs.length > 1) {
+    return askWhich(
+      draft,
+      events,
+      'Which one do you mean?',
+      refs.map((r) => ({
+        label: refLabel(r),
+        action: { type: 'PHYSICAL', verb, target: r.id } as GameAction,
+      }))
+    );
+  }
+
+  const ref = refs[0]!;
+  if (ref.kind === 'person') {
+    const person = PEOPLE[ref.id]!;
+    /*
+     * People are not scenery and are not handled by the table. One line, in
+     * their direction, pointing at the thing that does work on a person.
+     */
+    events.push({
+      kind: 'failure',
+      text:
+        verb === 'listen'
+          ? `You listen to ${person.name}, which is easier if you TALK TO ${person.name.toUpperCase()}.`
+          : `${person.name} is a person. TALK TO ${person.name.toUpperCase()} instead.`,
+    });
+    return commit(draft, events, false);
+  }
+
+  if (ref.kind === 'object') {
+    const def = OBJECTS[ref.id]!;
+    const authored = def.responses?.[verb as PhysicalVerb];
+    if (authored) {
+      const response = authored(draft);
+      events.push({
+        kind: response.accepted ? 'success' : 'narration',
+        text: renderText(response.text, draft),
+      });
+      journalEvents(applyEffects(draft, response.effects), events);
+      return commit(draft, events, response.accepted ?? false);
+    }
+    events.push({ kind: 'failure', text: fillIt(PHYSICAL_DEFAULTS[verb], def.name) });
+    return commit(draft, events, false);
+  }
+
+  if (ref.kind === 'item') {
+    const def = ITEMS[ref.id as ItemId];
+    events.push({ kind: 'failure', text: fillIt(PHYSICAL_DEFAULTS[verb], def.name) });
+    return commit(draft, events, false);
+  }
+
+  // An exit. Walking through one is GO; nothing else applies to a doorway.
+  events.push({
+    kind: 'failure',
+    text: fillIt(PHYSICAL_DEFAULTS[verb], refLabel(ref)),
+  });
+  return commit(draft, events, false);
+}
+
 function doExamine(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {
   const refs = resolveNoun(draft, target);
   if (refs.length === 0) {
@@ -729,7 +870,13 @@ function doTake(draft: Draft, target: string, events: NarrativeEvent[]): Resolve
 
   const def = OBJECTS[ref.id]!;
   if (!def.item) {
-    events.push({ kind: 'failure', text: `The ${def.name} is not something you can carry off.` });
+    const refusal = def.cannotTake?.(draft);
+    events.push({
+      kind: 'failure',
+      text: refusal
+        ? renderText(refusal, draft)
+        : `The ${def.name} is not something you can carry off.`,
+    });
     return commit(draft, events, false);
   }
 
@@ -1662,11 +1809,15 @@ function doClear(draft: Draft, target: string, events: NarrativeEvent[]): Resolv
     });
     return commit(draft, events, false);
   }
-  events.push({
-    kind: 'failure',
-    text: `There is nothing loose about the ${ref.label}.`,
-  });
-  return commit(draft, events, false);
+  /*
+   * Nothing to clear here, so answer it as a pull instead.
+   *
+   * `pull` and `clear` are the same typed verb, and the one thing in the game
+   * that is cleared is a wall of broken lime. Everything else a player pulls
+   * is an ordinary physical attempt, and an object that has authored a `pull`
+   * response is where that answer belongs.
+   */
+  return doPhysical(draft, 'pull', target, events);
 }
 
 function doFill(draft: Draft, target: string, events: NarrativeEvent[]): ResolveResult {

@@ -51,10 +51,15 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'Your Room',
     subtitle: () => 'Above the kitchen — early, on your birthday',
-    description: () =>
+    description: (state) =>
       'Your room is the width of two arm-spans and smells of woodsmoke from the flue that ' +
-      'runs up through the corner. Someone has been up before you: there is bread set out on ' +
-      'the stool by the door, and the shutter is already hooked back.\n\n' +
+      'runs up through the corner. Someone has been up before you: ' +
+      (f(state, FLAGS.ateBread)
+        ? 'there are crumbs on the stool by the door where the bread was, and the shutter is ' +
+          'already hooked back.'
+        : 'there is bread set out on the stool by the door, and the shutter is already hooked ' +
+          'back.') +
+      '\n\n' +
       'On the windowsill, where nothing is usually left, sits a hooded lantern.\n\n' +
       'The stair goes down to the lane, and the lane goes down to the square.',
     firstVisit: () =>
@@ -76,6 +81,10 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'The Village Square',
     subtitle: () => 'Hard-packed earth, a well, and more cord strung up than usual',
+    sounds: () =>
+      'A hammer somewhere behind the workshop, going in threes. Marjoram counting under her ' +
+      'breath. Somebody\'s chickens. A cord of lanterns ticking against itself in the wind, ' +
+      'which is the only sound in the square that is about you.',
     description: (state) => {
       const board = f(state, FLAGS.heardProphecy)
         ? 'The chalked plank by the well has been read aloud so many times this week that ' +
@@ -283,6 +292,11 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'The Echo Chamber',
     subtitle: () => 'A room that answers back',
+    sounds: () =>
+      'You stand still, and the room gives you back the sound of your standing still, a beat ' +
+      'late and from somewhere above your head.\n\nSay anything in here and it comes back to ' +
+      'you as somebody else saying it. That is the whole of what the room does, and it is ' +
+      'presumably why nobody comes down this far twice.',
     description: (state) =>
       'The crawl opens without warning into a bell of a room, high and round, with a floor ' +
       'that slopes to a shallow dish of standing water. Every sound you make arrives back at ' +
@@ -318,6 +332,12 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
         : f(state, FLAGS.passageOpen)
           ? 'Not as sealed as its name'
           : 'Small, square, and finished',
+    sounds: (state) =>
+      state.chapter === 'return'
+        ? 'Two people breathing in a four-pace room, and neither of them is doing it quietly.'
+        : 'Nothing, which is the remarkable part. The gallery behind you drips and this room ' +
+          'does not, and the pattern on the walls takes the sound of your own feet and puts it ' +
+          'somewhere else.',
     description: (state) => {
       /*
        * The same room, twice, in two chapters — and on the return the lamp in
@@ -436,6 +456,10 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'present',
     name: 'The Deep Chamber',
     subtitle: () => 'Below the part of the cave that has a name',
+    sounds: () =>
+      'Water, and under the water the hill, which is not a sound so much as the absence of ' +
+      'every other one. You can hear the weather at the mouth from down here, faintly, coming ' +
+      'down the stair like something remembered.',
     description: (state) => {
       const parts: string[] = [];
       parts.push(
@@ -735,6 +759,10 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'past',
     name: 'The Workings',
     subtitle: () => 'A room three-quarters finished, with the plan still on the wall',
+    sounds: () =>
+      'Chisels, four of them, not in time with each other, and Lovage\'s voice going over the ' +
+      'top of them about somebody\'s mother. Behind all of it, water moving somewhere it has ' +
+      'not been let out of yet.',
     description: (state) => {
       const parts: string[] = [];
       parts.push(
@@ -1037,6 +1065,10 @@ export const LOCATIONS: Record<LocationId, LocationDef> = {
     era: 'future',
     name: 'The Settlement',
     subtitle: () => 'Your square, with about thirty people left in it',
+    sounds: () =>
+      'The pump handle, and the knock of a bucket on the well-cap, and thirty people being ' +
+      'quiet in a space built for two hundred.\n\nNo hammer. No chickens. No cord of lanterns ' +
+      'in the wind. You keep listening for the gap where those ought to be.',
     description: (state) => {
       const parts: string[] = [];
       parts.push(

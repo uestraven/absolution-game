@@ -311,6 +311,13 @@ export type GameAction =
   | { type: 'HELP' }
   | { type: 'CHOOSE'; value: string }
   | { type: 'CANCEL' }
+  /**
+   * A small physical attempt: eat, touch, listen, sit, and so on.
+   *
+   * One action for the whole family rather than ten, so the vocabulary the
+   * parser, the affordances and the save validator all share stays small.
+   */
+  | { type: 'PHYSICAL'; verb: PhysicalVerb; target: string }
   | { type: 'UNPARSED'; raw: string; reason: string };
 
 /** A narrative event produced by resolving one action. */
@@ -391,6 +398,66 @@ export interface WorldObjectDef {
    * not the same experience.
    */
   takeText?: (state: GameState) => string;
+  /**
+   * What happens when somebody tries to eat, touch, listen to or sit on it.
+   *
+   * Authored per verb, and optional: a verb with no entry still gets a line
+   * that names this object rather than a generic refusal. Where a response
+   * changes the world — bread being eaten — it returns effects alongside the
+   * text, and the engine applies them exactly once.
+   */
+  responses?: Partial<Record<PhysicalVerb, (state: GameState) => PhysicalResponse>>;
+  /**
+   * Why this cannot be picked up, when "not something you can carry off" is
+   * the wrong answer.
+   *
+   * An owner objecting, an offering left deliberately, stonework that is part
+   * of the hill: the refusal is where the writing goes, and a refusal that
+   * knows what it is refusing is an interaction. Only consulted for objects
+   * with no `item`.
+   */
+  cannotTake?: (state: GameState) => string;
+}
+
+export interface PhysicalResponse {
+  text: string;
+  /** Flags and journal entries to apply. Applied once, after the text. */
+  effects?: ContentEffects;
+  /** True when this changed the world, so the turn counts as an action. */
+  accepted?: boolean;
+}
+
+/**
+ * The small physical vocabulary.
+ *
+ * Deliberately short, and deliberately only verbs the prose invites: the game
+ * describes bread on a stool, a bowl of salt, a spring, a stool to sit on. A
+ * player who tries `eat bread` should not be told the story does not
+ * understand the idea of eating.
+ *
+ * These are **not** a simulation. Each one resolves a noun and prints a line.
+ * The default line names the object, so attempting any of them against
+ * anything present gets an answer about that thing rather than "you cannot do
+ * that here" — which is the whole point. Authored responses override, and are
+ * where the actual writing goes.
+ */
+export const PHYSICAL_VERBS = [
+  'eat',
+  'drink',
+  'taste',
+  'touch',
+  'smell',
+  'listen',
+  'sit',
+  'pull',
+  'untie',
+  'knock',
+] as const;
+
+export type PhysicalVerb = (typeof PHYSICAL_VERBS)[number];
+
+export function isPhysicalVerb(value: unknown): value is PhysicalVerb {
+  return typeof value === 'string' && (PHYSICAL_VERBS as readonly string[]).includes(value);
 }
 
 export type SelectableVerb =
@@ -403,7 +470,8 @@ export type SelectableVerb =
   | 'cross'
   | 'fill'
   | 'break'
-  | 'clear';
+  | 'clear'
+  | PhysicalVerb;
 
 export interface PersonDef {
   id: string;
@@ -447,6 +515,15 @@ export interface LocationDef {
   name: string;
   /** Era-appropriate subtitle. Never says "present". */
   subtitle: (state: GameState) => string;
+  /**
+   * What a bare `LISTEN` hears here.
+   *
+   * A sensory affordance rather than an object: the echo chamber is named for
+   * a sound, the basin carries weather down from outside, and a settlement of
+   * thirty people is quiet in a way a village of two hundred is not. Optional;
+   * rooms without one get a line saying there is nothing to hear.
+   */
+  sounds?: (state: GameState) => string;
   /** Full room description. */
   description: (state: GameState) => string;
   /** Extra paragraph shown only on first arrival. */

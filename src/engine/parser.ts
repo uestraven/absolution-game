@@ -1,4 +1,4 @@
-import type { GameAction } from './types';
+import type { GameAction, PhysicalVerb } from './types';
 
 /**
  * A deliberately small, authored-synonym parser.
@@ -87,6 +87,32 @@ const PROPHECY_NOUNS = new Set([
   'prophecy word for word',
 ]);
 
+/**
+ * Typed verb to physical action, including the obvious synonyms.
+ *
+ * `pull` is deliberately absent: it already routes to CLEAR, which is what
+ * pulling means for the one thing in the game that is pulled. Adding a second
+ * meaning would make `pull fill` ambiguous for no gain.
+ */
+const PHYSICAL_SYNONYMS: Record<string, PhysicalVerb> = {
+  eat: 'eat',
+  bite: 'eat',
+  drink: 'drink',
+  sip: 'drink',
+  taste: 'taste',
+  lick: 'taste',
+  touch: 'touch',
+  feel: 'touch',
+  poke: 'touch',
+  smell: 'smell',
+  sniff: 'smell',
+  listen: 'listen',
+  sit: 'sit',
+  untie: 'untie',
+  unfasten: 'untie',
+  knock: 'knock',
+};
+
 /** Everything the help text lists, used to spot a verb typed with no object. */
 const KNOWN_VERBS = new Set([
   'look',
@@ -138,6 +164,7 @@ const KNOWN_VERBS = new Set([
   'commands',
   'exits',
   'retrieve',
+  ...Object.keys(PHYSICAL_SYNONYMS),
   'remove',
   'fill',
   'give',
@@ -309,6 +336,52 @@ export function parse(raw: string, context: ParseContext = {}): GameAction {
     case 'search': {
       if (rest.length === 0) return { type: 'UNPARSED', raw, reason: 'no-object' };
       return { type: 'EXAMINE', target: rest };
+    }
+
+    /*
+     * The small physical vocabulary. One action for all of them, so the
+     * parser, the affordances and the save validator share a short list.
+     *
+     * Each is accepted with or without the preposition a player would
+     * naturally use: `drink from the spring`, `sit on the stool`, `listen to
+     * the echo`, `pull on the rope`.
+     */
+    case 'eat':
+    case 'bite':
+    case 'drink':
+    case 'sip':
+    case 'taste':
+    case 'lick':
+    case 'touch':
+    case 'feel':
+    case 'poke':
+    case 'smell':
+    case 'sniff':
+    case 'listen':
+    case 'sit':
+    case 'untie':
+    case 'unfasten':
+    case 'knock': {
+      const verb = PHYSICAL_SYNONYMS[words[0]!]!;
+      let target = rest;
+      const leading = words[1];
+      if (
+        leading === 'to' ||
+        leading === 'on' ||
+        leading === 'at' ||
+        leading === 'from' ||
+        leading === 'in' ||
+        leading === 'of' ||
+        leading === 'into'
+      ) {
+        target = joinRest(words, 2);
+      }
+      if (target.length === 0) {
+        // `listen` on its own is a room action and needs no noun.
+        if (verb === 'listen') return { type: 'PHYSICAL', verb, target: 'here' };
+        return { type: 'UNPARSED', raw, reason: 'no-object' };
+      }
+      return { type: 'PHYSICAL', verb, target };
     }
 
     case 'exits':

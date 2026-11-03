@@ -185,6 +185,15 @@ export const FLAGS = {
   /** The hero has told them where the prophecy came from. */
   toldOrigin: 'told_origin',
 
+  /* ---- small physical world state ---------------------------------- */
+  /**
+   * The bread on the stool has been eaten.
+   *
+   * The one consumable in the game. Latches, so the loaf does not come back on
+   * a reload and the epilogue is not left describing breakfast nobody ate.
+   */
+  ateBread: 'ate_bread',
+
   /* ---- what has been tried with hands ------------------------------ */
   /** The hero is standing between them and the patterned wall. */
   blockingWall: 'blocking_wall',
@@ -308,6 +317,7 @@ export const FLAG_TYPES: Record<string, 'boolean' | 'number' | 'string'> = {
   [FLAGS.showedJournal]: 'boolean',
   [FLAGS.describedFuture]: 'boolean',
   [FLAGS.toldOrigin]: 'boolean',
+  [FLAGS.ateBread]: 'boolean',
   [FLAGS.blockingWall]: 'boolean',
   [FLAGS.tookTheirLamp]: 'boolean',
   [FLAGS.restrainedThem]: 'boolean',

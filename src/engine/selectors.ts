@@ -140,8 +140,21 @@ export interface Ref {
   label: string;
 }
 
+/**
+ * The one spelling the matcher works in.
+ *
+ * Hyphens become spaces on both sides of the comparison, so `plumb bob` finds
+ * `plumb-bob` and `well cap` finds `well-cap` without either having to be
+ * written out twice. Hyphens only: no stemming, which would cheerfully
+ * conflate nouns that have nothing to do with each other, and no stripping of
+ * full stops, which are part of every object id the selectable UI sends.
+ */
 function norm(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[-\u2010-\u2015]/g, ' ')
+    .replace(/\s+/g, ' ');
 }
 
 interface Candidate extends Ref {
@@ -173,9 +186,21 @@ function candidates(state: GameState): Candidate[] {
 /**
  * Resolves a typed or selected noun to zero, one, or several references.
  *
- * Match order: exact noun, then whole-word containment. Several matches at the
- * same strength mean genuine ambiguity, which the reducer turns into a
+ * Match order: id, exact noun, then whole-word containment. Several matches at
+ * the same strength mean genuine ambiguity, which the reducer turns into a
  * clarification prompt.
+ *
+ * ## There is deliberately no substring fallback
+ *
+ * There used to be one, and it was worse than failing. `examine oil` in the
+ * worksite returned the description of *the gap back to the basin chamber*,
+ * because `oil` is a substring of that exit's alias `spoil`. A player gets a
+ * confident answer about the wrong thing, which is harder to recover from than
+ * being told the noun is not here.
+ *
+ * The right fix for a noun that should work is an alias on the thing it names
+ * — including benign plurals and hyphenations — not a matcher that will accept
+ * any fragment. Missing nouns are a content bug and should look like one.
  */
 export function resolve(state: GameState, rawNoun: string, kinds?: RefKind[]): Ref[] {
   const noun = norm(rawNoun);
@@ -189,12 +214,12 @@ export function resolve(state: GameState, rawNoun: string, kinds?: RefKind[]): R
   const exact = pool.filter((c) => c.nouns.includes(noun));
   if (exact.length > 0) return dedupe(exact);
 
+  /*
+   * Whole words only. `(^| )noun( |$)` also matches across a hyphen once
+   * `norm` has turned it into a space, so `plumb bob` finds `plumb-bob`.
+   */
   const wordBoundary = new RegExp(`(^| )${escapeRegExp(noun)}( |$)`);
-  const partial = pool.filter((c) => c.nouns.some((n) => wordBoundary.test(n)));
-  if (partial.length > 0) return dedupe(partial);
-
-  const loose = pool.filter((c) => c.nouns.some((n) => n.includes(noun)));
-  return dedupe(loose);
+  return dedupe(pool.filter((c) => c.nouns.some((n) => wordBoundary.test(n))));
 }
 
 function dedupe(list: Candidate[]): Ref[] {

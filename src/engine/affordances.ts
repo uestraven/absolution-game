@@ -1,4 +1,5 @@
 import type { GameAction, GameState, ItemId } from './types';
+import { isPhysicalVerb } from './types';
 import { ITEMS } from '../content/items';
 import { OBJECTS, objectVerbs } from '../content/objects';
 import { FLAGS } from '../content/flags';
@@ -65,6 +66,22 @@ const VERB_LABELS: Record<string, string> = {
   fill: 'Fill from it',
   break: 'Break it open',
   clear: 'Clear it away',
+  /*
+   * The physical family. Only offered where an object has actually authored a
+   * response for the verb, so selectable mode gets the same handful of
+   * sensible attempts a typing player would think of and not forty buttons a
+   * room.
+   */
+  eat: 'Eat it',
+  drink: 'Drink',
+  taste: 'Taste it',
+  touch: 'Touch it',
+  smell: 'Smell it',
+  listen: 'Listen to it',
+  sit: 'Sit on it',
+  pull: 'Pull it',
+  untie: 'Untie it',
+  knock: 'Knock on it',
 };
 
 function verbAction(objectId: string, verb: string): GameAction | null {
@@ -87,7 +104,7 @@ function verbAction(objectId: string, verb: string): GameAction | null {
     case 'clear':
       return { type: 'CLEAR', target: objectId };
     default:
-      return null;
+      return isPhysicalVerb(verb) ? { type: 'PHYSICAL', verb, target: objectId } : null;
   }
 }
 

@@ -10,6 +10,14 @@ Moving
   NORTH / SOUTH / EAST / WEST / UP / DOWN / IN / OUT  (N, S, E, W, U, D)
   ENTER THRESHOLD             only where there is one
 
+Touching things
+  TOUCH <thing> (FEEL)        and SMELL, TASTE, KNOCK ON
+  EAT <thing> / DRINK <thing>
+  SIT ON <thing>
+  LISTEN                      what you can hear from here
+  LISTEN TO <thing>
+  PULL <thing> / UNTIE <thing>
+
 Handling things
   TAKE <thing> (GET, PICK UP, RETRIEVE)
   TAKE <thing> FROM <place>

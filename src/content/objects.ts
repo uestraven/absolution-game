@@ -63,14 +63,89 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'home.bread',
     name: 'bread',
-    nouns: ['bread', 'stool', 'breakfast', 'food'],
+    nouns: ['bread', 'loaf', 'breakfast', 'food', 'slice', 'crumbs'],
     locationId: 'present.home',
     initiallyVisible: true,
-    listAs: c('bread set out on a stool'),
-    verbs: () => ['examine'],
+    /*
+     * Not hidden once eaten: the crumbs are described, so the noun has to keep
+     * answering. Only what it is called changes.
+     */
+    listAs: (state) => (f(state, FLAGS.ateBread) ? c('crumbs on the stool') : c('bread set out on a stool')),
+    verbs: (state) => (f(state, FLAGS.ateBread) ? ['examine'] : ['examine', 'eat']),
+    description: (state) =>
+      f(state, FLAGS.ateBread)
+        ? 'Crumbs, and the dent in the stool where the loaf was.'
+        : 'Yesterday\'s loaf, cut thick, with the good end facing up. Someone wanted you to find ' +
+          'it and did not want to be there when you did.',
+    cannotTake: (state) =>
+      f(state, FLAGS.ateBread)
+        ? 'You have had it.'
+        : 'You could carry it, and then you would be a person walking up a hill holding bread. ' +
+          'EAT BREAD.',
+    responses: {
+      /*
+       * The one consumable in the game, and the reason the family exists at
+       * all: the opening sets bread on a stool and the player tries to eat it.
+       * It latches a flag, so the loaf is gone after a reload and the epilogue
+       * does not leave it sitting there uneaten.
+       */
+      eat: (state) =>
+        f(state, FLAGS.ateBread)
+          ? { text: 'There is no more bread. You are not going to be hungry for a while yet.' }
+          : {
+              text:
+                'You eat it standing up, which is how you eat everything, and it is better than ' +
+                'it has any right to be for yesterday\'s loaf.\n\nSomebody was up before you and ' +
+                'did not stay to be thanked. You will want to have eaten, later.',
+              accepted: true,
+              effects: {
+                flags: { [FLAGS.ateBread]: true },
+                journal: [
+                  {
+                    id: 'j.bread',
+                    text: 'Ate the bread somebody left out on the stool. Whoever it was had gone.',
+                  },
+                ],
+              },
+            },
+      taste: () => ({
+        text: 'Bread. Yesterday\'s, and better than that suggests. EAT BREAD if you are going to.',
+      }),
+      smell: (state) =>
+        f(state, FLAGS.ateBread)
+          ? { text: 'Crumbs, and the cold of the room underneath them.' }
+          : { text: 'Bread, and the cold of the room underneath it. It was baked yesterday.' },
+      touch: (state) =>
+        f(state, FLAGS.ateBread)
+          ? { text: 'Crumbs, and the stool is colder than the crumbs.' }
+          : { text: 'Still soft under the crust, which means the kitchen fire was going late.' },
+    },
+  },
+  {
+    /*
+     * Its own object now. It used to be an alias on the bread, so `sit on the
+     * stool` answered about a loaf.
+     */
+    id: 'home.stool',
+    name: 'stool',
+    nouns: ['stool', 'three legged stool', 'seat'],
+    locationId: 'present.home',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'sit'],
     description: () =>
-      'Yesterday\'s loaf, cut thick, with the good end facing up. Someone wanted you to find ' +
-      'it and did not want to be there when you did.',
+      'Three legs and a scrubbed top, the one your father made badly and keeps because he made ' +
+      'it. It lives under the window and gets dragged about for whatever needs standing on.',
+    cannotTake: () =>
+      'You are not taking furniture up a hill. Oreg would hear about it before you reached the ' +
+      'turn.',
+    responses: {
+      sit: () => ({
+        text:
+          'You sit down on it, out of habit, and then get up again, because sitting down is not ' +
+          'what today is for.',
+      }),
+      touch: () => ({ text: 'Scrubbed smooth in the middle and rough at the edges.' }),
+    },
   },
 
   /* ================================================================ *
@@ -123,15 +198,110 @@ const OBJECT_LIST: WorldObjectDef[] = [
   {
     id: 'square.salt',
     name: 'bowl of salt',
-    nouns: ['salt', 'bowl', 'bowl of salt', 'well cap', 'wellcap'],
+    nouns: [
+      'salt',
+      'bowl',
+      'bowl of salt',
+      'salt bowl',
+      'wooden bowl',
+      'offering',
+      'coarse salt',
+    ],
     locationId: 'present.square',
     initiallyVisible: true,
     listAs: c('a bowl of salt on the well-cap'),
-    verbs: () => ['examine'],
+    verbs: () => ['examine', 'taste', 'touch'],
     description: () =>
       'Coarse grey salt in a wooden bowl, heaped and smoothed flat on top. It is not a village ' +
       'custom you grew up with. It arrived this spring, fully formed, the way customs do when ' +
       'people are frightened and busy.',
+    cannotTake: () =>
+      'It is not yours and it is not for anything. Sage put it there in the spring and smoothed ' +
+      'the top flat, and she smooths it flat again every time the wind gets at it.',
+    responses: {
+      taste: () => ({
+        text:
+          'You put a wet fingertip in the corner of it where the smoothing does not reach, and ' +
+          'taste salt, which is what it is.\n\nThen you flatten the dent out with your thumb, ' +
+          'because Sage will see it otherwise.',
+      }),
+      touch: () => ({
+        text: 'Dry, coarse, and colder than the wood it sits in.',
+      }),
+      eat: () => ({
+        text: 'It is a bowl of salt, not a meal, and it is somebody else\'s besides.',
+      }),
+    },
+  },
+  {
+    /*
+     * The cap itself. `well cap` used to be an alias on the bowl standing on
+     * it, so asking about the cap described the salt.
+     */
+    id: 'square.wellcap',
+    name: 'well-cap',
+    nouns: ['well cap', 'wellcap', 'cap', 'well lid', 'lid', 'slab'],
+    locationId: 'present.square',
+    initiallyVisible: true,
+    description: () =>
+      'A single slab, cut to overhang the well mouth by a thumb all round, with a lifting notch ' +
+      'on the near side worn smooth and pale. It is not locked and never has been. It is heavy ' +
+      'enough that children leave it alone, which is the whole of the reason it exists.',
+    cannotTake: () =>
+      'It is a slab of stone and it is doing a job. You could shift it with two people and a ' +
+      'bar, and then there would be an open well in the middle of the square.',
+    responses: {
+      touch: () => ({
+        text: 'Cold, and dusty on top, and damp underneath where your fingers reach the overhang.',
+      }),
+      pull: () => ({
+        text:
+          'You get your fingers in the lifting notch and pull, and the cap tells you what it ' +
+          'weighs. It would come up for two people. It is not coming up for one, and there is ' +
+          'nothing you want down there.',
+      }),
+      knock: () => ({
+        text:
+          'You knock on it. There is a well under it, so the sound goes down and comes back ' +
+          'wrong, and a little later than you expect.',
+      }),
+    },
+  },
+  {
+    /*
+     * Marjoram's dough. Named in the room description and in her dialogue, and
+     * the headline example of prose the parser could not see.
+     */
+    id: 'square.dough',
+    name: 'dough',
+    nouns: ['dough', 'bread dough', 'kneading board', 'board of dough', 'marjoram board'],
+    locationId: 'present.square',
+    initiallyVisible: true,
+    description: () =>
+      'A grey-white mass on a floured board set across two trestles, worked to the point where ' +
+      'it has stopped sticking to her and started pushing back. She turns it a quarter and folds ' +
+      'it and leans, and does it again, and talks the whole time without losing the count.',
+    cannotTake: () =>
+      'Marjoram catches your wrist before your hand is halfway there. "That is tomorrow\'s," she ' +
+      'says, not unkindly, and goes back to her count.',
+    responses: {
+      touch: () => ({
+        text:
+          'Marjoram catches your wrist before you put a finger in her dough. "Wash first or ' +
+          'don\'t at all," she says, and then, having decided: "Don\'t at all."',
+      }),
+      eat: () => ({
+        text:
+          '"It is raw," says Marjoram, without looking up. "You would be ill, and I would be ' +
+          'short, and your mother would hear about both."',
+      }),
+      taste: () => ({
+        text: '"Raw flour," says Marjoram. "There is nothing in it yet. Come back tomorrow."',
+      }),
+      smell: () => ({
+        text: 'Flour and yeast and the sour edge of a starter somebody has kept alive for years.',
+      }),
+    },
   },
   {
     id: 'square.well',
@@ -799,6 +969,93 @@ const OBJECT_LIST: WorldObjectDef[] = [
             'in the silt. Nothing goes down past the stone.',
         },
       ],
+    },
+  },
+  {
+    /*
+     * The offerings. Named in the arrival prose, in the room description and in
+     * the basin's own description, and absent from the parser until now — the
+     * audit's headline example. Two objects rather than one, because the future
+     * has a different answer for each: the coins go green and the pin does not
+     * survive.
+     *
+     * Not takeable, deliberately and in character. That also means there is
+     * nothing to reconcile with the future basin a hundred years later: what is
+     * in the silt stays in the silt, in both centuries.
+     */
+    id: 'pastdeep.coins',
+    name: 'two copper coins',
+    nouns: ['coins', 'coin', 'copper coins', 'copper coin', 'two coins', 'money', 'offerings'],
+    locationId: 'past.deep_chamber',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'Two of them, in the silt in the corner, a hand\'s width apart. Copper, thin, worn almost ' +
+      'blank — the kind that stops being money and starts being something you have in a pocket. ' +
+      'One is face up. Somebody put them here on purpose and did not throw them.',
+    onExamine: {
+      journal: [
+        {
+          id: 'j.offerings',
+          text:
+            'Two worn copper coins and a bone pin in the silt at the corner of the basin. Placed, ' +
+            'not dropped. People were leaving things here before the stair was finished.',
+        },
+      ],
+    },
+    cannotTake: () =>
+      'You get two fingers into the water and then stop.\n\nSomebody came down an unfinished ' +
+      'stair in the dark to leave these, and whatever they wanted, they wanted it enough. You ' +
+      'take your hand back out and dry it on your shirt.',
+    responses: {
+      touch: () =>
+        ({
+          text:
+            'You turn the face-up one over with a fingertip. There is a head on it, worn to a ' +
+            'suggestion of a head. The water is cold enough that your hand aches by the time you ' +
+            'have done it.',
+        }),
+      taste: () => ({ text: 'You are not putting somebody\'s offering in your mouth.' }),
+    },
+  },
+  {
+    id: 'pastdeep.pin',
+    name: 'bone pin',
+    nouns: ['bone pin', 'pin', 'bone'],
+    locationId: 'past.deep_chamber',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'A hand\'s length of bone, shaped to a point at one end and a flattened knob at the other, ' +
+      'the sort of thing that holds a cloak shut. The water has not been unkind to it yet. There ' +
+      'is a line of cross-hatching near the knob where somebody\'s thumb has worn it shallow.',
+    cannotTake: () =>
+      'It would come up easily, and it is not yours. Somebody unpinned their cloak in the cold ' +
+      'to put it there.',
+    responses: {
+      touch: () => ({
+        text:
+          'Smooth, and not as cold as the coins. The cross-hatching is just deep enough to feel.',
+      }),
+    },
+  },
+  {
+    id: 'pastdeep.silt',
+    name: 'silt',
+    nouns: ['silt', 'sediment', 'bottom', 'corner'],
+    locationId: 'past.deep_chamber',
+    initiallyVisible: true,
+    description: () =>
+      'A fine pale dust in the low corner of the basin, thin enough to see the cut stone through. ' +
+      'The coins and the pin are lying in it. Nothing else is: it is a cut cistern a month old, ' +
+      'not a river.',
+    cannotTake: () => 'It is silt. There is no use for a handful of silt.',
+    responses: {
+      touch: () => ({
+        text:
+          'It lifts in a slow cloud when you disturb it and takes a while to settle, and while ' +
+          'it is up you cannot see the coins at all.',
+      }),
     },
   },
   {
@@ -1532,6 +1789,72 @@ const OBJECT_LIST: WorldObjectDef[] = [
             'dry for a very long time. The two coins are still in it, gone green.',
         },
       ],
+    },
+  },
+  {
+    /*
+     * The same offerings, a hundred years on. The era-specific half of the
+     * audit's first finding: the coins are described again in this room, so
+     * they have to answer here too — and differently, because copper goes green
+     * and bone does not last.
+     */
+    id: 'futuredeep.coins',
+    name: 'green coins',
+    nouns: [
+      'coins',
+      'coin',
+      'copper coins',
+      'green coins',
+      'two coins',
+      'money',
+      'offerings',
+    ],
+    locationId: 'future.deep_chamber',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'Two coins in the dry corner of the basin, a hand\'s width apart, gone the flat green of a ' +
+      'leaf all over. The copper underneath has swollen as it turned, so they sit proud of the ' +
+      'stone now instead of in it. One of them is face up.\n\nYou know which one.',
+    onExamine: {
+      journal: [
+        {
+          id: 'j.future_offerings',
+          text:
+            'The two coins are still in the corner of the dry basin, gone green and swollen. The ' +
+            'bone pin is a brown stain in the shape of a pin. Nobody has been down here to tidy ' +
+            'in a hundred years.',
+        },
+      ],
+    },
+    cannotTake: () =>
+      'You could lift them out with a fingernail now, and there is nobody left to mind.\n\nYou ' +
+      'leave them where they are. Somebody came down a dark stair to put them there and that is ' +
+      'still true, whatever has happened since.',
+    responses: {
+      touch: () => ({
+        text:
+          'The green comes off on your fingertip like chalk. Underneath it the metal is pitted ' +
+          'and soft, and the coin does not want to come away from the stone.',
+      }),
+    },
+  },
+  {
+    id: 'futuredeep.pin',
+    name: 'stain where the pin was',
+    nouns: ['bone pin', 'pin', 'bone', 'stain', 'remnant'],
+    locationId: 'future.deep_chamber',
+    initiallyVisible: true,
+    verbs: () => ['examine', 'touch'],
+    description: () =>
+      'A brown mark on the pale stone, a hand long, pointed at one end and swollen at the other. ' +
+      'Bone does not last in and out of water for a century; the shape of it did.',
+    cannotTake: () =>
+      'There is nothing to pick up. The pin is the mark, now, and the mark is part of the stone.',
+    responses: {
+      touch: () => ({
+        text: 'Dry stone, and no edge to it at all. Your thumb does not lift any of the colour.',
+      }),
     },
   },
   {

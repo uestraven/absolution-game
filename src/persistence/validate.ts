@@ -12,7 +12,9 @@ import type {
   TranscriptEntry,
   TranscriptKind,
 } from '../engine/types';
-import { SCHEMA_VERSION } from '../engine/types';
+import { SCHEMA_VERSION,
+  isPhysicalVerb,
+} from '../engine/types';
 import { isLocationId, LOCATIONS } from '../content/locations';
 import { isItemId } from '../content/items';
 import { isCharacterId } from '../content/characters';
@@ -89,6 +91,12 @@ const ACTION_SHAPES: Record<string, { strings?: string[]; optional?: string[] }>
   CLOSE: { strings: ['target'] },
   BREAK: { strings: ['target'], optional: ['using'] },
   CLEAR: { strings: ['target'] },
+  /*
+   * The physical family travels as one action with a verb field, so this is
+   * the one shape — and `verb` is checked against the real list below rather
+   * than being accepted as any string.
+   */
+  PHYSICAL: { strings: ['verb', 'target'] },
   FILL: { strings: ['target'], optional: ['item'] },
   GIVE: { strings: ['item', 'target'] },
   SHOW: { strings: ['subject'], optional: ['target'] },
@@ -125,6 +133,7 @@ function isGameAction(value: unknown): boolean {
   const shape = ACTION_SHAPES[value.type];
   if (!shape) return false;
   if (value.type === 'SELECT_CHARACTER' && !isCharacterId(value.character)) return false;
+  if (value.type === 'PHYSICAL' && !isPhysicalVerb(value.verb)) return false;
   for (const field of shape.strings ?? []) {
     if (typeof value[field] !== 'string') return false;
   }
