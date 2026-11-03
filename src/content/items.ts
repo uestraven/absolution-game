@@ -49,6 +49,16 @@ export const ITEMS: Record<ItemId, ItemDef> = {
         ? 'a yoke of water skins, full and heavy'
         : 'a yoke of water skins, empty',
     description: (state) =>
+      /*
+       * Where they are matters. Delivered, they hang from the peg at the mouth
+       * and are described hanging there, because the crew's kit says so and a
+       * player who reads that and types EXAMINE SKINS should get the same
+       * scene back.
+       */
+      (state.placements['water_skins']?.kind === 'room' && state.flags[FLAGS.carriedWater] === true
+        ? 'Hanging from the peg beside the broken barrel where you left them, dripping gently ' +
+          'onto the stone. '
+        : '') +
       'Four goatskins on a shoulder yoke, stitched and pitched, with wooden bungs on thongs. ' +
       (state.flags[FLAGS.skinsFilled]
         ? 'They are full, and they weigh what four skins of water weigh, which is more than ' +

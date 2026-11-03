@@ -6,7 +6,7 @@ import { ALL_FLAG_KEYS, FLAGS } from './flags';
 import { begin } from '../testing/harness';
 import { stripMarkup } from './markup';
 import { eraOf } from '../engine/reducer';
-import type { GameState, LocationId } from '../engine/types';
+import type { Chapter, GameState, LocationId, WorldObjectDef } from '../engine/types';
 
 const state = begin();
 
@@ -145,9 +145,25 @@ describe('objects and people', () => {
   });
 
   it('avoid two objects in one room answering to the same single noun unintentionally', () => {
-    // Ambiguity is allowed, but it must be deliberate: anything shared here is
-    // listed, so a new content edit cannot introduce one silently.
-    const deliberate = new Set(['stone']);
+    /*
+     * Ambiguity is allowed, but it must be deliberate.
+     *
+     * Two kinds are fine. One is listed below, where the game asks which the
+     * player means. The other is a pair that can never be visible at once —
+     * the sealed chamber has an opening-era shutter and a return-era shutter,
+     * and exactly one of them exists in any given chapter. That is checked
+     * rather than trusted: if a content edit ever let both appear together,
+     * this fails.
+     */
+    const deliberate = new Set(['stone', 'crack']);
+    const chapters: Chapter[] = ['rite', 'crossing', 'future', 'return', 'ending'];
+    const neverTogether = (a: WorldObjectDef, b: WorldObjectDef): boolean =>
+      chapters.every((chapter) => {
+        const state = { ...begin(), chapter } as GameState;
+        const visible = (def: WorldObjectDef) => !(def.hiddenWhen?.(state) ?? false);
+        return !(visible(a) && visible(b));
+      });
+
     for (const [locationId, defs] of Object.entries(OBJECTS_BY_LOCATION)) {
       const counts = new Map<string, string[]>();
       for (const def of defs) {
@@ -156,7 +172,12 @@ describe('objects and people', () => {
         }
       }
       for (const [noun, owners] of counts) {
-        if (owners.length > 1 && !deliberate.has(noun)) {
+        if (owners.length <= 1 || deliberate.has(noun)) continue;
+        const pairs = owners.flatMap((a, i) => owners.slice(i + 1).map((b) => [a, b] as const));
+        const overlapping = pairs.filter(
+          ([a, b]) => !neverTogether(OBJECTS[a]!, OBJECTS[b]!)
+        );
+        if (overlapping.length > 0) {
           throw new Error(`"${noun}" is shared in ${locationId} by ${owners.join(', ')}`);
         }
       }

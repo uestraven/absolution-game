@@ -755,6 +755,56 @@ Twenty locations; the finale adds no new ones, which is the point of it.
 | `water_skins` | `past.square` wall | The water route into the workings. Optional |
 | `mallet` | `past.worksite` chisel basket | Nothing yet. Carried forward for Milestone 4, which has a substitute if it was left |
 
+## Mentioned objects, and what answers for them
+
+An interaction pass runs against an audit of every concrete noun the prose puts
+in a room. Two rules:
+
+1. **A noun the prose uses must resolve in the room that uses it.** Parts may
+   delegate to a parent only when the answer acknowledges the named part.
+2. **A sensible attempt must get an answer that names the thing.** "You cannot
+   do that here" in a room with a stool in it, and "you cannot see any dough
+   here" while reading about dough, are both the defect — not the absence of a
+   feature.
+
+Not everything is portable. **A refusal is an interaction**: Marjoram catches
+your wrist before you put a finger in her dough; the offerings in the basin stay
+in the basin because somebody came down a dark stair to leave them. The tiers
+are scenery with authored replies, owned or attached things, genuinely portable
+items, and — once — a consumable.
+
+### Where the tiers got to
+
+- **Done (first pass).** The small physical vocabulary; the bread as the one
+  consumable; the salt bowl, well-cap, stool and Marjoram's dough; the coins
+  and the bone pin in both centuries; room-level `LISTEN`; and the resolver's
+  substring fallback, which answered `examine oil` with an exit description
+  because `oil` is inside `spoil`.
+- **Done (puzzle-adjacent).** The split water barrel and the rest of the crew
+  kit at the past mouth; the trestle, chisels, oil flask, ledge, nails, scales,
+  chalk line and cut waste in the workings; the basin's bucket and the crew's
+  mallet; Saffra's board after the recitation; and the return chamber's own
+  shutter, wedge, eye, wall, alcove and pillar crack.
+- **Not yet.** The broad pass: remaining NPC props, workshop clutter, spring
+  scenery, the future settlement's goats and keepsakes, and attachment/state
+  consistency for parts that travel with their parents.
+
+### The ones that must not become solutions
+
+These answer, and the answer is a physical reason rather than silence:
+
+| Attempt | Answer |
+| --- | --- |
+| Take a chisel to cut the third dish | Four days' work by somebody who knows how, into a panel a flagstone thick with a hole already in it. The panel would go, and the hole with it |
+| Take the crew's mallet from the basin chamber | It is the tool four men are coming back for, and there is a basket of them in the workings |
+| Take the tarred line as a rope | Too light to hold a person; it is a chalk line, and nothing in the hill needs string |
+| Take the bucket to solve the water problem | The problem is at the mouth and it is not a bucket-sized problem |
+| Take Saffra's board away | There is a version of the next hundred years with no plank by the well, and guessing at that with somebody's afternoon is not on |
+| Pull the earlier self's wedge | The shutter comes down, the light goes off the wall, and the argument happens in the dark |
+
+Checked in `src/engine/interaction.test.ts`, which asserts both the wording and
+that nothing was acquired or unlocked.
+
 ## Automated coverage
 
 One vitest suite across the files below. Counts and dated results live in

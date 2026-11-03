@@ -300,3 +300,244 @@ describe('every authored response is reachable', () => {
     expect(parse('sit on stool')).toEqual({ type: 'PHYSICAL', verb: 'sit', target: 'stool' });
   });
 });
+
+/* ================================================================ *
+ * Tier two: the puzzle-adjacent objects
+ *
+ * The audit singled these out because a player is most likely to read them as
+ * clues or as alternative solutions. So the tests check two things at once:
+ * that the noun answers, and that the answer does not open a door.
+ * ================================================================ */
+
+/** A room, with the things in it discovered, as arriving there would. */
+function standingIn(id: LocationId, chapter: GameState['chapter'] = 'rite'): GameState {
+  const base = begin();
+  const discovered = Object.values(OBJECTS)
+    .filter((def) => def.locationId === id && def.initiallyVisible)
+    .map((def) => def.id);
+  return {
+    ...base,
+    locationId: id,
+    chapter,
+    discovered: [...base.discovered, ...discovered],
+  } as GameState;
+}
+
+describe('the workings', () => {
+  const here = () => standingIn('past.worksite');
+
+  it('answers for the trestle the placement action climbs', () => {
+    expect(say(here(), 'examine trestle')).toMatch(/folding frame/i);
+    expect(say(here(), 'sit on trestle')).toMatch(/what Lovage's boys do/i);
+    expect(say(here(), 'pull the trestle')).toMatch(/drag it a foot/i);
+  });
+
+  it('answers the obvious idea about the chisels without granting it', () => {
+    const refused = type(here(), 'take chisels');
+    expect(refused.accepted).toBe(false);
+    const text = stripMarkup(lastText(refused));
+    // It knows what the player was thinking, and answers in stone and days.
+    expect(text).toMatch(/you know what you are thinking/i);
+    expect(text).toMatch(/not going to be with a chisel/i);
+    // And nothing is acquired that could cut a third dish.
+    expect(refused.state.inventory).toEqual(here().inventory);
+  });
+
+  it('answers for the oil the resolver used to get wrong', () => {
+    /*
+     * The verified defect: `examine oil` returned the description of the gap
+     * back to the basin chamber. Both halves are fixed — the matcher does not
+     * guess, and the noun now has something to find.
+     */
+    const text = say(here(), 'examine oil');
+    expect(text).toMatch(/clay flask/i);
+    expect(text).not.toMatch(/basin chamber/i);
+    expect(say(here(), 'drink oil')).toMatch(/^No\.$/);
+  });
+
+  it('answers for the rest of the room the prose describes', () => {
+    const room = here();
+    expect(say(room, 'examine ledge')).toMatch(/course of stone/i);
+    expect(say(room, 'examine scales')).toMatch(/overlapping scales/i);
+    expect(say(room, 'examine nails')).toMatch(/four of them/i);
+    expect(say(room, 'examine waste')).toMatch(/stone that used to be the hole/i);
+    expect(say(room, 'examine chalk line')).toMatch(/snapped in blue chalk/i);
+  });
+
+  it('does not make the panel passable by any of them', () => {
+    // None of the new objects may become a second way through.
+    const room = here();
+    for (const cmd of ['pull waste', 'pull chisels', 'pull nails', 'touch scales']) {
+      const result = type(room, cmd);
+      expect(result.state.flags[FLAGS.lanternInHighDish], cmd).toBeUndefined();
+      expect(result.state.locationId, cmd).toBe('past.worksite');
+    }
+  });
+});
+
+describe('the crew kit at the past mouth', () => {
+  const here = () => standingIn('past.entrance');
+
+  it('answers for the split barrel, which is why the puzzle exists', () => {
+    const room = here();
+    expect(say(room, 'examine barrel')).toMatch(/post a letter through it/i);
+    expect(say(room, 'drink barrel')).toMatch(/nothing in it/i);
+    expect(say(room, 'pull barrel')).toMatch(/a cooper could put a new stave in it/i);
+  });
+
+  it('knows the barrel is the thing that needs water, when examined', () => {
+    // Examining it teaches the same fact examining the kit does.
+    const looked = type(here(), 'examine barrel');
+    expect(looked.state.flags[FLAGS.knowsWaterNeeded]).toBe(true);
+  });
+
+  it('gives the kit its parts', () => {
+    const room = here();
+    expect(say(room, 'examine barrow')).toMatch(/mended/i);
+    expect(say(room, 'examine wheel')).toMatch(/mended/i);
+    expect(say(room, 'examine chisels')).toMatch(/waiting for a smith/i);
+    expect(say(room, 'examine tarred line')).toMatch(/black with tar/i);
+    expect(say(room, 'examine bowls')).toMatch(/upside down/i);
+  });
+
+  it('does not let the tarred line become a rope', () => {
+    const refused = type(here(), 'take line');
+    expect(refused.accepted).toBe(false);
+    expect(stripMarkup(lastText(refused))).toMatch(/nothing in this hill you need string for/i);
+    expect(refused.state.inventory).toEqual(here().inventory);
+  });
+
+  it('hangs the delivered skins on a peg that exists', () => {
+    const delivered = {
+      ...here(),
+      flags: { ...here().flags, [FLAGS.carriedWater]: true },
+      placements: {
+        ...here().placements,
+        water_skins: { kind: 'room', locationId: 'past.entrance' },
+      },
+    } as GameState;
+    expect(say(delivered, 'examine peg')).toMatch(/driven into a crack/i);
+    // And the skins themselves say where they are now.
+    expect(say(delivered, 'examine skins')).toMatch(/hanging from the peg/i);
+  });
+
+  it('keeps the peg out of the room before anything is delivered', () => {
+    expect(say(here(), 'examine peg')).toMatch(/cannot see any peg here/i);
+  });
+});
+
+describe('the basin chamber', () => {
+  const here = () => standingIn('past.deep_chamber');
+
+  it('answers for the bucket and the mallet the prose puts there', () => {
+    expect(say(here(), 'examine bucket')).toMatch(/stitched hide/i);
+    expect(say(here(), 'examine mallet')).toMatch(/still tight on the shaft/i);
+  });
+
+  it('does not hand out a second mallet', () => {
+    /*
+     * The reconciliation the audit asked for. The prose always described a
+     * mallet here; the portable one is a different mallet in the workings. A
+     * second portable mallet would be a second way to arm the finale.
+     */
+    const refused = type(here(), 'take mallet');
+    expect(refused.accepted).toBe(false);
+    expect(refused.state.inventory).not.toContain('mallet');
+    expect(stripMarkup(lastText(refused))).toMatch(/the tool they are coming back for/i);
+  });
+
+  it('does not let the bucket solve the water problem', () => {
+    const refused = type(here(), 'take bucket');
+    expect(refused.accepted).toBe(false);
+    expect(stripMarkup(lastText(refused))).toMatch(/not a bucket-sized problem/i);
+  });
+});
+
+describe("Saffra's board, after she writes it", () => {
+  const square = (recited: boolean) =>
+    ({
+      ...standingIn('past.square'),
+      flags: { ...begin().flags, ...(recited ? { [FLAGS.recitedProphecy]: true } : {}) },
+    }) as GameState;
+
+  it('is not there before the recitation', () => {
+    expect(say(square(false), 'examine board')).toMatch(/cannot see any board here/i);
+  });
+
+  it('is there afterwards, in her hand and in the hero\'s words', () => {
+    const text = say(square(true), 'examine board');
+    expect(text).toMatch(/four lines on the back of it in charcoal/i);
+    expect(text).toMatch(/they are your words/i);
+  });
+
+  it('cannot be carried off, and says what that would mean', () => {
+    const refused = type(square(true), 'take board');
+    expect(refused.accepted).toBe(false);
+    expect(stripMarkup(lastText(refused))).toMatch(/no plank by the well/i);
+  });
+});
+
+describe('the return chamber keeps its own furniture', () => {
+  const here = () => standingIn('present.sealed_chamber', 'return');
+
+  it('answers for the shutter, the wedge, the eye, the wall and the alcove', () => {
+    const room = here();
+    expect(say(room, 'examine shutter')).toMatch(/held there by an oak wedge/i);
+    expect(say(room, 'examine their wedge')).toMatch(/block of oak/i);
+    expect(say(room, 'examine eye')).toMatch(/cut through a panel/i);
+    expect(say(room, 'examine wall')).toMatch(/overlapping scales/i);
+    expect(say(room, 'examine alcove')).toMatch(/shallow dish/i);
+  });
+
+  it('reads the scene rather than the hero\'s own placement flags', () => {
+    /*
+     * The reason the return has its own objects at all: the opening-era
+     * shutter and alcove describe what *the player* did with them, and on the
+     * return that stone is holding somebody else's wedge and somebody else's
+     * lamp.
+     */
+    const room = here();
+    // The hero has placed nothing in this chapter, and the room still
+    // describes a wedged shutter — because it is theirs.
+    expect(room.flags[FLAGS.shutterHeld]).toBeUndefined();
+    expect(say(room, 'examine shutter')).toMatch(/you know the exact depth that wedge has gone/i);
+    // And the refusal keeps the two wedges separate.
+    expect(stripMarkup(lastText(type(room, 'take their wedge')))).toMatch(/that one is theirs/i);
+  });
+
+  it('refuses to undo the arrangement the scene depends on', () => {
+    const room = here();
+    for (const cmd of ['take shutter', 'take their wedge', 'pull their wedge', 'pull shutter']) {
+      const result = type(room, cmd);
+      expect(result.accepted, cmd).toBe(false);
+      expect(result.state.flags[FLAGS.shutterHeld], cmd).toBeUndefined();
+    }
+  });
+
+  it('separates the pillar crack from the wall seam', () => {
+    const room = here();
+    expect(say(room, 'examine pillar crack')).toMatch(/foot of the pillar/i);
+    expect(say(room, 'examine grit')).toMatch(/fan of grit/i);
+  });
+
+  it('asks which crack, once both are discoverable', () => {
+    /*
+     * Two cracks in one room is genuine ambiguity, and the audit's answer is
+     * the right one: ask, rather than silently pick.
+     */
+    const room = here();
+    const withSeam = { ...room, discovered: [...room.discovered, 'sealed.seam'] } as GameState;
+    const asked = type(withSeam, 'examine crack');
+    expect(asked.state.pending?.kind).toBe('clarification');
+    expect(asked.state.pending?.kind === 'clarification' && asked.state.pending.options.length).toBe(2);
+  });
+
+  it('tracks the pillar through each blow', () => {
+    const room = here();
+    const struck = (n: number) =>
+      say({ ...room, flags: { ...room.flags, [FLAGS.pillarStruck]: n } } as GameState, 'examine grit');
+    expect(struck(0)).toMatch(/carrying a load for longer than it was meant to/i);
+    expect(struck(1)).toMatch(/finger-width now/i);
+    expect(struck(2)).toMatch(/all the way through/i);
+  });
+});
